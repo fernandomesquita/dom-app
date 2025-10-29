@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getLoginUrl } from "@/const";
-import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote } from "lucide-react";
 import { Link } from "wouter";
 import { mockEstatisticas } from "@/lib/mockData";
 import { useState } from "react";
@@ -185,10 +185,27 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Ações Rápidas */}
+        {/* Acesso Rápido */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
+        <h2 className="text-2xl font-bold mb-4">Acesso Rápido</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Link href="/anotacoes">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <StickyNote className="h-6 w-6 text-yellow-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold mb-1">Anotações de Meta</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Visualize suas anotações pessoais
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
           <Link href="/plano">
             <a>
               <Card className="hover:bg-accent transition-colors cursor-pointer h-full">

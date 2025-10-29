@@ -118,6 +118,11 @@ export default function Plano() {
     }
   };
 
+  const handleSaveAnotacao = (metaId: number, anotacao: string) => {
+    // TODO: Implementar salvamento no backend
+    console.log(`Salvando anotação para meta ${metaId}:`, anotacao);
+  };
+
   // Filtragem
   const metasFiltradas = metas.filter(meta => {
     if (filtroTipo && meta.tipo !== filtroTipo) return false;
@@ -390,6 +395,7 @@ export default function Plano() {
         onClose={() => setSelectedMeta(null)}
         onConcluir={handleConcluirMeta}
         onNeedMoreTime={handleNeedMoreTime}
+        onSaveAnotacao={handleSaveAnotacao}
       />
     </div>
   );

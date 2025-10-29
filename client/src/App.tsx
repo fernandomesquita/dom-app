@@ -12,6 +12,7 @@ import Materiais from "./pages/Materiais";
 import Questoes from "./pages/Questoes";
 import Forum from "./pages/Forum";
 import Revisao from "./pages/Revisao";
+import AnotacoesMeta from "./pages/AnotacoesMeta";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function Router() {
         <Route path={"/questoes"} component={Questoes} />
         <Route path={"/forum"} component={Forum} />
         <Route path={"/revisao"} component={Revisao} />
+        <Route path={"/anotacoes"} component={AnotacoesMeta} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />

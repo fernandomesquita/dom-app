@@ -2,7 +2,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, BookOpen, HelpCircle, CheckCircle, Play, Pause, RotateCcw, Edit, Mic, Square } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock, BookOpen, HelpCircle, CheckCircle, Play, Pause, RotateCcw, Edit, Mic, Square, Save, StickyNote } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -17,6 +21,7 @@ interface Meta {
   dicaEstudo?: string;
   aulaId?: number | null;
   orientacaoEstudos?: string;
+  anotacoes?: string;
 }
 
 interface MetaModalProps {
@@ -25,9 +30,10 @@ interface MetaModalProps {
   onClose: () => void;
   onConcluir?: () => void;
   onNeedMoreTime?: () => void;
+  onSaveAnotacao?: (metaId: number, anotacao: string) => void;
 }
 
-export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreTime }: MetaModalProps) {
+export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreTime, onSaveAnotacao }: MetaModalProps) {
   const { user } = useAuth();
   const isMaster = user?.role === "master";
   
@@ -38,15 +44,35 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   const [isRecording, setIsRecording] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
+  // Estados para edição
+  const [editDisciplina, setEditDisciplina] = useState("");
+  const [editAssunto, setEditAssunto] = useState("");
+  const [editTipo, setEditTipo] = useState<"estudo" | "revisao" | "questoes">("estudo");
+  const [editDuracao, setEditDuracao] = useState(0);
+  const [editIncidencia, setEditIncidencia] = useState<"baixa" | "media" | "alta" | "">("");
+  const [editDicaEstudo, setEditDicaEstudo] = useState("");
+  const [editOrientacaoEstudos, setEditOrientacaoEstudos] = useState("");
+  const [editAnotacoes, setEditAnotacoes] = useState("");
+  
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (meta) {
-      setTempoRestante(meta.duracao * 60); // Converte minutos para segundos
+      setTempoRestante(meta.duracao * 60);
       setTempoDecorrido(0);
       setRodando(false);
       setShowFinalizarModal(false);
       setEditMode(false);
+      
+      // Inicializar campos de edição
+      setEditDisciplina(meta.disciplina);
+      setEditAssunto(meta.assunto);
+      setEditTipo(meta.tipo);
+      setEditDuracao(meta.duracao);
+      setEditIncidencia(meta.incidencia || "");
+      setEditDicaEstudo(meta.dicaEstudo || "");
+      setEditOrientacaoEstudos(meta.orientacaoEstudos || "");
+      setEditAnotacoes(meta.anotacoes || "");
     }
   }, [meta]);
 
@@ -128,7 +154,7 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   };
 
   const resetTimer = () => {
-    setTempoRestante(meta.duracao * 60);
+    setTempoRestante(editDuracao * 60);
     setTempoDecorrido(0);
     setRodando(false);
   };
@@ -159,8 +185,21 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
     // TODO: Implementar salvamento do áudio
   };
 
-  const incidenciaInfo = getIncidenciaInfo(meta.incidencia);
-  const duracaoTotal = meta.duracao * 60;
+  const handleSaveChanges = () => {
+    // TODO: Implementar salvamento no backend
+    toast.success("Meta atualizada com sucesso!");
+    setEditMode(false);
+  };
+
+  const handleSaveAnotacao = () => {
+    if (onSaveAnotacao && meta) {
+      onSaveAnotacao(meta.id, editAnotacoes);
+      toast.success("Anotação salva com sucesso!");
+    }
+  };
+
+  const incidenciaInfo = getIncidenciaInfo(editMode ? editIncidencia : meta.incidencia);
+  const duracaoTotal = (editMode ? editDuracao : meta.duracao) * 60;
   const progressoPercentual = duracaoTotal > 0 ? (tempoDecorrido / duracaoTotal) * 100 : 0;
 
   // Modal de finalização
@@ -201,17 +240,53 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <DialogTitle className="text-2xl mb-2">{meta.disciplina}</DialogTitle>
-              <DialogDescription className="text-base">{meta.assunto}</DialogDescription>
+              {editMode ? (
+                <div className="space-y-3">
+                  <div>
+                    <Label>Disciplina</Label>
+                    <Input
+                      value={editDisciplina}
+                      onChange={(e) => setEditDisciplina(e.target.value)}
+                      placeholder="Ex: Direito Constitucional"
+                    />
+                  </div>
+                  <div>
+                    <Label>Assunto</Label>
+                    <Input
+                      value={editAssunto}
+                      onChange={(e) => setEditAssunto(e.target.value)}
+                      placeholder="Ex: Direitos Fundamentais"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <DialogTitle className="text-2xl mb-2">{meta.disciplina}</DialogTitle>
+                  <DialogDescription className="text-base">{meta.assunto}</DialogDescription>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge className={getTipoColor(meta.tipo)}>
-                {getTipoLabel(meta.tipo)}
-              </Badge>
+              {editMode ? (
+                <Select value={editTipo} onValueChange={(v) => setEditTipo(v as typeof editTipo)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="estudo">Estudo</SelectItem>
+                    <SelectItem value="revisao">Revisão</SelectItem>
+                    <SelectItem value="questoes">Questões</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Badge className={getTipoColor(meta.tipo)}>
+                  {getTipoLabel(meta.tipo)}
+                </Badge>
+              )}
               {isMaster && (
                 <Button
                   variant="outline"
@@ -219,7 +294,7 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
                   onClick={() => setEditMode(!editMode)}
                 >
                   <Edit className="h-4 w-4 mr-1" />
-                  Editar
+                  {editMode ? "Cancelar" : "Editar"}
                 </Button>
               )}
             </div>
@@ -260,6 +335,7 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
                   variant={rodando ? "destructive" : "default"}
                   size="lg"
                   onClick={toggleTimer}
+                  disabled={editMode}
                 >
                   {rodando ? (
                     <>
@@ -277,6 +353,7 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
                   variant="outline"
                   size="lg"
                   onClick={resetTimer}
+                  disabled={editMode}
                 >
                   <RotateCcw className="h-5 w-5 mr-2" />
                   Reiniciar
@@ -289,102 +366,172 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
           <div className="grid grid-cols-2 gap-4">
             <div className="flex items-center gap-3 p-4 bg-accent rounded-lg">
               <Clock className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <div className="text-sm text-muted-foreground">Duração</div>
-                <div className="font-semibold">{meta.duracao} minutos</div>
+              <div className="flex-1">
+                {editMode ? (
+                  <div>
+                    <Label className="text-xs">Duração (minutos)</Label>
+                    <Input
+                      type="number"
+                      value={editDuracao}
+                      onChange={(e) => setEditDuracao(Number(e.target.value))}
+                      className="mt-1"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm text-muted-foreground">Duração</div>
+                    <div className="font-semibold">{meta.duracao} minutos</div>
+                  </>
+                )}
               </div>
             </div>
 
-            {incidenciaInfo && (
-              <div className="flex items-center gap-3 p-4 bg-accent rounded-lg">
-                <span className="text-2xl">{incidenciaInfo.icon}</span>
-                <div>
-                  <div className="text-sm text-muted-foreground">Incidência</div>
-                  <div className={`font-semibold ${incidenciaInfo.color}`}>
-                    {incidenciaInfo.label}
-                  </div>
+            <div className="flex items-center gap-3 p-4 bg-accent rounded-lg">
+              {editMode ? (
+                <div className="flex-1">
+                  <Label className="text-xs">Incidência</Label>
+                  <Select value={editIncidencia} onValueChange={(v) => setEditIncidencia(v as typeof editIncidencia)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="baixa">💧 Baixa</SelectItem>
+                      <SelectItem value="media">⚡ Média</SelectItem>
+                      <SelectItem value="alta">🔥 Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-            )}
+              ) : incidenciaInfo ? (
+                <>
+                  <span className="text-2xl">{incidenciaInfo.icon}</span>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Incidência</div>
+                    <div className={`font-semibold ${incidenciaInfo.color}`}>
+                      {incidenciaInfo.label}
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
 
           {/* Dica de Estudo */}
-          {meta.dicaEstudo && (
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-              <h4 className="font-semibold mb-2 flex items-center gap-2">
-                💡 Dica de Estudo
-              </h4>
-              <p className="text-sm text-muted-foreground">{meta.dicaEstudo}</p>
-            </div>
-          )}
+          <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <h4 className="font-semibold mb-2 flex items-center gap-2">
+              💡 Dica de Estudo
+            </h4>
+            {editMode ? (
+              <Textarea
+                value={editDicaEstudo}
+                onChange={(e) => setEditDicaEstudo(e.target.value)}
+                placeholder="Adicione uma dica de estudo..."
+                className="min-h-[80px]"
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {meta.dicaEstudo || "Nenhuma dica cadastrada"}
+              </p>
+            )}
+          </div>
 
-          {/* Orientação de Estudos (Rich Text) */}
-          {(meta.orientacaoEstudos || editMode) && (
-            <div className="p-4 bg-accent/50 border border-border rounded-lg">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-semibold flex items-center gap-2">
-                  📚 Orientação de Estudos
-                </h4>
-                {isMaster && (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={isRecording ? handleStopRecording : handleStartRecording}
-                    >
-                      {isRecording ? (
-                        <>
-                          <Square className="h-4 w-4 mr-1" />
-                          Parar Gravação
-                        </>
-                      ) : (
-                        <>
-                          <Mic className="h-4 w-4 mr-1" />
-                          Gravar Áudio
-                        </>
-                      )}
-                    </Button>
-                  </div>
+          {/* Orientação de Estudos */}
+          <div className="p-4 bg-accent/50 border border-border rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                📚 Orientação de Estudos
+              </h4>
+              {isMaster && editMode && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={isRecording ? handleStopRecording : handleStartRecording}
+                  >
+                    {isRecording ? (
+                      <>
+                        <Square className="h-4 w-4 mr-1" />
+                        Parar Gravação
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-4 w-4 mr-1" />
+                        Gravar Áudio
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+            {editMode ? (
+              <Textarea
+                value={editOrientacaoEstudos}
+                onChange={(e) => setEditOrientacaoEstudos(e.target.value)}
+                placeholder="Adicione orientações de estudo, links de vídeos (YouTube/Vimeo), ou grave um áudio..."
+                className="min-h-[150px]"
+              />
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                {meta.orientacaoEstudos ? (
+                  <div dangerouslySetInnerHTML={{ __html: meta.orientacaoEstudos }} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Nenhuma orientação cadastrada</p>
                 )}
               </div>
-              {editMode ? (
-                <textarea
-                  className="w-full min-h-[150px] p-3 border border-border rounded-lg resize-y"
-                  placeholder="Adicione orientações de estudo, links de vídeos (YouTube/Vimeo), ou grave um áudio..."
-                  defaultValue={meta.orientacaoEstudos || ""}
-                />
-              ) : (
-                <div 
-                  className="prose prose-sm max-w-none"
-                  dangerouslySetInnerHTML={{ __html: meta.orientacaoEstudos || "" }}
-                />
+            )}
+          </div>
+
+          {/* Anotações do Aluno */}
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-semibold flex items-center gap-2">
+                <StickyNote className="h-5 w-5 text-yellow-600" />
+                Minhas Anotações
+              </h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveAnotacao}
+              >
+                <Save className="h-4 w-4 mr-1" />
+                Salvar Anotação
+              </Button>
+            </div>
+            <Textarea
+              value={editAnotacoes}
+              onChange={(e) => setEditAnotacoes(e.target.value)}
+              placeholder="Adicione suas anotações pessoais sobre esta meta..."
+              className="min-h-[120px] bg-white"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Suas anotações aparecerão no menu "Anotações de Meta" no dashboard
+            </p>
+          </div>
+
+          {/* Ações */}
+          {!editMode && (
+            <div className="space-y-3">
+              {meta.aulaId && (
+                <Button className="w-full" variant="default" size="lg">
+                  <Play className="h-4 w-4 mr-2" />
+                  Assistir Aula Relacionada
+                </Button>
+              )}
+
+              {meta.tipo === "questoes" && (
+                <Button className="w-full" variant="outline" size="lg">
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Resolver Questões
+                </Button>
+              )}
+
+              {meta.tipo === "estudo" && meta.aulaId && (
+                <Button className="w-full" variant="outline" size="lg">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Ver Materiais Complementares
+                </Button>
               )}
             </div>
           )}
-
-          {/* Ações */}
-          <div className="space-y-3">
-            {meta.aulaId && (
-              <Button className="w-full" variant="default" size="lg">
-                <Play className="h-4 w-4 mr-2" />
-                Assistir Aula Relacionada
-              </Button>
-            )}
-
-            {meta.tipo === "questoes" && (
-              <Button className="w-full" variant="outline" size="lg">
-                <HelpCircle className="h-4 w-4 mr-2" />
-                Resolver Questões
-              </Button>
-            )}
-
-            {meta.tipo === "estudo" && meta.aulaId && (
-              <Button className="w-full" variant="outline" size="lg">
-                <BookOpen className="h-4 w-4 mr-2" />
-                Ver Materiais Complementares
-              </Button>
-            )}
-          </div>
 
           {/* Botão de Conclusão */}
           {!editMode && (
@@ -411,11 +558,9 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
                 className="flex-1"
                 variant="default"
                 size="lg"
-                onClick={() => {
-                  toast.success("Meta atualizada com sucesso!");
-                  setEditMode(false);
-                }}
+                onClick={handleSaveChanges}
               >
+                <Save className="h-4 w-4 mr-2" />
                 Salvar Alterações
               </Button>
               <Button

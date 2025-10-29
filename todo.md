@@ -1015,3 +1015,31 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Salvar áudios gravados no storage S3
 
 ---
+
+
+## 🎯 EDIÇÃO DE META E SISTEMA DE ANOTAÇÕES
+
+### Edição Completa de Meta
+- [x] Tornar todos os campos da meta editáveis no modo de edição
+- [x] Campo editável: Disciplina
+- [x] Campo editável: Assunto
+- [x] Campo editável: Tipo (estudo/revisão/questões)
+- [x] Campo editável: Duração
+- [x] Campo editável: Incidência (baixa/média/alta)
+- [x] Campo editável: Dica de estudo
+- [ ] Campo editável: Aula vinculada
+- [x] Campo editável: Orientação de estudos
+- [ ] Implementar salvamento no backend de todas as alterações
+
+### Sistema de Anotações de Meta
+- [x] Adicionar campo "Anotações" em cada meta individual
+- [x] Permitir que aluno adicione anotações pessoais na meta
+- [x] Criar menu "Anotações de Meta" no dashboard do aluno
+- [x] Exibir lista de todas as metas com anotações
+- [x] Mostrar anotação completa no card da lista
+- [x] Implementar link/botão para navegar da anotação para a meta original
+- [ ] Salvar anotações no banco de dados vinculadas ao usuário e meta (backend)
+- [x] Implementar edição de anotações existentes
+- [ ] Implementar exclusão de anotações
+
+---
