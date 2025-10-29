@@ -20,6 +20,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
+import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -192,75 +193,7 @@ export default function Admin() {
         {/* Tab: Gestão de Usuários (Master, Administrativo) */}
         {availableTabs.usuarios && (
           <TabsContent value="usuarios" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Gestão de Usuários</CardTitle>
-                    <CardDescription>
-                      {isMaster 
-                        ? "Criar, editar e excluir qualquer usuário (mentor, professor, administrativo ou aluno)"
-                        : "Cadastrar e editar perfis de alunos, mentores e professores"
-                      }
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Novo Usuário
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg divide-y">
-                    {[
-                      { nome: "João Silva", email: "joao@email.com", role: "aluno", status: "ativo" },
-                      { nome: "Maria Santos", email: "maria@email.com", role: "professor", status: "ativo" },
-                      { nome: "Pedro Costa", email: "pedro@email.com", role: "mentor", status: "ativo" },
-                      { nome: "Ana Lima", email: "ana@email.com", role: "aluno", status: "inativo" },
-                    ].map((usuario, index) => (
-                      <div key={index} className="p-4 flex items-center justify-between hover:bg-accent transition-colors">
-                        <div className="flex-1">
-                          <div className="font-semibold">{usuario.nome}</div>
-                          <div className="text-sm text-muted-foreground">{usuario.email}</div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-sm">
-                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                              {usuario.role}
-                            </span>
-                          </div>
-                          <div className="text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              usuario.status === "ativo" 
-                                ? "bg-green-100 text-green-800" 
-                                : "bg-gray-100 text-gray-800"
-                            }`}>
-                              {usuario.status}
-                            </span>
-                          </div>
-                          <Button variant="outline" size="sm">
-                            Editar
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {isAdministrativo && (
-                    <div className="pt-4 border-t">
-                      <h4 className="font-semibold mb-3">Importação em Lote</h4>
-                      <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Importar CSV/Excel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <GestaoUsuarios />
           </TabsContent>
         )}
 

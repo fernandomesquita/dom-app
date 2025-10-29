@@ -1243,3 +1243,29 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Implementar moderação de comentários
 
 ---
+
+
+## 🔄 SISTEMA DE REVISÃO - EM DESENVOLVIMENTO
+
+### Curva de Esquecimento
+- [x] Implementar algoritmo de espaçamento (1, 7, 30, 90 dias)
+- [x] Calcular próxima data de revisão automaticamente
+- [x] Agendar revisões baseadas na curva de esquecimento
+- [ ] Permitir ajuste manual do intervalo de revisão (futuro)
+
+### Interface de Revisão
+- [x] Criar calendário de revisões programadas
+- [x] Mostrar revisões pendentes do dia
+- [x] Implementar interface de revisão de metas
+- [x] Implementar interface de revisão de aulas
+- [x] Implementar interface de revisão de questões
+- [x] Permitir marcar revisão como concluída
+- [x] Permitir adiar revisão
+
+### Estatísticas de Revisão
+- [x] Mostrar total de revisões realizadas
+- [x] Mostrar taxa de cumprimento de revisões
+- [x] Mostrar próximas revisões agendadas
+- [ ] Gráfico de evolução de revisões (futuro)
+
+---
