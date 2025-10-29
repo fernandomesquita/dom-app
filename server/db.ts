@@ -1,6 +1,19 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { 
+  InsertUser, users,
+  planos, InsertPlano,
+  matriculas, InsertMatricula,
+  metas, InsertMeta,
+  progressoMetas, InsertProgressoMeta,
+  aulas, InsertAula,
+  progressoAulas, InsertProgressoAula,
+  questoes,
+  forumTopicos, InsertForumTopico,
+  forumRespostas, InsertForumResposta,
+  avisos, InsertAviso,
+  avisosDispensados
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -56,8 +69,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       values.role = user.role;
       updateSet.role = user.role;
     } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
+      values.role = 'master';
+      updateSet.role = 'master';
     }
 
     if (!values.lastSignedIn) {
@@ -89,4 +102,233 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ===== PLANOS =====
+export async function getPlanos() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(planos).where(eq(planos.ativo, 1));
+  return result;
+}
+
+export async function getPlanoById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(planos).where(eq(planos.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createPlano(plano: InsertPlano) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(planos).values(plano);
+  return result;
+}
+
+// ===== MATRÍCULAS =====
+export async function getMatriculasByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(matriculas).where(eq(matriculas.userId, userId));
+  return result;
+}
+
+export async function getMatriculaAtiva(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const { and } = await import("drizzle-orm");
+  const result = await db.select().from(matriculas)
+    .where(and(
+      eq(matriculas.userId, userId),
+      eq(matriculas.ativo, 1)
+    ))
+    .limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createMatricula(matricula: InsertMatricula) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(matriculas).values(matricula);
+  return result;
+}
+
+// ===== METAS =====
+export async function getMetasByPlanoId(planoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(metas).where(eq(metas.planoId, planoId));
+  return result;
+}
+
+export async function getMetaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(metas).where(eq(metas.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createMeta(meta: InsertMeta) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(metas).values(meta);
+  return result;
+}
+
+// ===== PROGRESSO METAS =====
+export async function getProgressoMetasByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(progressoMetas).where(eq(progressoMetas.userId, userId));
+  return result;
+}
+
+export async function marcarMetaConcluida(userId: number, metaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and } = await import("drizzle-orm");
+  const result = await db.update(progressoMetas)
+    .set({ concluida: 1, dataConclusao: new Date() })
+    .where(and(
+      eq(progressoMetas.userId, userId),
+      eq(progressoMetas.metaId, metaId)
+    ));
+  return result;
+}
+
+// ===== AULAS =====
+export async function getAulas() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(aulas).where(eq(aulas.ativo, 1));
+  return result;
+}
+
+export async function getAulaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(aulas).where(eq(aulas.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createAula(aula: InsertAula) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(aulas).values(aula);
+  return result;
+}
+
+// ===== PROGRESSO AULAS =====
+export async function getProgressoAulasByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(progressoAulas).where(eq(progressoAulas.userId, userId));
+  return result;
+}
+
+export async function updateProgressoAula(userId: number, aulaId: number, progresso: Partial<InsertProgressoAula>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verifica se já existe progresso
+  const { and } = await import("drizzle-orm");
+  const existing = await db.select().from(progressoAulas)
+    .where(and(
+      eq(progressoAulas.userId, userId),
+      eq(progressoAulas.aulaId, aulaId)
+    ))
+    .limit(1);
+  
+  if (existing.length > 0) {
+    return await db.update(progressoAulas)
+      .set(progresso)
+      .where(and(
+        eq(progressoAulas.userId, userId),
+        eq(progressoAulas.aulaId, aulaId)
+      ));
+  } else {
+    return await db.insert(progressoAulas).values({
+      userId,
+      aulaId,
+      ...progresso
+    });
+  }
+}
+
+// ===== QUESTÕES =====
+export async function getQuestoes() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(questoes).where(eq(questoes.ativo, 1));
+  return result;
+}
+
+export async function getQuestaoById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(questoes).where(eq(questoes.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ===== FÓRUM =====
+export async function getForumTopicos() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(forumTopicos);
+  return result;
+}
+
+export async function getForumTopicoById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(forumTopicos).where(eq(forumTopicos.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createForumTopico(topico: InsertForumTopico) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(forumTopicos).values(topico);
+  return result;
+}
+
+export async function getForumRespostasByTopicoId(topicoId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(forumRespostas).where(eq(forumRespostas.topicoId, topicoId));
+  return result;
+}
+
+export async function createForumResposta(resposta: InsertForumResposta) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(forumRespostas).values(resposta);
+  return result;
+}
+
+// ===== AVISOS =====
+export async function getAvisosAtivos(userId?: number, planoId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(avisos).where(eq(avisos.ativo, 1));
+  
+  // Filtra por plano ou avisos globais
+  // TODO: adicionar lógica de filtragem mais complexa
+  
+  const result = await query;
+  return result;
+}
+
+export async function createAviso(aviso: InsertAviso) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(avisos).values(aviso);
+  return result;
+}
+
+export async function dispensarAviso(userId: number, avisoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(avisosDispensados).values({ userId, avisoId });
+  return result;
+}

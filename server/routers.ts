@@ -17,12 +17,98 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  // Routers do sistema DOM
+  planos: router({
+    list: publicProcedure.query(async () => {
+      const { getPlanos } = await import("./db");
+      return await getPlanos();
+    }),
+    getById: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "id" in val && typeof val.id === "number") {
+        return val as { id: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getPlanoById } = await import("./db");
+      return await getPlanoById(input.id);
+    }),
+  }),
+
+  metas: router({
+    listByPlano: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "planoId" in val && typeof val.planoId === "number") {
+        return val as { planoId: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getMetasByPlanoId } = await import("./db");
+      return await getMetasByPlanoId(input.planoId);
+    }),
+    meusProgressos: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getProgressoMetasByUserId } = await import("./db");
+      return await getProgressoMetasByUserId(ctx.user.id);
+    }),
+  }),
+
+  aulas: router({
+    list: publicProcedure.query(async () => {
+      const { getAulas } = await import("./db");
+      return await getAulas();
+    }),
+    getById: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "id" in val && typeof val.id === "number") {
+        return val as { id: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getAulaById } = await import("./db");
+      return await getAulaById(input.id);
+    }),
+    meusProgressos: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getProgressoAulasByUserId } = await import("./db");
+      return await getProgressoAulasByUserId(ctx.user.id);
+    }),
+  }),
+
+  forum: router({
+    listTopicos: publicProcedure.query(async () => {
+      const { getForumTopicos } = await import("./db");
+      return await getForumTopicos();
+    }),
+    getTopico: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "id" in val && typeof val.id === "number") {
+        return val as { id: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getForumTopicoById } = await import("./db");
+      return await getForumTopicoById(input.id);
+    }),
+    getRespostas: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "topicoId" in val && typeof val.topicoId === "number") {
+        return val as { topicoId: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getForumRespostasByTopicoId } = await import("./db");
+      return await getForumRespostasByTopicoId(input.topicoId);
+    }),
+  }),
+
+  matriculas: router({
+    minhas: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getMatriculasByUserId } = await import("./db");
+      return await getMatriculasByUserId(ctx.user.id);
+    }),
+    ativa: publicProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getMatriculaAtiva } = await import("./db");
+      return await getMatriculaAtiva(ctx.user.id);
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

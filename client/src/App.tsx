@@ -4,17 +4,31 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import DOMLayout from "./components/DOMLayout";
+import Dashboard from "./pages/Dashboard";
+import Plano from "./pages/Plano";
+import Aulas from "./pages/Aulas";
+import Materiais from "./pages/Materiais";
+import Questoes from "./pages/Questoes";
+import Forum from "./pages/Forum";
+import Revisao from "./pages/Revisao";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <DOMLayout>
+      <Switch>
+        <Route path={"/"} component={Dashboard} />
+        <Route path={"/plano"} component={Plano} />
+        <Route path={"/aulas"} component={Aulas} />
+        <Route path={"/materiais"} component={Materiais} />
+        <Route path={"/questoes"} component={Questoes} />
+        <Route path={"/forum"} component={Forum} />
+        <Route path={"/revisao"} component={Revisao} />
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </DOMLayout>
   );
 }
 
