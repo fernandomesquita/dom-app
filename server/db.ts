@@ -12,6 +12,7 @@ import {
   respostasQuestoes,
   forumTopicos, InsertForumTopico,
   forumRespostas, InsertForumResposta,
+  forumNotificacoesLidas,
   avisos, InsertAviso,
   avisosDispensados,
   conquistas,
@@ -1258,4 +1259,134 @@ export async function calcularEngajamentoPlano(planoId: number) {
     taxaRetornoDiario: Math.round(taxaRetornoDiario * 10) / 10,
     progressoPorMeta,
   };
+}
+
+// ========== NOTIFICAÇÕES DO FÓRUM ==========
+
+/**
+ * Buscar notificações de respostas no fórum para o usuário
+ * Retorna respostas aos tópicos criados pelo usuário que ainda não foram lidas
+ */
+export async function getNotificacoesForumRespostas(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    // Buscar tópicos criados pelo usuário
+    const topicosUsuario = await db
+      .select()
+      .from(forumTopicos)
+      .where(eq(forumTopicos.userId, userId));
+
+    if (topicosUsuario.length === 0) {
+      return [];
+    }
+
+    const topicoIds = topicosUsuario.map(t => t.id);
+
+    // Buscar respostas aos tópicos do usuário
+    const respostas = await db
+      .select()
+      .from(forumRespostas)
+      .where(inArray(forumRespostas.topicoId, topicoIds));
+
+    // Filtrar respostas que não são do próprio usuário
+    const respostasOutros = respostas.filter(r => r.userId !== userId);
+
+    if (respostasOutros.length === 0) {
+      return [];
+    }
+
+    // Buscar notificações já lidas
+    const respostaIds = respostasOutros.map(r => r.id);
+    const notificacoesLidas = await db
+      .select()
+      .from(forumNotificacoesLidas)
+      .where(
+        and(
+          eq(forumNotificacoesLidas.userId, userId),
+          inArray(forumNotificacoesLidas.respostaId, respostaIds)
+        )
+      );
+
+    const idsLidas = new Set(notificacoesLidas.map(n => n.respostaId));
+
+    // Filtrar apenas respostas não lidas
+    const respostasNaoLidas = respostasOutros.filter(r => !idsLidas.has(r.id));
+
+    // Buscar informações dos usuários que responderam
+    const userIds = Array.from(new Set(respostasNaoLidas.map(r => r.userId)));
+    const usuariosResponderam = await db
+      .select()
+      .from(users)
+      .where(inArray(users.id, userIds));
+
+    const userMap = new Map(usuariosResponderam.map(u => [u.id, u]));
+
+    // Buscar informações dos tópicos
+    const topicoMap = new Map(topicosUsuario.map(t => [t.id, t]));
+
+    // Montar notificações com informações completas
+    const notificacoes = respostasNaoLidas.map(resposta => {
+      const usuario = userMap.get(resposta.userId);
+      const topico = topicoMap.get(resposta.topicoId);
+
+      return {
+        id: resposta.id,
+        topicoId: resposta.topicoId,
+        topicoTitulo: topico?.titulo || "Tópico",
+        respostaConteudo: resposta.conteudo,
+        respondidoPor: usuario?.name || "Usuário",
+        respondidoPorRole: usuario?.role || "aluno",
+        createdAt: resposta.createdAt,
+      };
+    });
+
+    // Ordenar por data (mais recentes primeiro)
+    notificacoes.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return notificacoes;
+  } catch (error) {
+    console.error("[getNotificacoesForumRespostas] Erro:", error);
+    return [];
+  }
+}
+
+/**
+ * Marcar notificação de resposta do fórum como lida
+ */
+export async function marcarNotificacaoForumLida(userId: number, respostaId: number) {
+  const db = await getDb();
+  if (!db) return { success: false };
+
+  try {
+    // Verificar se já existe
+    const existente = await db
+      .select()
+      .from(forumNotificacoesLidas)
+      .where(
+        and(
+          eq(forumNotificacoesLidas.userId, userId),
+          eq(forumNotificacoesLidas.respostaId, respostaId)
+        )
+      )
+      .limit(1);
+
+    if (existente.length > 0) {
+      return { success: true, alreadyRead: true };
+    }
+
+    // Inserir nova notificação lida
+    await db.insert(forumNotificacoesLidas).values({
+      userId,
+      respostaId,
+    });
+
+    return { success: true, alreadyRead: false };
+  } catch (error) {
+    console.error("[marcarNotificacaoForumLida] Erro:", error);
+    return { success: false };
+  }
 }

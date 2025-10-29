@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getLoginUrl } from "@/const";
 import { PontosCard, RankingCard, ConquistasCard } from "@/components/GamificacaoCard";
-import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote } from "lucide-react";
+import NotificacoesForumCard from "@/components/NotificacoesForumCard";
+import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote, Bell } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -202,6 +203,7 @@ export default function Dashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Acesso Rápido</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <NotificacoesForumCard />
           <Link href="/anotacoes">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
               <CardContent className="pt-6">

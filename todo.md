@@ -415,7 +415,15 @@
 - [ ] Implementar exclusão de posts
 
 ### 8.4 Notificações
-- [ ] Implementar notificações de novas respostas
+- [x] Implementar notificações de novas respostas no Dashboard
+- [x] Criar API para buscar respostas não lidas do fórum
+- [x] Criar card de notificações no Dashboard do aluno
+- [x] Implementar contador de respostas não lidas
+- [x] Implementar marcação de notificação como lida
+- [x] Implementar link direto para o tópico respondido
+- [x] Criar tabela forum_notificacoes_lidas no banco de dados
+- [x] Implementar badge com contador de notificações
+- [x] Implementar botão de dispensar notificação
 - [ ] Implementar notificações de menções
 - [ ] Implementar notificações de solução marcada
 - [ ] Implementar notificações de novos tópicos (seguidos)

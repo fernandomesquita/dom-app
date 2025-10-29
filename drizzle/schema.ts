@@ -277,6 +277,20 @@ export const avisosDispensados = mysqlTable("avisos_dispensados", {
 
 export type AvisoDispensado = typeof avisosDispensados.$inferSelect;
 export type InsertAvisoDispensado = typeof avisosDispensados.$inferInsert;
+
+/**
+ * Notificações lidas do fórum - controle de respostas visualizadas
+ */
+export const forumNotificacoesLidas = mysqlTable("forum_notificacoes_lidas", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  respostaId: int("resposta_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ForumNotificacaoLida = typeof forumNotificacoesLidas.$inferSelect;
+export type InsertForumNotificacaoLida = typeof forumNotificacoesLidas.$inferInsert;
+
 // ========== GAMIFICAÇÃO ==========
 
 export const conquistas = mysqlTable("conquistas", {

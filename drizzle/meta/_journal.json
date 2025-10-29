@@ -50,6 +50,13 @@
       "when": 1761752698744,
       "tag": "0006_massive_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1761754586526,
+      "tag": "0007_orange_miracleman",
+      "breakpoints": true
     }
   ]
 }

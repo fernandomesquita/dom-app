@@ -311,6 +311,22 @@ export const appRouter = router({
       const { getForumRespostasByTopicoId } = await import("./db");
       return await getForumRespostasByTopicoId(input.topicoId);
     }),
+    
+    // Notificações de respostas
+    notificacoesRespostas: protectedProcedure.query(async ({ ctx }) => {
+      const { getNotificacoesForumRespostas } = await import("./db");
+      return await getNotificacoesForumRespostas(ctx.user.id);
+    }),
+    
+    marcarNotificacaoLida: protectedProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "respostaId" in val && typeof val.respostaId === "number") {
+        return val as { respostaId: number };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ ctx, input }) => {
+      const { marcarNotificacaoForumLida } = await import("./db");
+      return await marcarNotificacaoForumLida(ctx.user.id, input.respostaId);
+    }),
   }),
 
   matriculas: router({
