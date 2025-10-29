@@ -573,6 +573,16 @@ export const appRouter = router({
       const { getAllUsers } = await import("./db");
       return await getAllUsers();
     }),
+
+    getDadosAluno: protectedProcedure
+      .input(z.object({ alunoId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { getDadosAluno } = await import("./db");
+        return await getDadosAluno(input.alunoId);
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

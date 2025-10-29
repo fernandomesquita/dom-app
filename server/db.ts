@@ -2062,3 +2062,171 @@ export async function concluirMeta(userId: number, metaId: number, tempoGasto?: 
     throw new Error(`Erro ao concluir meta: ${error}`);
   }
 }
+
+
+// Função para buscar dados completos do aluno para o painel administrativo
+export async function getDadosAluno(alunoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar dados do aluno
+    const aluno = await db
+      .select({
+        id: users.id,
+        nome: users.name,
+        email: users.email,
+        role: users.role,
+        ativo: sql<number>`1`,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .where(eq(users.id, alunoId))
+      .limit(1);
+
+    if (aluno.length === 0) {
+      return null;
+    }
+
+    // Buscar matrícula ativa (plano atual)
+    const matriculaAtiva = await db
+      .select({
+        id: matriculas.id,
+        planoId: matriculas.planoId,
+        dataInicio: matriculas.dataInicio,
+        dataTermino: matriculas.dataTermino,
+        planoNome: planos.nome,
+        planoOrgao: planos.orgao,
+        planoCargo: planos.cargo,
+      })
+      .from(matriculas)
+      .leftJoin(planos, eq(matriculas.planoId, planos.id))
+      .where(
+        and(
+          eq(matriculas.userId, alunoId),
+          eq(matriculas.ativo, 1)
+        )
+      )
+      .orderBy(desc(matriculas.dataInicio))
+      .limit(1);
+
+    // Buscar todas as metas do plano atual
+    let metasDoPlano: any[] = [];
+    let totalMetas = 0;
+    
+    if (matriculaAtiva.length > 0 && matriculaAtiva[0].planoId) {
+      metasDoPlano = await db
+        .select()
+        .from(metas)
+        .where(eq(metas.planoId, matriculaAtiva[0].planoId))
+        .orderBy(metas.ordem);
+      
+      totalMetas = metasDoPlano.length;
+    }
+
+    // Buscar progresso das metas
+    const progressoDasMetas = await db
+      .select()
+      .from(progressoMetas)
+      .where(eq(progressoMetas.userId, alunoId));
+
+    // Calcular métricas
+    const metasConcluidas = progressoDasMetas.filter(p => p.concluida === 1).length;
+    const horasEstudadas = progressoDasMetas.reduce((acc, p) => acc + (p.tempoGasto || 0), 0) / 60; // converter minutos para horas
+    
+    // Calcular sequência de dias consecutivos
+    const datasUnicasSet = new Set(
+      progressoDasMetas
+        .filter(p => p.dataConclusao)
+        .map(p => p.dataConclusao!.toISOString().split('T')[0])
+    );
+    const datasUnicas = Array.from(datasUnicasSet).sort().reverse();
+    
+    let sequenciaDias = 0;
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    if (datasUnicas.length > 0 && (datasUnicas[0] === hoje || datasUnicas[0] === new Date(Date.now() - 86400000).toISOString().split('T')[0])) {
+      sequenciaDias = 1;
+      for (let i = 1; i < datasUnicas.length; i++) {
+        const dataAtual = new Date(datasUnicas[i - 1]);
+        const dataAnterior = new Date(datasUnicas[i]);
+        const diffDias = Math.floor((dataAtual.getTime() - dataAnterior.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (diffDias === 1) {
+          sequenciaDias++;
+        } else {
+          break;
+        }
+      }
+    }
+
+    // Agrupar metas por disciplina
+    const metasPorDisciplina = metasDoPlano.reduce((acc: any, meta) => {
+      if (!acc[meta.disciplina]) {
+        acc[meta.disciplina] = { nome: meta.disciplina, metas: 0 };
+      }
+      acc[meta.disciplina].metas++;
+      return acc;
+    }, {});
+
+    // Contar metas por tipo
+    const tipoEstudo = metasDoPlano.filter(m => m.tipo === 'Estudo').length;
+    const tipoRevisao = metasDoPlano.filter(m => m.tipo === 'Revisão').length;
+    const tipoQuestoes = metasDoPlano.filter(m => m.tipo === 'Questões').length;
+
+    // Combinar metas com progresso
+    const metasComProgresso = metasDoPlano.map(meta => {
+      const progresso = progressoDasMetas.find(p => p.metaId === meta.id);
+      return {
+        ...meta,
+        concluida: progresso?.concluida === 1,
+        dataConclusao: progresso?.dataConclusao,
+        tempoGasto: progresso?.tempoGasto,
+        dataAgendada: progresso?.dataAgendada,
+      };
+    });
+
+    // Buscar histórico de atividades (últimas 20)
+    const historico = progressoDasMetas
+      .filter(p => p.dataConclusao)
+      .sort((a, b) => b.dataConclusao!.getTime() - a.dataConclusao!.getTime())
+      .slice(0, 20)
+      .map(p => {
+        const meta = metasDoPlano.find(m => m.id === p.metaId);
+        return {
+          acao: 'Meta concluída',
+          detalhes: meta ? `${meta.disciplina} - ${meta.assunto}` : 'Meta não encontrada',
+          data: p.dataConclusao,
+        };
+      });
+
+    return {
+      aluno: {
+        ...aluno[0],
+        planoAtual: matriculaAtiva.length > 0 ? {
+          nome: matriculaAtiva[0].planoNome,
+          orgao: matriculaAtiva[0].planoOrgao,
+          cargo: matriculaAtiva[0].planoCargo,
+          dataInicio: matriculaAtiva[0].dataInicio,
+          dataTermino: matriculaAtiva[0].dataTermino,
+          totalMetas,
+        } : null,
+      },
+      metricas: {
+        totalMetas,
+        metasConcluidas,
+        horasEstudadas: Math.round(horasEstudadas * 10) / 10, // arredondar para 1 casa decimal
+        sequenciaDias,
+        disciplinas: Object.values(metasPorDisciplina),
+        tipoEstudo,
+        tipoRevisao,
+        tipoQuestoes,
+      },
+      metas: metasComProgresso,
+      historico,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar dados do aluno:", error);
+    throw new Error(`Erro ao buscar dados do aluno: ${error}`);
+  }
+}

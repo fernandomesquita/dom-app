@@ -106,18 +106,18 @@
 - [ ] Criar listagem de alunos por produtos/planos
 - [ ] Implementar exibição de dados cadastrais
 - [ ] Implementar histórico de acessos por IP
-- [ ] Implementar cálculo de progressão no plano
-- [ ] Criar painel individual do aluno
+- [x] Implementar cálculo de progressão no plano
+- [x] Criar painel individual do aluno
 - [ ] Implementar visualização de logs de login
 - [ ] Implementar visualização de aulas acessadas
-- [ ] Implementar histórico de metas concluídas
-- [ ] Implementar tempo total de estudo
+- [x] Implementar histórico de metas concluídas
+- [x] Implementar tempo total de estudo
 - [ ] Implementar interações no fórum
-- [ ] Implementar alteração de plano de estudos
-- [ ] Implementar configuração de horas diárias
-- [ ] Implementar configuração de dias da semana
-- [ ] Implementar pausa/retomada de cronograma
-- [ ] Implementar envio de aviso individual
+- [ ] Implementar alteração de plano de estudos (interface pronta)
+- [ ] Implementar configuração de horas diárias (interface pronta)
+- [ ] Implementar configuração de dias da semana (interface pronta)
+- [ ] Implementar pausa/retomada de cronograma (interface pronta)
+- [ ] Implementar envio de aviso individual (interface pronta)
 
 ---
 
