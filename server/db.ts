@@ -907,6 +907,25 @@ export async function getEstatisticasDashboard(userId: number) {
   if (!db) return null;
   const { and } = await import("drizzle-orm");
   
+  // Buscar plano atual do usuário
+  const matriculaAtiva = await db
+    .select({
+      planoId: matriculas.planoId,
+      planoNome: planos.nome,
+    })
+    .from(matriculas)
+    .leftJoin(planos, eq(matriculas.planoId, planos.id))
+    .where(
+      and(
+        eq(matriculas.userId, userId),
+        eq(matriculas.ativo, 1)
+      )
+    )
+    .orderBy(desc(matriculas.dataInicio))
+    .limit(1);
+  
+  const nomePlano = matriculaAtiva[0]?.planoNome || "Seu Plano";
+  
   // Buscar metas concluídas
   const metasConcluidasData = await db
     .select()
@@ -971,6 +990,7 @@ export async function getEstatisticasDashboard(userId: number) {
     questoesResolvidas: questoesData.length,
     taxaAcerto,
     sequenciaDias: diasUnicos,
+    nomePlano,
   };
 }
 

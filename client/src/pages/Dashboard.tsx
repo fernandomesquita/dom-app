@@ -163,21 +163,37 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Metas Concluídas</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Progresso no Plano</CardTitle>
+              <p className="text-lg font-bold mt-1">{stats?.nomePlano || "Seu Plano"}</p>
+            </div>
+            <Target className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats?.totalMetas ? Math.round(((stats?.metasConcluidas || 0) / stats.totalMetas) * 100) : 0}% concluído
-            </p>
-            <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500 transition-all" 
-                style={{ width: `${stats?.totalMetas ? ((stats?.metasConcluidas || 0) / stats.totalMetas) * 100 : 0}%` }}
-              />
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-sm text-muted-foreground">Metas Concluídas</div>
+                  <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold text-primary">
+                    {stats?.totalMetas ? Math.round(((stats?.metasConcluidas || 0) / stats.totalMetas) * 100) : 0}%
+                  </div>
+                  <div className="text-xs text-muted-foreground">Completo</div>
+                </div>
+              </div>
+              <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500" 
+                  style={{ width: `${stats?.totalMetas ? ((stats?.metasConcluidas || 0) / stats.totalMetas) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Faltam <span className="font-semibold text-foreground">{(stats?.totalMetas || 0) - (stats?.metasConcluidas || 0)} metas</span> para concluir seu plano
+              </p>
             </div>
           </CardContent>
         </Card>

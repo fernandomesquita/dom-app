@@ -2266,3 +2266,26 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - ✅ Corrigir botão "Ver Meta no Plano" para navegar com ?metaId=X
   - ✅ Plano.tsx detecta metaId na URL e abre modal automaticamente
 - **Status:** ✅ 100% Concluído
+
+### Bug: Progresso da Semana com dados díspares (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Card "Progresso da Semana" mostrava dados inconsistentes (1 de 25 vs 1 de 11 metas)
+- **Causa:** Filtros de tipo e disciplina estavam afetando o cálculo do progresso
+- **Solução implementada:**
+  - ✅ Cálculo agora ignora filtros e considera apenas metas da semana
+  - ✅ Consistência entre texto, percentual e barra de progresso
+  - ✅ Filtros afetam apenas visualização dos cards, não o progresso
+- **Status:** ✅ Corrigido
+
+### Feature: Card de Progresso Geral no Dashboard (CONCLUÍDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Adicionar card "Progresso no [Nome do Plano]" mostrando quanto falta para concluir todo o plano
+- **Implementação:**
+  - ✅ Título: "Progresso no Plano"
+  - ✅ Nome do plano dinâmico (busca do backend)
+  - ✅ Metas concluídas: X / Y
+  - ✅ Percentual grande (3xl) e destacado
+  - ✅ Barra de progresso com gradiente verde
+  - ✅ Mensagem: "Faltam X metas para concluir seu plano"
+  - ✅ Card ocupa 2 colunas (md:col-span-2)
+- **Status:** ✅ 100% Concluído

@@ -450,35 +450,30 @@ export default function Plano() {
                   <div className="space-y-1">
                     <h3 className="text-sm font-semibold">Progresso da Semana</h3>
                     <p className="text-xs text-muted-foreground">
-                      {metas.filter((m: any) => {
-                        const metaDate = new Date(m.data);
+                      {(() => {
                         const weekStart = getDaysOfWeek()[0];
                         const weekEnd = getDaysOfWeek()[6];
-                        return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
-                      }).length} de {metas.filter((m: any) => {
-                        const metaDate = new Date(m.data);
-                        const weekStart = getDaysOfWeek()[0];
-                        const weekEnd = getDaysOfWeek()[6];
-                        return metaDate >= weekStart && metaDate <= weekEnd;
-                      }).length} metas concluídas
+                        const metasDaSemana = metas.filter((m: any) => {
+                          const metaDate = new Date(m.data);
+                          return metaDate >= weekStart && metaDate <= weekEnd;
+                        });
+                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
+                        return `${metasConcluidasDaSemana.length} de ${metasDaSemana.length} metas concluídas`;
+                      })()}
                     </p>
                   </div>
                   <div className="text-right">
                     <div className="text-2xl font-bold text-primary">
-                      {Math.round(
-                        (metas.filter((m: any) => {
+                      {(() => {
+                        const weekStart = getDaysOfWeek()[0];
+                        const weekEnd = getDaysOfWeek()[6];
+                        const metasDaSemana = metas.filter((m: any) => {
                           const metaDate = new Date(m.data);
-                          const weekStart = getDaysOfWeek()[0];
-                          const weekEnd = getDaysOfWeek()[6];
-                          return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
-                        }).length / 
-                        Math.max(1, metas.filter((m: any) => {
-                          const metaDate = new Date(m.data);
-                          const weekStart = getDaysOfWeek()[0];
-                          const weekEnd = getDaysOfWeek()[6];
                           return metaDate >= weekStart && metaDate <= weekEnd;
-                        }).length)) * 100
-                      )}%
+                        });
+                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
+                        return Math.round((metasConcluidasDaSemana.length / Math.max(1, metasDaSemana.length)) * 100);
+                      })()}%
                     </div>
                     <div className="text-xs text-muted-foreground">Completo</div>
                   </div>
@@ -487,20 +482,16 @@ export default function Plano() {
                   <div 
                     className="bg-primary h-full transition-all duration-500 ease-out rounded-full"
                     style={{
-                      width: `${Math.round(
-                        (metas.filter((m: any) => {
+                      width: `${(() => {
+                        const weekStart = getDaysOfWeek()[0];
+                        const weekEnd = getDaysOfWeek()[6];
+                        const metasDaSemana = metas.filter((m: any) => {
                           const metaDate = new Date(m.data);
-                          const weekStart = getDaysOfWeek()[0];
-                          const weekEnd = getDaysOfWeek()[6];
-                          return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
-                        }).length / 
-                        Math.max(1, metas.filter((m: any) => {
-                          const metaDate = new Date(m.data);
-                          const weekStart = getDaysOfWeek()[0];
-                          const weekEnd = getDaysOfWeek()[6];
                           return metaDate >= weekStart && metaDate <= weekEnd;
-                        }).length)) * 100
-                      )}%`
+                        });
+                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
+                        return Math.round((metasConcluidasDaSemana.length / Math.max(1, metasDaSemana.length)) * 100);
+                      })()}%`
                     }}
                   />
                 </div>
