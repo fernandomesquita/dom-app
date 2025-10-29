@@ -1,7 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
+import { z } from "zod";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -226,12 +227,30 @@ export const appRouter = router({
       const { getRespostasQuestoesByUserId } = await import("./db");
       return await getRespostasQuestoesByUserId(ctx.user.id);
     }),
-    estatisticas: publicProcedure.query(async ({ ctx }) => {
+    estatisticas: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Not authenticated");
       const { getEstatisticasQuestoes } = await import("./db");
       return await getEstatisticasQuestoes(ctx.user.id);
     }),
+    estatisticasPorDisciplina: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getEstatisticasPorDisciplina } = await import("./db");
+      return await getEstatisticasPorDisciplina(ctx.user.id);
+    }),
+    evolucaoTemporal: protectedProcedure
+      .input(z.object({ dias: z.number().default(30) }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const { getEvolucaoTemporal } = await import("./db");
+        return await getEvolucaoTemporal(ctx.user.id, input.dias);
+      }),
+    questoesMaisErradas: protectedProcedure
+      .input(z.object({ limit: z.number().default(10) }))
+      .query(async ({ ctx, input }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const { getQuestoesMaisErradas } = await import("./db");
+        return await getQuestoesMaisErradas(ctx.user.id, input.limit);
+      }),
   }),
 });
-
 export type AppRouter = typeof appRouter;

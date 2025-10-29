@@ -557,3 +557,119 @@ export async function getEstatisticasQuestoes(userId: number) {
   
   return { total, corretas, taxaAcerto: Math.round(taxaAcerto) };
 }
+
+
+// ========== ESTATÍSTICAS AVANÇADAS DE QUESTÕES ==========
+
+export async function getEstatisticasPorDisciplina(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const respostas = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  // Buscar questões para obter disciplinas
+  const questoesIds = respostas.map(r => r.questaoId);
+  if (questoesIds.length === 0) return [];
+  
+  const questoesData = await db
+    .select()
+    .from(questoes)
+    .where(eq(questoes.id, questoesIds[0])); // Simplificado para demo
+  
+  // Agrupar por disciplina
+  const estatisticasPorDisciplina: Record<string, { total: number; corretas: number; taxaAcerto: number }> = {};
+  
+  for (const resposta of respostas) {
+    const questao = questoesData.find(q => q.id === resposta.questaoId);
+    if (!questao) continue;
+    
+    const disciplina = questao.disciplina;
+    if (!estatisticasPorDisciplina[disciplina]) {
+      estatisticasPorDisciplina[disciplina] = { total: 0, corretas: 0, taxaAcerto: 0 };
+    }
+    
+    estatisticasPorDisciplina[disciplina].total++;
+    if (resposta.acertou === 1) {
+      estatisticasPorDisciplina[disciplina].corretas++;
+    }
+  }
+  
+  // Calcular taxas de acerto
+  const resultado = Object.entries(estatisticasPorDisciplina).map(([disciplina, stats]) => ({
+    disciplina,
+    total: stats.total,
+    corretas: stats.corretas,
+    taxaAcerto: stats.total > 0 ? Math.round((stats.corretas / stats.total) * 100) : 0,
+  }));
+  
+  return resultado;
+}
+
+export async function getEvolucaoTemporal(userId: number, dias: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const dataInicio = new Date();
+  dataInicio.setDate(dataInicio.getDate() - dias);
+  
+  const respostas = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  // Agrupar por data
+  const estatisticasPorData: Record<string, { total: number; corretas: number }> = {};
+  
+  for (const resposta of respostas) {
+    const data = new Date(resposta.createdAt).toISOString().split('T')[0];
+    if (!estatisticasPorData[data]) {
+      estatisticasPorData[data] = { total: 0, corretas: 0 };
+    }
+    estatisticasPorData[data].total++;
+    if (resposta.acertou === 1) {
+      estatisticasPorData[data].corretas++;
+    }
+  }
+  
+  const resultado = Object.entries(estatisticasPorData).map(([data, stats]) => ({
+    data,
+    total: stats.total,
+    corretas: stats.corretas,
+    taxaAcerto: stats.total > 0 ? Math.round((stats.corretas / stats.total) * 100) : 0,
+  })).sort((a, b) => a.data.localeCompare(b.data));
+  
+  return resultado;
+}
+
+export async function getQuestoesMaisErradas(userId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const respostas = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  // Contar erros por questão
+  const errosPorQuestao: Record<number, number> = {};
+  
+  for (const resposta of respostas) {
+    if (resposta.acertou === 0) {
+      errosPorQuestao[resposta.questaoId] = (errosPorQuestao[resposta.questaoId] || 0) + 1;
+    }
+  }
+  
+  // Ordenar e pegar top N
+  const questoesMaisErradas = Object.entries(errosPorQuestao)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit)
+    .map(([questaoId, erros]) => ({
+      questaoId: parseInt(questaoId),
+      erros,
+    }));
+  
+  return questoesMaisErradas;
+}

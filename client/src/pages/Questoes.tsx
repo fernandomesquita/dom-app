@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/Breadcrumb";
-import { ArrowLeft, Search, CheckCircle, XCircle, TrendingUp, Clock, Target, Award, ChevronLeft, ChevronRight, Star, BookmarkPlus } from "lucide-react";
+import { ArrowLeft, Search, CheckCircle, XCircle, TrendingUp, Clock, Target, Award, ChevronLeft, ChevronRight, Star, BookmarkPlus, BarChart3 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { mockQuestoes, type Questao } from "@/lib/mockQuestoes";
@@ -278,14 +278,20 @@ export default function Questoes() {
         <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Breadcrumb items={[{ label: "Banco de Questões" }]} />
+        <Breadcrumb items={[{ label: "Questões" }]} />
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold">Banco de Questões</h1>
-        <p className="text-muted-foreground mt-2">
-          Pratique com questões de concursos anteriores
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Banco de Questões</h1>
+          <p className="text-muted-foreground mt-2">
+            Pratique com questões de concursos anteriores
+          </p>
+        </div>
+        <Button onClick={() => setLocation("/questoes/estatisticas")} variant="outline">
+          <BarChart3 className="h-4 w-4 mr-2" />
+          Estatísticas Avançadas
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

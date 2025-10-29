@@ -1347,3 +1347,25 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Service Worker para modo offline
 - [ ] Melhorias de acessibilidade
 - [ ] Documentação completa
+
+
+## 📊 ESTATÍSTICAS AVANÇADAS DE QUESTÕES
+
+### Backend - APIs de Estatísticas
+- [x] API `questoes.estatisticasPorDisciplina` - Taxa de acerto por disciplina
+- [ ] API `questoes.estatisticasPorAssunto` - Taxa de acerto por assunto (futuro)
+- [ ] API `questoes.estatisticasPorBanca` - Taxa de acerto por banca (futuro)
+- [x] API `questoes.evolucaoTemporal` - Evolução de acertos ao longo do tempo
+- [x] API `questoes.questoesMaisErradas` - Top 10 questões mais erradas
+- [ ] API `questoes.tempoMedioPorDisciplina` - Tempo médio de resposta por disciplina (futuro)
+
+### Frontend - Visualizações
+- [x] Página de Estatísticas Avançadas criada
+- [x] Cards - Estatísticas gerais (total, taxa de acerto, acertos, erros)
+- [x] Barras de progresso - Desempenho por disciplina
+- [x] Lista - Evolução temporal (últimos 30 dias)
+- [x] Cards - Questões mais erradas com ranking
+- [x] Botão de acesso na página de Questões
+- [ ] Gráficos interativos (Chart.js ou Recharts) (futuro)
+- [ ] Filtro de período (7 dias, 30 dias, 90 dias, tudo) (futuro)
+- [ ] Exportar relatório em PDF (futuro)

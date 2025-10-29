@@ -10,6 +10,7 @@ import Plano from "./pages/Plano";
 import Aulas from "./pages/Aulas";
 import Materiais from "./pages/Materiais";
 import Questoes from "./pages/Questoes";
+import EstatisticasQuestoes from "./pages/EstatisticasQuestoes";
 import Forum from "./pages/Forum";
 import Revisao from "./pages/Revisao";
 import AnotacoesMeta from "./pages/AnotacoesMeta";
@@ -24,6 +25,7 @@ function Router() {
         <Route path={"/aulas"} component={Aulas} />
         <Route path={"/materiais"} component={Materiais} />
         <Route path={"/questoes"} component={Questoes} />
+      <Route path={"/questoes/estatisticas"} component={EstatisticasQuestoes} />
         <Route path={"/forum"} component={Forum} />
         <Route path={"/revisao"} component={Revisao} />
         <Route path={"/anotacoes"} component={AnotacoesMeta} />
