@@ -2306,3 +2306,347 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - **Motivo:** Focar no positivo (metas concluídas) ao invés do negativo (metas faltantes)
 - **Solução:** Removida linha com mensagem, card agora mostra apenas informações positivas
 - **Status:** ✅ Concluído
+
+
+## 📊 FEATURE MAJOR: Sistema de Estatísticas Comparativas e Analytics Avançado
+
+### Visão Geral
+Implementar sistema robusto de estatísticas comparativas entre alunos do mesmo plano, com dashboards interativos, gráficos avançados e análises de desempenho detalhadas.
+
+---
+
+### 1. Desempenho Comparativo (Imagem 1 - Radar + Área + Barras)
+
+**Descrição:** Página dedicada para análises comparativas a nível de meta, disciplina ou assunto estudado.
+
+**Componentes:**
+
+#### 1.1 Gráfico Radar (Spider Chart) - Comparação por Disciplinas
+- **Dados:** Percentual de conclusão por disciplina (AUD, CTBGA, DADM, DCIV, DCON, DEMP, DTRIB, ESTAT, PORT, RLOG)
+- **Linhas:** 
+  - Verde claro: Desempenho do aluno
+  - Amarelo: Média geral dos alunos do plano
+- **Escala:** 0% a 100%
+- **Interatividade:** Hover mostra valores exatos
+- **Biblioteca sugerida:** Recharts ou Chart.js
+
+#### 1.2 Gráfico de Área Empilhada - Evolução de Desempenho
+- **Título:** "Evolução de desempenho"
+- **Eixo X:** Metas (M1 a M20)
+- **Eixo Y:** Percentual (0% a 100%)
+- **Áreas:**
+  - Verde escuro (base): Desempenho geral
+  - Verde claro (topo): Desempenho do aluno
+  - Linha amarela: Média comparativa
+- **Legenda:** "Você" (verde) vs "Geral" (azul/cinza)
+- **Comparação:** Dropdown para selecionar período
+
+#### 1.3 Gráfico de Barras Verticais - Comparação Temporal
+- **Dados:** Comparação mês a mês ou semana a semana
+- **Cores:** Verde (você) vs Cinza (média geral)
+- **Tooltip:** Valores exatos ao passar mouse
+
+**Status:** ⏳ A implementar
+
+---
+
+### 2. Análises de Resultados - Questões (Imagem 2)
+
+**Descrição:** Tabela comparativa de desempenho em questões com diferença para média.
+
+**Componentes:**
+
+#### 2.1 Tabela de Acertos Comparativa
+- **Colunas:**
+  - Acertos (número absoluto)
+  - Taxa de acertos (%)
+  - Ícone de status (✓ verde, 🏆 troféu para destaque)
+  - Diferença para média (% com seta ↑ verde ou ↓ vermelha)
+- **Dados:** Por simulado, prova ou conjunto de questões
+- **Destaque:** Linhas com melhor desempenho em cor diferenciada
+- **Ordenação:** Clicável por coluna
+
+#### 2.2 Gráfico de Evolução de Desempenho em Questões
+- **Título:** "Evolução de desempenho"
+- **Eixo X:** Metas (M1 a M10+)
+- **Eixo Y:** Percentual (40% a 100%)
+- **Linhas:**
+  - Verde: Você
+  - Azul/Cinza: Geral (média)
+- **Área preenchida:** Gradiente suave
+- **Grid:** Linhas horizontais para referência
+
+**Status:** ⏳ A implementar
+
+---
+
+### 3. Desempenho Acumulado (Imagem 3)
+
+**Descrição:** Dashboard completo com KPIs, tabela detalhada por disciplina e gráficos de evolução.
+
+**Componentes:**
+
+#### 3.1 Cards de KPIs (Topo)
+- **Card 1 - Desempenho Atingido:**
+  - Ícone: Estrela azul
+  - Valor: 90,7%
+  - Cor: Azul
+  
+- **Card 2 - Horas Estudadas:**
+  - Ícone: Relógio verde
+  - Valor: 190h05m
+  - Cor: Verde
+  
+- **Card 3 - Questões Resolvidas:**
+  - Ícone: Check laranja
+  - Valor: 3147
+  - Cor: Laranja
+  
+- **Card 4 - Tempo Restante:**
+  - Ícone: Ampulheta amarela
+  - Valor: 02h28m
+  - Cor: Amarelo
+
+#### 3.2 Tabela Detalhada por Disciplina
+- **Colunas:**
+  - Disciplina (nome completo)
+  - Acertos (número)
+  - Questões (total)
+  - % de acertos
+- **Linha TOTAL:** Soma de todas as disciplinas
+- **Filtros:** Dropdown para "Todas disciplinas"
+- **Ordenação:** Por disciplina, acertos ou %
+
+#### 3.3 Gráfico de Desempenho Médio por Meta
+- **Título:** "Desempenho médio por meta"
+- **Tipo:** Linha suave
+- **Eixo X:** M1 a M12
+- **Eixo Y:** 70% a 100%
+- **Cor:** Azul
+- **Área:** Preenchimento gradiente
+- **Filtro:** Dropdown "Todas disciplinas"
+
+#### 3.4 Treemap - Desempenho por Disciplina
+- **Título:** "Desempenho por disciplina"
+- **Visualização:** Retângulos proporcionais
+- **Dados:** Cada disciplina com sigla e percentual
+- **Cores:** Gradiente verde (melhor desempenho = mais escuro)
+- **Tamanho:** Proporcional ao número de questões ou tempo gasto
+- **Abas:**
+  - Tempo gasto por disciplina
+  - Questões resolvidas por disciplina
+- **Interatividade:** Click para drill-down
+
+**Status:** ⏳ A implementar
+
+---
+
+### 4. Acompanhe sua Evolução (Imagem 4)
+
+**Descrição:** Cards visuais coloridos com métricas principais e progresso de metas.
+
+**Componentes:**
+
+#### 4.1 Cards Coloridos de Métricas
+- **Card Azul - Desempenho Atingido:**
+  - Ícone: Estrela
+  - Valor: 85,6%
+  - Tamanho: Grande, destacado
+  
+- **Card Laranja - Questões Resolvidas:**
+  - Ícone: Check
+  - Valor: 160
+  - Posição: Inferior direito
+  
+- **Card Amarelo - Média Horas/Estudo Diárias:**
+  - Ícone: Ampulheta
+  - Valor: 01h24m
+  - Posição: Superior
+  
+- **Card Verde - Horas Estudadas:**
+  - Ícone: Relógio tracejado
+  - Valor: 06h59m
+  - Posição: Superior direito
+
+#### 4.2 Card de Progresso de Meta
+- **Título:** Meta 2
+- **Progresso:** Barra horizontal
+  - ✓ 7 (concluídas) em verde
+  - Restante em cinza
+  - Ícone de foguete no progresso
+- **Detalhes:**
+  - 21 Disciplinas
+  - 32 Atividades
+- **Cor:** Fundo branco, barra verde limão
+
+**Status:** ⏳ A implementar
+
+---
+
+### 5. Estrutura de Dados Necessária
+
+#### 5.1 Tabelas/Coleções
+- **estatisticas_aluno:** Cache de estatísticas calculadas
+  - userId, planoId, disciplina, metaId
+  - percentualConclusao, horasEstudadas, questoesResolvidas
+  - taxaAcerto, tempoMedio
+  - dataCalculo (timestamp)
+
+- **estatisticas_plano:** Médias por plano
+  - planoId, disciplina, metaId
+  - mediaConclusao, mediaHoras, mediaQuestoes
+  - mediaTaxaAcerto
+  - totalAlunos, dataCalculo
+
+#### 5.2 APIs Backend
+- `GET /api/estatisticas/comparativo` - Dados para gráfico radar
+- `GET /api/estatisticas/evolucao` - Série temporal
+- `GET /api/estatisticas/disciplinas` - Tabela detalhada
+- `GET /api/estatisticas/kpis` - Cards de métricas
+- `GET /api/estatisticas/treemap` - Dados para treemap
+
+#### 5.3 Cálculos Necessários
+- Percentual de conclusão por disciplina (aluno vs média)
+- Evolução temporal (por meta, semana, mês)
+- Taxa de acerto em questões (aluno vs média)
+- Tempo gasto por disciplina (aluno vs média)
+- Ranking de desempenho (posição do aluno)
+- Diferença para média (+ ou - X%)
+
+---
+
+### 6. Componentes de UI a Desenvolver
+
+#### 6.1 Gráficos
+- [ ] RadarChart (Spider) - Comparação por disciplinas
+- [ ] AreaChart (Empilhado) - Evolução temporal
+- [ ] BarChart (Vertical) - Comparação período a período
+- [ ] LineChart (Suave) - Desempenho médio por meta
+- [ ] Treemap - Distribuição por disciplina
+- [ ] ProgressBar (Horizontal) - Progresso de metas
+
+#### 6.2 Componentes Customizados
+- [ ] CardKPI - Cards coloridos com ícones
+- [ ] TabelaComparativa - Tabela com setas e ícones
+- [ ] FiltroDropdown - Seletor de disciplina/período
+- [ ] LegendaGrafico - Legenda "Você" vs "Geral"
+- [ ] TooltipCustom - Tooltip com valores detalhados
+
+#### 6.3 Páginas
+- [ ] `/estatisticas` - Dashboard principal
+- [ ] `/estatisticas/comparativo` - Desempenho comparativo
+- [ ] `/estatisticas/questoes` - Análise de questões
+- [ ] `/estatisticas/evolucao` - Acompanhamento temporal
+
+---
+
+### 7. Bibliotecas Sugeridas
+
+- **Gráficos:** Recharts (React) - https://recharts.org
+- **Treemap:** D3.js ou Recharts Treemap
+- **Ícones:** Lucide React (já em uso)
+- **Cores:** Paleta verde limão + azul + laranja + amarelo (conforme referências)
+- **Animações:** Framer Motion (opcional)
+
+---
+
+### 8. Priorização
+
+**Fase 1 (MVP):**
+- [ ] Estrutura de dados (tabelas estatisticas_aluno e estatisticas_plano)
+- [ ] APIs backend para cálculos
+- [ ] Cards de KPIs no Dashboard
+- [ ] Gráfico de evolução temporal (linha simples)
+
+**Fase 2 (Comparativo):**
+- [ ] Gráfico Radar (comparação por disciplinas)
+- [ ] Tabela comparativa de questões
+- [ ] Filtros por disciplina e período
+
+**Fase 3 (Avançado):**
+- [ ] Treemap de desempenho
+- [ ] Gráfico de área empilhada
+- [ ] Análises preditivas (tendências)
+
+**Fase 4 (Gamificação):**
+- [ ] Ranking de alunos
+- [ ] Badges por conquistas estatísticas
+- [ ] Notificações de melhoria de desempenho
+
+---
+
+### 9. Considerações de Performance
+
+- **Cache:** Estatísticas calculadas diariamente (cronjob)
+- **Agregação:** Pré-calcular médias por plano
+- **Lazy Loading:** Carregar gráficos sob demanda
+- **Paginação:** Tabelas com muitos dados
+- **Debounce:** Filtros com delay de 300ms
+
+---
+
+### 10. Privacidade e Ética
+
+- **Anonimização:** Comparações sempre com "média geral", nunca identificar outros alunos
+- **Opt-out:** Permitir aluno desabilitar comparações
+- **Transparência:** Explicar como as médias são calculadas
+- **LGPD:** Dados estatísticos agregados, sem exposição individual
+
+---
+
+**Data de criação:** 29/10/2025  
+**Prioridade:** ALTA  
+**Complexidade:** ALTA  
+**Estimativa:** 3-4 semanas (todas as fases)  
+**Status:** 📋 Especificado - Aguardando aprovação para início
+
+
+## 📚 FEATURE: Sistema de Materiais PDF Vinculados a Metas (PARCIALMENTE CONCLUÍDO ✅)
+
+### Descrição
+Permitir upload, armazenamento e vinculação de materiais PDF às metas específicas do plano de estudos.
+
+### Tarefas
+
+#### Backend
+- ✅ Criar tabela `materiais` no schema
+  - id, titulo, descricao, urlArquivo, tipoArquivo, tamanhoBytes
+  - metaId (FK para metas), disciplina
+  - uploadedBy (userId), createdAt, updatedAt
+- ✅ Implementar upload de PDF para S3 (endpoint `/api/storage/upload` com multer)
+- ✅ API tRPC: `materiais.list` - Listar todos os materiais
+- ✅ API tRPC: `materiais.byMetaId` - Materiais de uma meta específica
+- ✅ API tRPC: `materiais.create` - Criar material
+- ✅ API tRPC: `materiais.delete` - Deletar material (soft delete)
+- ✅ Validação: apenas PDFs, tamanho máximo 50MB
+- ✅ Funções db.ts: getAllMateriais, getMateriaisByMetaId, createMaterial, deleteMaterial
+
+#### Frontend
+- ✅ Página `/materiais` - Listagem de todos os materiais
+  - Grid de cards com ícone PDF, título, disciplina
+  - Filtro por disciplina
+  - Busca por título e descrição
+  - Botão "Adicionar Material" (apenas professores/mentores/admins)
+- ✅ Modal de Upload de Material
+  - Input de arquivo PDF
+  - Campos: título, descrição, disciplina
+  - Progress bar de upload
+  - Validação de tipo e tamanho
+- ✅ Cards de estatísticas (total, PDFs, disciplinas)
+- ✅ Botões Visualizar e Download
+- ✅ Botão Deletar (apenas owner ou admin)
+- [ ] Integração no MetaModal
+  - Seção "Materiais de Apoio"
+  - Lista de PDFs vinculados à meta
+  - Botão para abrir PDF em nova aba
+  - Botão "Adicionar Material" (se professor/admin)
+- [ ] Campo metaId no modal de upload (vincular a meta específica)
+
+#### Permissões
+- ✅ Alunos: visualizar e baixar materiais
+- ✅ Professores/Mentores/Admins: upload, deletar (apenas próprios materiais ou admin)
+- ✅ Validação de permissões no backend
+
+**Data:** 29/10/2025  
+**Prioridade:** ALTA  
+**Status:** ✅ 70% Concluído (falta integração com MetaModal e vinculação específica a metas)

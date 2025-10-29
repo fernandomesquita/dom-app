@@ -2484,3 +2484,111 @@ export async function salvarAnotacaoMeta(userId: number, metaId: number, anotaca
     throw new Error(`Erro ao salvar anotação: ${error}`);
   }
 }
+
+
+// ========== MATERIAIS DE APOIO ==========
+
+export async function getAllMateriais() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: materiais.id,
+      titulo: materiais.titulo,
+      descricao: materiais.descricao,
+      urlArquivo: materiais.urlArquivo,
+      tipoArquivo: materiais.tipoArquivo,
+      tamanhoBytes: materiais.tamanhoBytes,
+      metaId: materiais.metaId,
+      disciplina: materiais.disciplina,
+      uploadedBy: materiais.uploadedBy,
+      uploaderNome: users.name,
+      ativo: materiais.ativo,
+      createdAt: materiais.createdAt,
+      updatedAt: materiais.updatedAt,
+    })
+    .from(materiais)
+    .leftJoin(users, eq(materiais.uploadedBy, users.id))
+    .where(eq(materiais.ativo, 1))
+    .orderBy(desc(materiais.createdAt));
+  
+  return result;
+}
+
+export async function getMateriaisByMetaId(metaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: materiais.id,
+      titulo: materiais.titulo,
+      descricao: materiais.descricao,
+      urlArquivo: materiais.urlArquivo,
+      tipoArquivo: materiais.tipoArquivo,
+      tamanhoBytes: materiais.tamanhoBytes,
+      uploadedBy: materiais.uploadedBy,
+      uploaderNome: users.name,
+      createdAt: materiais.createdAt,
+    })
+    .from(materiais)
+    .leftJoin(users, eq(materiais.uploadedBy, users.id))
+    .where(
+      and(
+        eq(materiais.metaId, metaId),
+        eq(materiais.ativo, 1)
+      )
+    )
+    .orderBy(desc(materiais.createdAt));
+  
+  return result;
+}
+
+export async function createMaterial(data: {
+  titulo: string;
+  descricao?: string;
+  urlArquivo: string;
+  tipoArquivo: string;
+  tamanhoBytes?: number;
+  metaId?: number;
+  disciplina?: string;
+  uploadedBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const [result] = await db.insert(materiais).values(data);
+  return { id: result.insertId, ...data };
+}
+
+export async function deleteMaterial(id: number, userId: number, userRole: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar se o usuário é o uploader ou é admin
+  const [material] = await db
+    .select()
+    .from(materiais)
+    .where(eq(materiais.id, id))
+    .limit(1);
+  
+  if (!material) {
+    throw new Error("Material não encontrado");
+  }
+  
+  const isAdmin = ["master", "administrativo"].includes(userRole);
+  const isOwner = material.uploadedBy === userId;
+  
+  if (!isAdmin && !isOwner) {
+    throw new Error("Sem permissão para deletar este material");
+  }
+  
+  // Soft delete
+  await db
+    .update(materiais)
+    .set({ ativo: 0 })
+    .where(eq(materiais.id, id));
+  
+  return { success: true };
+}

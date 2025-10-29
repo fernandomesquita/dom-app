@@ -71,6 +71,13 @@
       "when": 1761776128206,
       "tag": "0009_fat_metal_master",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1761778519292,
+      "tag": "0010_dizzy_ezekiel",
+      "breakpoints": true
     }
   ]
 }

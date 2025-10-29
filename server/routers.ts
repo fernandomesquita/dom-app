@@ -616,5 +616,54 @@ export const appRouter = router({
         return await getDadosAluno(input.alunoId);
       }),
   }),
+
+  materiais: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const { getAllMateriais } = await import("./db");
+      return await getAllMateriais();
+    }),
+    
+    byMetaId: protectedProcedure
+      .input(z.object({ metaId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const { getMateriaisByMetaId } = await import("./db");
+        return await getMateriaisByMetaId(input.metaId);
+      }),
+    
+    create: protectedProcedure
+      .input(z.object({
+        titulo: z.string(),
+        descricao: z.string().optional(),
+        urlArquivo: z.string(),
+        tipoArquivo: z.string(),
+        tamanhoBytes: z.number().optional(),
+        metaId: z.number().optional(),
+        disciplina: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        // Apenas professores, mentores e admins podem criar materiais
+        const allowedRoles = ["master", "professor", "mentor", "administrativo"];
+        if (!allowedRoles.includes(ctx.user.role || "")) {
+          throw new Error("Sem permissão para criar materiais");
+        }
+        
+        const { createMaterial } = await import("./db");
+        return await createMaterial({
+          ...input,
+          uploadedBy: ctx.user.id,
+        });
+      }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        
+        const { deleteMaterial } = await import("./db");
+        return await deleteMaterial(input.id, ctx.user.id, ctx.user.role || "aluno");
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

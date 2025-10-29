@@ -352,3 +352,26 @@ export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
 
 export type ForumMensagemRetida = typeof forumMensagensRetidas.$inferSelect;
 export type InsertForumMensagemRetida = typeof forumMensagensRetidas.$inferInsert;
+
+// ========== MATERIAIS DE APOIO ==========
+
+/**
+ * Materiais de apoio (PDFs, documentos) vinculados a metas específicas
+ */
+export const materiais = mysqlTable("materiais", {
+  id: int("id").autoincrement().primaryKey(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  urlArquivo: text("url_arquivo").notNull(), // URL do S3
+  tipoArquivo: varchar("tipo_arquivo", { length: 50 }).default("application/pdf").notNull(),
+  tamanhoBytes: int("tamanho_bytes"),
+  metaId: int("meta_id"), // FK para metas (opcional - material pode ser geral)
+  disciplina: varchar("disciplina", { length: 255 }),
+  uploadedBy: int("uploaded_by").notNull(), // userId do professor/admin
+  ativo: int("ativo").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Material = typeof materiais.$inferSelect;
+export type InsertMaterial = typeof materiais.$inferInsert;
