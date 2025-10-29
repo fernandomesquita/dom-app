@@ -67,13 +67,21 @@ export const appRouter = router({
           cargo: z.string().optional(),
           concursoArea: z.string().optional(),
           horasDiariasPadrao: z.number().optional(),
+          exibirMensagemPosPlano: z.boolean().optional(),
+          mensagemPosPlano: z.string().optional(),
+          linkPosPlano: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
           if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
             throw new Error("Acesso negado");
           }
           const { createPlano } = await import("./db");
-          return await createPlano(input);
+          const dataToSave = {
+            ...input,
+            exibirMensagemPosPlano: input.exibirMensagemPosPlano ? 1 : 0,
+            createdBy: ctx.user.id,
+          };
+          return await createPlano(dataToSave as any);
         }),
       
       update: protectedProcedure
@@ -87,14 +95,21 @@ export const appRouter = router({
           cargo: z.string().optional(),
           concursoArea: z.string().optional(),
           horasDiariasPadrao: z.number().optional(),
+          exibirMensagemPosPlano: z.boolean().optional(),
+          mensagemPosPlano: z.string().optional(),
+          linkPosPlano: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
           if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
             throw new Error("Acesso negado");
           }
-          const { id, ...data } = input;
+          const { id, exibirMensagemPosPlano, ...data } = input;
+          const dataToSave = {
+            ...data,
+            exibirMensagemPosPlano: exibirMensagemPosPlano !== undefined ? (exibirMensagemPosPlano ? 1 : 0) : undefined,
+          };
           const { updatePlano } = await import("./db");
-          return await updatePlano(id, data);
+          return await updatePlano(id, dataToSave as any);
         }),
       
       delete: protectedProcedure

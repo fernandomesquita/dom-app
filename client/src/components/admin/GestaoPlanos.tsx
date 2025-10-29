@@ -80,6 +80,9 @@ export default function GestaoPlanos() {
     tipo: "pago" as "pago" | "gratuito",
     duracao: 180,
     horasDiarias: 4,
+    exibirMensagemPosPlano: false,
+    mensagemPosPlano: "",
+    linkPosPlano: "",
   });
 
   const handleNovoPlano = () => {
@@ -91,6 +94,9 @@ export default function GestaoPlanos() {
       tipo: "pago",
       duracao: 180,
       horasDiarias: 4,
+      exibirMensagemPosPlano: false,
+      mensagemPosPlano: "",
+      linkPosPlano: "",
     });
     setModalAberto(true);
   };
@@ -104,6 +110,9 @@ export default function GestaoPlanos() {
       tipo: plano.tipo,
       duracao: plano.duracao,
       horasDiarias: plano.horasDiarias,
+      exibirMensagemPosPlano: (plano as any).exibirMensagemPosPlano || false,
+      mensagemPosPlano: (plano as any).mensagemPosPlano || "",
+      linkPosPlano: (plano as any).linkPosPlano || "",
     });
     setModalAberto(true);
   };
@@ -145,6 +154,9 @@ export default function GestaoPlanos() {
         tipo: formData.tipo,
         duracaoTotal: formData.duracao,
         horasDiariasPadrao: formData.horasDiarias,
+        exibirMensagemPosPlano: formData.exibirMensagemPosPlano,
+        mensagemPosPlano: formData.mensagemPosPlano,
+        linkPosPlano: formData.linkPosPlano,
       });
     } else {
       criarPlanoMutation.mutate({
@@ -155,6 +167,9 @@ export default function GestaoPlanos() {
         tipo: formData.tipo,
         duracaoTotal: formData.duracao,
         horasDiariasPadrao: formData.horasDiarias,
+        exibirMensagemPosPlano: formData.exibirMensagemPosPlano,
+        mensagemPosPlano: formData.mensagemPosPlano,
+        linkPosPlano: formData.linkPosPlano,
       });
     }
   };
@@ -385,6 +400,72 @@ export default function GestaoPlanos() {
                 />
               </div>
             </div>
+
+            {/* Mensagem Pós-Conclusão (apenas para planos gratuitos) */}
+            {formData.tipo === "gratuito" && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-semibold">Mensagem Pós-Conclusão</Label>
+                    <p className="text-sm text-muted-foreground">Exibir mensagem após a última meta do plano</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, exibirMensagemPosPlano: !formData.exibirMensagemPosPlano })}
+                  >
+                    {formData.exibirMensagemPosPlano ? "Desabilitar" : "Habilitar"}
+                  </Button>
+                </div>
+
+                {formData.exibirMensagemPosPlano && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="mensagemPosPlano">Mensagem (HTML)</Label>
+                      <Textarea
+                        id="mensagemPosPlano"
+                        placeholder="<h2>Parabéns!</h2><p>Você concluiu o plano gratuito. Assine nosso plano premium para continuar estudando!</p>"
+                        value={formData.mensagemPosPlano}
+                        onChange={(e) => setFormData({ ...formData, mensagemPosPlano: e.target.value })}
+                        rows={4}
+                        className="font-mono text-sm"
+                      />
+                      <p className="text-xs text-muted-foreground">Use HTML para formatar a mensagem</p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="linkPosPlano">Link (opcional)</Label>
+                      <Input
+                        id="linkPosPlano"
+                        type="url"
+                        placeholder="https://exemplo.com/assinar"
+                        value={formData.linkPosPlano}
+                        onChange={(e) => setFormData({ ...formData, linkPosPlano: e.target.value })}
+                      />
+                      <p className="text-xs text-muted-foreground">URL para redirecionar o aluno (ex: página de assinatura)</p>
+                    </div>
+
+                    {formData.mensagemPosPlano && (
+                      <div className="p-4 border rounded-lg bg-muted">
+                        <p className="text-sm font-semibold mb-2">Preview:</p>
+                        <div 
+                          className="prose prose-sm max-w-none"
+                          dangerouslySetInnerHTML={{ __html: formData.mensagemPosPlano }}
+                        />
+                        {formData.linkPosPlano && (
+                          <Button size="sm" className="mt-2" asChild>
+                            <a href={formData.linkPosPlano} target="_blank" rel="noopener noreferrer">
+                              Acessar Link
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2">

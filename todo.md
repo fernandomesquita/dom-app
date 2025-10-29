@@ -1760,3 +1760,39 @@ Botão "Baixar Template" visível e funcional na página de gestão de planos. D
 
 ### Status: ✅ COMPLETO
 Botões agora têm largura automática baseada no conteúdo, melhor distribuição e botão de excluir alinhado à direita.
+
+
+## 📢 MENSAGEM/LINK PÓS-CONCLUSÃO PARA PLANOS GRATUITOS
+
+### Backend - Schema e APIs
+- [x] Adicionar campos no schema da tabela planos:
+  - mensagemPosPlano (text, rich HTML)
+  - linkPosPlano (varchar, URL opcional)
+  - exibirMensagemPosPlano (int, 0 ou 1)
+- [x] Migrar banco de dados (pnpm db:push)
+- [x] Atualizar API create para aceitar novos campos
+- [x] Atualizar API update para aceitar novos campos
+- [x] Converter boolean para int (0/1) nas mutations
+- [x] Adicionar createdBy automaticamente no create
+
+### Frontend - Formulário de Configuração
+- [x] Adicionar seção "Mensagem Pós-Conclusão" no formulário de planos
+- [x] Campo toggle (botão Habilitar/Desabilitar) para ativar mensagem
+- [x] Textarea com placeholder HTML para mensagem
+- [x] Campo de URL opcional para link
+- [x] Preview da mensagem com renderização HTML (dangerouslySetInnerHTML)
+- [x] Botão de preview do link
+- [x] Exibir seção apenas para planos gratuitos
+- [x] Adicionar campos ao estado formData
+- [x] Atualizar handleNovoPlano e handleEditarPlano
+- [x] Enviar campos nas mutations create e update
+
+### Frontend - Exibição para Alunos
+- [ ] Detectar quando aluno conclui última meta do plano
+- [ ] Exibir modal ou card com mensagem configurada
+- [ ] Renderizar HTML rich text com segurança
+- [ ] Botão de ação se link estiver configurado
+- [ ] Marcar mensagem como visualizada
+
+### Status: ✅ BACKEND E FORMULÁRIO COMPLETOS
+Schema atualizado, APIs funcionando, formulário administrativo com preview. Planos gratuitos podem configurar mensagem HTML e link pós-conclusão. Falta apenas implementar exibição para alunos (próxima fase).

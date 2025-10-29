@@ -42,6 +42,9 @@ export const planos = mysqlTable("planos", {
   horasDiariasPadrao: int("horas_diarias_padrao").default(4).notNull(),
   diasEstudoPadrao: varchar("dias_estudo_padrao", { length: 50 }).default("1,2,3,4,5").notNull(), // dias da semana (0=dom, 6=sab)
   createdBy: int("created_by"), // userId do criador
+  mensagemPosPlano: text("mensagem_pos_plano"), // Mensagem HTML rich text após última meta
+  linkPosPlano: varchar("link_pos_plano", { length: 500 }), // Link opcional após última meta
+  exibirMensagemPosPlano: int("exibir_mensagem_pos_plano").default(0).notNull(), // 1 = exibir, 0 = não exibir
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
