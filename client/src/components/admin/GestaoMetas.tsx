@@ -18,6 +18,8 @@ import {
   RotateCcw,
   HelpCircle,
   Clock,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 
 interface Meta {
@@ -97,6 +99,34 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     },
     onError: (error) => {
       toast.error(error.message || "Erro ao excluir meta");
+    },
+  });
+
+  const moverParaCimaMutation = trpc.admin.moverMetaParaCima.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(result.message);
+        refetch();
+      } else {
+        toast.info(result.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao mover meta");
+    },
+  });
+
+  const moverParaBaixoMutation = trpc.admin.moverMetaParaBaixo.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(result.message);
+        refetch();
+      } else {
+        toast.info(result.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao mover meta");
     },
   });
 
@@ -235,6 +265,24 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
                             <p className="text-sm text-muted-foreground">{meta.assunto}</p>
                           </div>
                           <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => moverParaCimaMutation.mutate({ metaId: meta.id })}
+                              disabled={index === 0 || moverParaCimaMutation.isPending}
+                              title="Mover para cima"
+                            >
+                              <ChevronUp className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => moverParaBaixoMutation.mutate({ metaId: meta.id })}
+                              disabled={index === metas.length - 1 || moverParaBaixoMutation.isPending}
+                              title="Mover para baixo"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"

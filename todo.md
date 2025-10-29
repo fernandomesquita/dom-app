@@ -1928,3 +1928,33 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Criar painel de moderação no Admin (tab Moderação) - UI
 - [ ] Notificar usuário sobre mensagem retida
 - [ ] Integrar verificação ao criar tópicos/respostas no frontend
+
+### Bugs e Ajustes Urgentes
+- [ ] Investigar tópico do fórum desaparecido (formulário não integrado com backend)
+- [x] Corrigir exibição de caracteres Unicode no card DMR (Configurações)
+- [ ] Integrar formulário de criação de tópicos com backend real
+- [ ] Desabilitar moderação automática de links (ou criar whitelist)
+
+### Centro de Comando - Cores das Atividades
+- [x] Adicionar seletores de cores para atividades de estudo
+- [x] Implementar seletor de cor para "Estudo" (metaEstudoColor)
+- [x] Implementar seletor de cor para "Revisão" (metaRevisaoColor)
+- [x] Implementar seletor de cor para "Questões" (metaQuestoesColor)
+- [x] Adicionar color pickers + inputs hex para cada tipo
+- [x] Preview visual com emojis para cada tipo de atividade
+- [x] Salvar configurações de cores no localStorage
+- [ ] Aplicar cores personalizadas nos cards de metas (frontend)
+- [ ] Aplicar cores personalizadas na visualização Meta a Meta
+
+### Organização Manual de Metas
+- [x] Adicionar botões de subir/descer metas no Admin
+- [x] Implementar função de reordenar metas (botões ChevronUp/Down)
+- [x] Atualizar campo "ordem" nas metas ao reorganizar
+- [x] Campo "ordem" já existe no schema (linha 86)
+- [x] Implementar APIs para atualizar ordem (moverMetaParaCima, moverMetaParaBaixo)
+- [x] Adicionar imports lt, gt, asc no db.ts
+- [x] Criar rotas tRPC admin.moverMetaParaCima e admin.moverMetaParaBaixo
+- [x] Integrar botões no componente GestaoMetas
+- [x] Desabilitar botões quando meta está no topo/final
+- [x] Toast de feedback ao mover metas
+- [ ] Garantir que visualizações respeitem a ordem personalizada (verificar)

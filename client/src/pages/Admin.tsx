@@ -298,12 +298,12 @@ export default function Admin() {
                   <ControleFuncionalidades />
                   
                   <div className="p-4 border rounded-lg mt-4">
-                    <h4 className="font-semibold mb-2">DMR e Seguran\u00e7a</h4>
+                    <h4 className="font-semibold mb-2">DMR e Segurança</h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Gerenciar configura\u00e7\u00f5es de DMR, valida\u00e7\u00e3o de CPF e controle de logs
+                      Gerenciar configurações de DMR, validação de CPF e controle de logs
                     </p>
                     <Button variant="outline" size="sm">
-                      Configurar Seguran\u00e7a
+                      Configurar Segurança
                     </Button>
                   </div>
                   

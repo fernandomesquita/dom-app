@@ -1,0 +1,17 @@
+{
+  "query": "\n-- Verificar mensagens retidas\nSELECT * FROM forum_mensagens_retidas ORDER BY created_at DESC LIMIT 5;\n\n-- Verificar tópicos recentes\nSELECT id, user_id, titulo, conteudo, created_at FROM forum_topicos ORDER BY created_at DESC LIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute \n-- Verificar mensagens retidas\nSELECT * FROM forum_mensagens_retidas ORDER BY created_at DESC LIMIT 5;\n\n-- Verificar tópicos recentes\nSELECT id, user_id, titulo, conteudo, created_at FROM forum_topicos ORDER BY created_at DESC LIMIT 5;\n",
+  "rows": [
+    {
+      "id": "1",
+      "user_id": "1",
+      "titulo": "Teste de Notificação",
+      "conteudo": "Este é um tópico de teste para demonstrar o sistema de notificações do fórum.",
+      "created_at": "2025-10-29 17:44:58"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuser_id\ttitulo\tconteudo\tcreated_at\n1\t1\tTeste de Notificação\tEste é um tópico de teste para demonstrar o sistema de notificações do fórum.\t2025-10-29 17:44:58\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

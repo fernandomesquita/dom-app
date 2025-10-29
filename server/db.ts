@@ -1,4 +1,4 @@
-import { eq, sql, desc, and, count, inArray } from "drizzle-orm";
+import { eq, sql, desc, asc, and, count, inArray, lt, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -1584,4 +1584,97 @@ export async function rejeitarMensagemRetida(
     .where(eq(forumMensagensRetidas.id, mensagemId));
 
   return true;
+}
+
+
+// ========== REORDENAÇÃO DE METAS ==========
+
+/**
+ * Mover meta para cima (diminuir ordem)
+ */
+export async function moverMetaParaCima(metaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar meta atual
+  const metaAtual = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.id, metaId))
+    .limit(1);
+
+  if (!metaAtual[0]) {
+    throw new Error("Meta não encontrada");
+  }
+
+  const meta = metaAtual[0];
+  const ordemAtual = meta.ordem;
+
+  // Buscar meta anterior (mesma plano, ordem menor)
+  const metaAnterior = await db
+    .select()
+    .from(metas)
+    .where(and(
+      eq(metas.planoId, meta.planoId),
+      lt(metas.ordem, ordemAtual)
+    ))
+    .orderBy(desc(metas.ordem))
+    .limit(1);
+
+  if (!metaAnterior[0]) {
+    return { success: false, message: "Meta já está no topo" };
+  }
+
+  const ordemAnterior = metaAnterior[0].ordem;
+
+  // Trocar ordens
+  await db.update(metas).set({ ordem: ordemAnterior }).where(eq(metas.id, metaId));
+  await db.update(metas).set({ ordem: ordemAtual }).where(eq(metas.id, metaAnterior[0].id));
+
+  return { success: true, message: "Meta movida para cima" };
+}
+
+/**
+ * Mover meta para baixo (aumentar ordem)
+ */
+export async function moverMetaParaBaixo(metaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar meta atual
+  const metaAtual = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.id, metaId))
+    .limit(1);
+
+  if (!metaAtual[0]) {
+    throw new Error("Meta não encontrada");
+  }
+
+  const meta = metaAtual[0];
+  const ordemAtual = meta.ordem;
+
+  // Buscar próxima meta (mesmo plano, ordem maior)
+  const proximaMeta = await db
+    .select()
+    .from(metas)
+    .where(and(
+      eq(metas.planoId, meta.planoId),
+      gt(metas.ordem, ordemAtual)
+    ))
+    .orderBy(asc(metas.ordem))
+    .limit(1);
+
+  if (!proximaMeta[0]) {
+    return { success: false, message: "Meta já está no final" };
+  }
+
+  const ordemProxima = proximaMeta[0].ordem;
+
+  // Trocar ordens
+  await db.update(metas).set({ ordem: ordemProxima }).where(eq(metas.id, metaId));
+  await db.update(metas).set({ ordem: ordemAtual }).where(eq(metas.id, proximaMeta[0].id));
+
+  return { success: true, message: "Meta movida para baixo" };
 }

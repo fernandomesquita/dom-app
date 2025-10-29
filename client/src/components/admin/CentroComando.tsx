@@ -11,6 +11,9 @@ interface ColorConfig {
   sidebarBg: string;
   backgroundColor: string;
   textColor: string;
+  metaEstudoColor: string;
+  metaRevisaoColor: string;
+  metaQuestoesColor: string;
 }
 
 const defaultColors: ColorConfig = {
@@ -19,6 +22,9 @@ const defaultColors: ColorConfig = {
   sidebarBg: "#f0fdf4", // green-50
   backgroundColor: "#ffffff",
   textColor: "#0f172a", // slate-900
+  metaEstudoColor: "#3b82f6", // blue-500
+  metaRevisaoColor: "#f59e0b", // amber-500
+  metaQuestoesColor: "#10b981", // green-500
 };
 
 export default function CentroComando() {
@@ -320,7 +326,115 @@ export default function CentroComando() {
         </Card>
       </div>
 
-      <Card className="bg-blue-50 border-blue-200">
+      {/* Cores das Atividades */}
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Palette className="h-5 w-5" />
+          Cores das Atividades
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Cor de Estudo */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Estudo</CardTitle>
+              <CardDescription>
+                Cor para atividades de estudo
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={colors.metaEstudoColor}
+                  onChange={(e) => handleColorChange("metaEstudoColor", e.target.value)}
+                  className="w-20 h-20 rounded-lg cursor-pointer border-2 border-border"
+                />
+                <div className="flex-1">
+                  <Label>Código Hex</Label>
+                  <input
+                    type="text"
+                    value={colors.metaEstudoColor}
+                    onChange={(e) => handleColorChange("metaEstudoColor", e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    placeholder="#3b82f6"
+                  />
+                </div>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.metaEstudoColor }}>
+                <p className="text-white font-semibold">📚 Estudo</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cor de Revisão */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Revisão</CardTitle>
+              <CardDescription>
+                Cor para atividades de revisão
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={colors.metaRevisaoColor}
+                  onChange={(e) => handleColorChange("metaRevisaoColor", e.target.value)}
+                  className="w-20 h-20 rounded-lg cursor-pointer border-2 border-border"
+                />
+                <div className="flex-1">
+                  <Label>Código Hex</Label>
+                  <input
+                    type="text"
+                    value={colors.metaRevisaoColor}
+                    onChange={(e) => handleColorChange("metaRevisaoColor", e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    placeholder="#f59e0b"
+                  />
+                </div>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.metaRevisaoColor }}>
+                <p className="text-white font-semibold">🔄 Revisão</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cor de Questões */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Questões</CardTitle>
+              <CardDescription>
+                Cor para atividades de questões
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="color"
+                  value={colors.metaQuestoesColor}
+                  onChange={(e) => handleColorChange("metaQuestoesColor", e.target.value)}
+                  className="w-20 h-20 rounded-lg cursor-pointer border-2 border-border"
+                />
+                <div className="flex-1">
+                  <Label>Código Hex</Label>
+                  <input
+                    type="text"
+                    value={colors.metaQuestoesColor}
+                    onChange={(e) => handleColorChange("metaQuestoesColor", e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    placeholder="#10b981"
+                  />
+                </div>
+              </div>
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.metaQuestoesColor }}>
+                <p className="text-white font-semibold">❓ Questões</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Card className="bg-blue-50 border-blue-200 mt-8">
         <CardHeader>
           <CardTitle className="text-blue-900">💡 Dicas de Uso</CardTitle>
         </CardHeader>

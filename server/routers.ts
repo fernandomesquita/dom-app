@@ -456,6 +456,27 @@ export const appRouter = router({
         const { rejeitarMensagemRetida } = await import("./db");
         return await rejeitarMensagemRetida(input.mensagemId, ctx.user.id, input.motivo);
       }),
+
+    // Reordenação de Metas
+    moverMetaParaCima: protectedProcedure
+      .input(z.object({ metaId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { moverMetaParaCima } = await import("./db");
+        return await moverMetaParaCima(input.metaId);
+      }),
+
+    moverMetaParaBaixo: protectedProcedure
+      .input(z.object({ metaId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { moverMetaParaBaixo } = await import("./db");
+        return await moverMetaParaBaixo(input.metaId);
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;
