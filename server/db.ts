@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -672,4 +672,142 @@ export async function getQuestoesMaisErradas(userId: number, limit: number = 10)
     }));
   
   return questoesMaisErradas;
+}
+
+
+// ========== GAMIFICAÇÃO ==========
+
+import { conquistas, userConquistas } from "../drizzle/schema";
+
+export async function adicionarPontos(userId: number, pontos: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db
+    .update(users)
+    .set({ pontos: sql`${users.pontos} + ${pontos}` })
+    .where(eq(users.id, userId));
+  
+  return true;
+}
+
+export async function getPontosUsuario(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db
+    .select({ pontos: users.pontos })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  
+  return result[0]?.pontos || 0;
+}
+
+export async function getRanking(limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      pontos: users.pontos,
+    })
+    .from(users)
+    .orderBy(desc(users.pontos))
+    .limit(limit);
+  
+  return result;
+}
+
+export async function getConquistasUsuario(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const result = await db
+    .select({
+      id: conquistas.id,
+      nome: conquistas.nome,
+      descricao: conquistas.descricao,
+      icone: conquistas.icone,
+      desbloqueadaEm: userConquistas.desbloqueadaEm,
+    })
+    .from(userConquistas)
+    .innerJoin(conquistas, eq(userConquistas.conquistaId, conquistas.id))
+    .where(eq(userConquistas.userId, userId));
+  
+  return result;
+}
+
+export async function verificarEAtribuirConquistas(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Buscar estatísticas do usuário
+  const metasConcluidas = await db
+    .select()
+    .from(progressoMetas)
+    .where(eq(progressoMetas.userId, userId));
+  
+  const questoesRespondidas = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  const conquistasDesbloqueadas: number[] = [];
+  
+  // Verificar "Primeiro Passo" - 1 meta concluída
+  if (metasConcluidas.length >= 1) {
+    const jaTemConquista = await db
+      .select()
+      .from(userConquistas)
+      .where(eq(userConquistas.userId, userId))
+      .limit(1);
+    
+    if (jaTemConquista.length === 0) {
+      // Desbloquear conquista (ID fictício 1)
+      await db.insert(userConquistas).values({
+        userId,
+        conquistaId: 1,
+      });
+      conquistasDesbloqueadas.push(1);
+    }
+  }
+  
+  // Verificar "Estudioso" - 10 metas concluídas
+  if (metasConcluidas.length >= 10) {
+    const jaTemConquista = await db
+      .select()
+      .from(userConquistas)
+      .where(eq(userConquistas.userId, userId))
+      .limit(1);
+    
+    if (jaTemConquista.length === 0) {
+      await db.insert(userConquistas).values({
+        userId,
+        conquistaId: 2,
+      });
+      conquistasDesbloqueadas.push(2);
+    }
+  }
+  
+  // Verificar "Mestre" - 100 questões respondidas
+  if (questoesRespondidas.length >= 100) {
+    const jaTemConquista = await db
+      .select()
+      .from(userConquistas)
+      .where(eq(userConquistas.userId, userId))
+      .limit(1);
+    
+    if (jaTemConquista.length === 0) {
+      await db.insert(userConquistas).values({
+        userId,
+        conquistaId: 4,
+      });
+      conquistasDesbloqueadas.push(4);
+    }
+  }
+  
+  return conquistasDesbloqueadas;
 }

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getLoginUrl } from "@/const";
+import { PontosCard, RankingCard, ConquistasCard } from "@/components/GamificacaoCard";
 import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote } from "lucide-react";
 import { Link } from "wouter";
 import { mockEstatisticas } from "@/lib/mockData";
@@ -102,7 +103,8 @@ export default function Dashboard() {
       </div>
 
       {/* Estatísticas Rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <PontosCard />
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Horas Estudadas</CardTitle>
@@ -286,6 +288,12 @@ export default function Dashboard() {
               </Card>
           </Link>
         </div>
+      </div>
+
+      {/* Gamificação: Ranking e Conquistas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RankingCard />
+        <ConquistasCard />
       </div>
 
       {/* Progresso Semanal */}

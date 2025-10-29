@@ -1392,3 +1392,29 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Upload de foto de perfil para S3
 - [ ] Mais componentes administrativos
 - [ ] Otimizações e refinamentos
+
+
+## 🎮 SISTEMA DE GAMIFICAÇÃO
+
+### Backend - Sistema de Pontos
+- [x] Adicionar campo `pontos` à tabela users
+- [x] Criar tabela `conquistas` (badges/achievements)
+- [x] Criar tabela `userConquistas` (relação many-to-many)
+- [x] API para calcular pontos por ação (meta concluída: 10pts, aula assistida: 15pts, questão correta: 5pts)
+- [x] API para atribuir conquistas automaticamente
+- [x] API para buscar ranking de usuários
+
+### Frontend - Visualizações
+- [x] Card de pontos no dashboard
+- [x] Seção de conquistas/badges no dashboard
+- [x] Card de ranking geral no dashboard
+- [ ] Animações ao ganhar pontos (futuro)
+- [ ] Notificações ao desbloquear conquistas (futuro)
+- [ ] Barra de progresso para próxima conquista (futuro)
+
+### Conquistas Planejadas
+- [ ] "Primeiro Passo" - Concluir primeira meta
+- [ ] "Estudioso" - Concluir 10 metas
+- [ ] "Dedicado" - Estudar 7 dias consecutivos
+- [ ] "Mestre" - Acertar 100 questões
+- [ ] "Perfeito" - 100% de acerto em 10 questões seguidas

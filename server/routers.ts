@@ -3,8 +3,20 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
+import { getPontosUsuario, getRanking, getConquistasUsuario, createMeta, updateMeta, deleteMeta, marcarMetaConcluida, adicionarAnotacaoMeta, vincularAulaAMeta, getAulas, getAulaById, marcarAulaConcluida, salvarProgressoAula, getQuestoes, getQuestaoById, salvarRespostaQuestao, getEstatisticasQuestoes, getEstatisticasPorDisciplina, getEvolucaoTemporal, getQuestoesMaisErradas } from "./db";
 
 export const appRouter = router({
+  gamificacao: router({
+    meusPontos: protectedProcedure.query(async ({ ctx }) => {
+      return await getPontosUsuario(ctx.user.id);
+    }),
+    ranking: publicProcedure.query(async () => {
+      return await getRanking(10);
+    }),
+    minhasConquistas: protectedProcedure.query(async ({ ctx }) => {
+      return await getConquistasUsuario(ctx.user.id);
+    }),
+  }),
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({

@@ -17,6 +17,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["aluno", "professor", "administrativo", "mentor", "master"]).default("aluno").notNull(),
+  pontos: int("pontos").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -270,3 +271,26 @@ export const avisosDispensados = mysqlTable("avisos_dispensados", {
 
 export type AvisoDispensado = typeof avisosDispensados.$inferSelect;
 export type InsertAvisoDispensado = typeof avisosDispensados.$inferInsert;
+// ========== GAMIFICAÇÃO ==========
+
+export const conquistas = mysqlTable("conquistas", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  descricao: text("descricao"),
+  icone: varchar("icone", { length: 50 }), // nome do ícone lucide-react
+  pontosRequeridos: int("pontosRequeridos"),
+  tipo: mysqlEnum("tipo", ["meta", "aula", "questao", "sequencia", "especial"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const userConquistas = mysqlTable("userConquistas", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  conquistaId: int("conquistaId").notNull(),
+  desbloqueadaEm: timestamp("desbloqueadaEm").defaultNow().notNull(),
+});
+
+export type Conquista = typeof conquistas.$inferSelect;
+export type InsertConquista = typeof conquistas.$inferInsert;
+export type UserConquista = typeof userConquistas.$inferSelect;
+export type InsertUserConquista = typeof userConquistas.$inferInsert;
