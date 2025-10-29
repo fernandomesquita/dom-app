@@ -1,13 +1,18 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Search, Plus, ThumbsUp, MessageCircle, Eye } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
+import { MessageSquare, Search, Plus, ThumbsUp, MessageCircle, Eye, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { mockForumTopicos } from "@/lib/mockData";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export default function Forum() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: topicos, isLoading } = trpc.forum.listTopicos.useQuery();
+  const topicos = mockForumTopicos;
+  const isLoading = false;
 
   const filteredTopicos = topicos?.filter((topico) =>
     topico.titulo.toLowerCase().includes(searchTerm.toLowerCase())
@@ -28,6 +33,18 @@ export default function Forum() {
 
   return (
     <div className="container py-8 space-y-6">
+      {/* Breadcrumb e Botão Voltar */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Breadcrumb items={[{ label: "Fórum" }]} />
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -36,7 +53,7 @@ export default function Forum() {
             Tire suas dúvidas e interaja com mentores e outros alunos
           </p>
         </div>
-        <Button>
+        <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
           <Plus className="h-4 w-4 mr-2" />
           Nova Pergunta
         </Button>

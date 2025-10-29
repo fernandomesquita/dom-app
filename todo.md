@@ -935,3 +935,46 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Implementar sessões administrativas com timeout reduzido
 
 ---
+
+
+---
+
+## 🎯 MELHORIAS SOLICITADAS - PRIORIDADE ALTA
+
+### Interface Geral
+- [x] Adicionar breadcrumb em todas as páginas
+- [x] Adicionar botão de voltar em todas as páginas
+- [ ] Alterar título do app para "DOM / EARA" (requer configuração manual)
+- [x] Criar componente de Footer com "Desenvolvido por Fernando Mesquita" e versionamento
+- [x] Adicionar Footer em todas as páginas
+
+### Dados de Teste (Frontend)
+- [x] Criar dados de teste para planos de estudo
+- [x] Criar dados de teste para metas (estudo, revisão, questões)
+- [x] Criar dados de teste para aulas (diversas disciplinas)
+- [ ] Criar dados de teste para questões
+- [x] Criar dados de teste para tópicos do fórum
+- [x] Criar dados de teste para matrículas
+- [x] Preencher dashboard com estatísticas de teste
+- [x] Preencher página de aulas com cards de exemplo
+- [x] Preencher página de fórum com tópicos de exemplo
+- [x] Preencher página de plano com metas distribuídas na semana
+
+### Painéis de Metas - FOCO PRINCIPAL
+- [x] Implementar painel geral de metas (calendário semanal completo)
+- [x] Implementar boxes de metas com cores personalizáveis (pastel)
+- [x] Implementar indicadores de incidência (🔥 alta, ⚡ média, 💧 baixa)
+- [x] Implementar badges de tipo de meta (estudo, revisão, questões)
+- [x] Implementar hover com dica de estudo
+- [x] Implementar modal de detalhes da meta ao clicar
+- [x] Implementar marcação de meta como concluída
+- [x] Implementar progresso visual (barra de progresso semanal)
+- [x] Implementar filtros por disciplina e tipo de atividade
+- [x] Implementar painel específico de meta individual (modal)
+- [x] Implementar vinculação de meta com aula
+- [x] Implementar vinculação de meta com questões
+- [ ] Implementar ajuste de tempo da meta
+- [ ] Implementar sistema de arrastar e soltar metas (opcional)
+- [ ] Implementar visualização de histórico de metas concluídas
+
+---

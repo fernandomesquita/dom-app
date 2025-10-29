@@ -2,6 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
+import Footer from "./Footer";
 import {
   Home,
   BookOpen,
@@ -153,8 +154,9 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-72 pt-16 lg:pt-0">
-        <div className="min-h-screen">{children}</div>
+      <main className="lg:pl-72 pt-16 lg:pt-0 flex flex-col min-h-screen">
+        <div className="flex-1">{children}</div>
+        <Footer />
       </main>
     </div>
   );

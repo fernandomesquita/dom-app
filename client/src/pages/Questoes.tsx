@@ -1,10 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { HelpCircle, Play, BookOpen, Target } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
+import { HelpCircle, Play, BookOpen, Target, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export default function Questoes() {
+  const [, setLocation] = useLocation();
+
   return (
     <div className="container py-8 space-y-6">
+      {/* Breadcrumb e Botão Voltar */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Breadcrumb items={[{ label: "Questões" }]} />
+      </div>
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Banco de Questões</h1>
@@ -15,7 +31,7 @@ export default function Questoes() {
 
       {/* Modos de Estudo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-100 rounded-lg">
@@ -29,7 +45,7 @@ export default function Questoes() {
           </CardHeader>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-purple-100 rounded-lg">
@@ -43,7 +59,7 @@ export default function Questoes() {
           </CardHeader>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-green-100 rounded-lg">
@@ -57,7 +73,7 @@ export default function Questoes() {
           </CardHeader>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="p-3 bg-orange-100 rounded-lg">

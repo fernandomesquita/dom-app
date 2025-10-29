@@ -1,26 +1,24 @@
-import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import Breadcrumb from "@/components/Breadcrumb";
+import MetaModal from "@/components/MetaModal";
+import { Calendar, ChevronLeft, ChevronRight, Clock, Filter, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { mockMetas, mockMatricula } from "@/lib/mockData";
+import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export default function Plano() {
-  const { isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
   const [currentWeek, setCurrentWeek] = useState(0);
+  const [selectedMeta, setSelectedMeta] = useState<typeof mockMetas[0] | null>(null);
+  const [metasConcluidas, setMetasConcluidas] = useState<Set<number>>(new Set());
+  const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
+  const [filtroDisciplina, setFiltroDisciplina] = useState<string | null>(null);
 
-  const { data: matriculaAtiva } = trpc.matriculas.ativa.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
-
-  const { data: metas } = trpc.metas.listByPlano.useQuery(
-    { planoId: matriculaAtiva?.planoId || 0 },
-    { enabled: !!matriculaAtiva }
-  );
-
-  const { data: progressos } = trpc.metas.meusProgressos.useQuery(undefined, {
-    enabled: isAuthenticated,
-  });
+  const matricula = mockMatricula;
+  const metas = mockMetas;
 
   // Gera os dias da semana atual
   const getWeekDays = (weekOffset: number) => {
@@ -41,16 +39,36 @@ export default function Plano() {
   const weekDays = getWeekDays(currentWeek);
   const dayNames = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 
-  const getTipoColor = (tipo: string) => {
+  // Distribui metas pelos dias da semana (simulação)
+  const distribuirMetasPorDia = () => {
+    const metasPorDia: { [key: number]: typeof mockMetas } = {};
+    
+    metas.forEach((meta, index) => {
+      const diaIndex = index % 5; // Distribui de segunda a sexta
+      if (!metasPorDia[diaIndex]) {
+        metasPorDia[diaIndex] = [];
+      }
+      metasPorDia[diaIndex].push(meta);
+    });
+    
+    return metasPorDia;
+  };
+
+  const metasPorDia = distribuirMetasPorDia();
+
+  const getTipoColor = (tipo: string, concluida: boolean = false) => {
+    if (concluida) {
+      return "bg-green-50 text-green-800 border-green-200 opacity-70";
+    }
     switch (tipo) {
       case "estudo":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100";
       case "revisao":
-        return "bg-purple-100 text-purple-800 border-purple-300";
+        return "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100";
       case "questoes":
-        return "bg-green-100 text-green-800 border-green-300";
+        return "bg-green-50 text-green-900 border-green-200 hover:bg-green-100";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
+        return "bg-gray-50 text-gray-900 border-gray-200 hover:bg-gray-100";
     }
   };
 
@@ -67,38 +85,61 @@ export default function Plano() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Acesso Restrito</CardTitle>
-            <CardDescription>Faça login para acessar seu plano de estudos.</CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const getTipoLabel = (tipo: string) => {
+    switch (tipo) {
+      case "estudo":
+        return "Estudo";
+      case "revisao":
+        return "Revisão";
+      case "questoes":
+        return "Questões";
+      default:
+        return tipo;
+    }
+  };
 
-  if (!matriculaAtiva) {
-    return (
-      <div className="container py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Nenhum Plano Ativo</CardTitle>
-            <CardDescription>
-              Você ainda não está matriculado em nenhum plano de estudos.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const handleConcluirMeta = () => {
+    if (selectedMeta) {
+      setMetasConcluidas(prev => {
+        const newSet = new Set(prev);
+        newSet.add(selectedMeta.id);
+        return newSet;
+      });
+      toast.success("Meta concluída com sucesso! 🎉");
+    }
+  };
+
+  // Filtragem
+  const metasFiltradas = metas.filter(meta => {
+    if (filtroTipo && meta.tipo !== filtroTipo) return false;
+    if (filtroDisciplina && meta.disciplina !== filtroDisciplina) return false;
+    return true;
+  });
+
+  const disciplinasUnicas = Array.from(new Set(metas.map(m => m.disciplina)));
+  const tiposUnicos = Array.from(new Set(metas.map(m => m.tipo)));
+
+  // Calcula progresso
+  const metasConcluidasSemana = metasFiltradas.filter(m => metasConcluidas.has(m.id)).length;
+  const totalMetasSemana = metasFiltradas.length;
+  const progressoSemana = totalMetasSemana > 0 ? (metasConcluidasSemana / totalMetasSemana) * 100 : 0;
 
   return (
     <div className="container py-8 space-y-6">
+      {/* Breadcrumb e Botão Voltar */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Breadcrumb items={[{ label: "Plano de Estudos" }]} />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
           <p className="text-muted-foreground mt-2">
@@ -127,22 +168,77 @@ export default function Plano() {
         </div>
       </div>
 
-      {/* Informações da Semana */}
+      {/* Informações da Semana e Progresso */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div className="flex-1">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 Semana de {weekDays[0].toLocaleDateString("pt-BR")} a{" "}
                 {weekDays[6].toLocaleDateString("pt-BR")}
               </CardTitle>
               <CardDescription className="mt-2">
-                Horas previstas de estudos nesta semana: {matriculaAtiva.horasDiarias * 5}h
+                Horas previstas: {matricula.horasDiarias * 5}h | 
+                Metas concluídas: {metasConcluidasSemana} de {totalMetasSemana}
               </CardDescription>
+            </div>
+            <div className="w-full lg:w-64">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-muted-foreground">Progresso</span>
+                <span className="font-semibold">{Math.round(progressoSemana)}%</span>
+              </div>
+              <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500" 
+                  style={{ width: `${progressoSemana}%` }}
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
+      </Card>
+
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium mr-2">Filtros:</span>
+            
+            <Button
+              variant={filtroTipo === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFiltroTipo(null)}
+            >
+              Todos
+            </Button>
+            
+            {tiposUnicos.map(tipo => (
+              <Button
+                key={tipo}
+                variant={filtroTipo === tipo ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFiltroTipo(tipo)}
+              >
+                {getTipoLabel(tipo)}
+              </Button>
+            ))}
+
+            <div className="w-px h-6 bg-border mx-2" />
+
+            {disciplinasUnicas.map(disciplina => (
+              <Button
+                key={disciplina}
+                variant={filtroDisciplina === disciplina ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFiltroDisciplina(filtroDisciplina === disciplina ? null : disciplina)}
+              >
+                {disciplina}
+              </Button>
+            ))}
+          </div>
+        </CardContent>
       </Card>
 
       {/* Calendário Semanal */}
@@ -150,14 +246,20 @@ export default function Plano() {
         {weekDays.map((day, index) => {
           const isToday = day.toDateString() === new Date().toDateString();
           const isPast = day < new Date() && !isToday;
+          const metasDoDia = metasPorDia[index] || [];
+          const metasFiltradasDia = metasDoDia.filter(meta => {
+            if (filtroTipo && meta.tipo !== filtroTipo) return false;
+            if (filtroDisciplina && meta.disciplina !== filtroDisciplina) return false;
+            return true;
+          });
 
           return (
             <div key={index} className="space-y-2">
               {/* Cabeçalho do Dia */}
               <div
-                className={`text-center p-3 rounded-lg ${
+                className={`text-center p-3 rounded-lg transition-all ${
                   isToday
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-lg scale-105"
                     : isPast
                       ? "bg-muted text-muted-foreground"
                       : "bg-card border border-border"
@@ -167,29 +269,42 @@ export default function Plano() {
                 <div className="text-sm">{day.getDate()}/{day.getMonth() + 1}</div>
               </div>
 
-              {/* Metas do Dia - Exemplo estático */}
-              <div className="space-y-2">
-                {index < 5 && metas && metas.slice(0, 2).map((meta, metaIndex) => (
-                  <Card
-                    key={metaIndex}
-                    className={`cursor-pointer hover:shadow-md transition-shadow ${getTipoColor(meta.tipo)}`}
-                  >
-                    <CardContent className="p-3 space-y-2">
-                      <div className="font-semibold text-sm">{meta.disciplina}</div>
-                      <div className="text-xs">{meta.assunto}</div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {meta.duracao}min
-                        </span>
-                        {meta.incidencia && (
-                          <span>{getIncidenciaIcon(meta.incidencia)}</span>
+              {/* Metas do Dia */}
+              <div className="space-y-2 min-h-[200px]">
+                {metasFiltradasDia.map((meta) => {
+                  const concluida = metasConcluidas.has(meta.id);
+                  return (
+                    <Card
+                      key={meta.id}
+                      className={`cursor-pointer transition-all border-2 ${getTipoColor(meta.tipo, concluida)} ${
+                        concluida ? "scale-95" : "hover:scale-105 hover:shadow-lg"
+                      }`}
+                      onClick={() => setSelectedMeta(meta)}
+                    >
+                      <CardContent className="p-3 space-y-2">
+                        {concluida && (
+                          <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
+                            ✓ Concluída
+                          </div>
                         )}
-                      </div>
-                      <div className="text-xs font-medium uppercase">{meta.tipo}</div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="font-semibold text-sm line-clamp-1">{meta.disciplina}</div>
+                        <div className="text-xs line-clamp-2 opacity-90">{meta.assunto}</div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1 opacity-75">
+                            <Clock className="h-3 w-3" />
+                            {meta.duracao}min
+                          </span>
+                          {meta.incidencia && (
+                            <span className="text-base">{getIncidenciaIcon(meta.incidencia)}</span>
+                          )}
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {getTipoLabel(meta.tipo)}
+                        </Badge>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             </div>
           );
@@ -202,17 +317,17 @@ export default function Plano() {
           <CardTitle className="text-base">Legenda</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-blue-100 border border-blue-300"></div>
+              <div className="w-4 h-4 rounded bg-blue-50 border-2 border-blue-200"></div>
               <span className="text-sm">Estudo</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-purple-100 border border-purple-300"></div>
+              <div className="w-4 h-4 rounded bg-purple-50 border-2 border-purple-200"></div>
               <span className="text-sm">Revisão</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-100 border border-green-300"></div>
+              <div className="w-4 h-4 rounded bg-green-50 border-2 border-green-200"></div>
               <span className="text-sm">Questões</span>
             </div>
             <div className="flex items-center gap-2">
@@ -230,6 +345,14 @@ export default function Plano() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de Detalhes da Meta */}
+      <MetaModal
+        meta={selectedMeta}
+        open={!!selectedMeta}
+        onClose={() => setSelectedMeta(null)}
+        onConcluir={handleConcluirMeta}
+      />
     </div>
   );
 }

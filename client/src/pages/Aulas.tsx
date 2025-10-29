@@ -1,13 +1,17 @@
-import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Clock, Play, Search, Star } from "lucide-react";
+import Breadcrumb from "@/components/Breadcrumb";
+import { BookOpen, Clock, Play, Search, Star, ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { mockAulas } from "@/lib/mockData";
+import { useLocation } from "wouter";
 
 export default function Aulas() {
+  const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const { data: aulas, isLoading } = trpc.aulas.list.useQuery();
+  const aulas = mockAulas;
+  const isLoading = false;
 
   const filteredAulas = aulas?.filter((aula) =>
     aula.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,6 +33,18 @@ export default function Aulas() {
 
   return (
     <div className="container py-8 space-y-6">
+      {/* Breadcrumb e Botão Voltar */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setLocation("/")}
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <Breadcrumb items={[{ label: "Aulas" }]} />
+      </div>
+
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground">Repositório de Aulas</h1>
