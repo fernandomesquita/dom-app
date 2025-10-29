@@ -193,9 +193,6 @@ export default function Dashboard() {
                   style={{ width: `${stats?.totalMetas ? (((stats?.metasConcluidas || 0) / stats.totalMetas) * 100).toFixed(1) : 0}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Faltam <span className="font-semibold text-foreground">{(stats?.totalMetas || 0) - (stats?.metasConcluidas || 0)} metas</span> para concluir seu plano
-              </p>
             </div>
           </CardContent>
         </Card>

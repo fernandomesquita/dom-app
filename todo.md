@@ -2299,3 +2299,10 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - ✅ Barra de progresso usa valor com decimal para precisão
   - ✅ Mantida mensagem "Faltam X metas para concluir seu plano"
 - **Status:** ✅ 100% Concluído
+
+### Remover mensagem "Faltam X metas" do card de Progresso (CONCLUÍDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Remover mensagem "Faltam 120 metas para concluir seu plano" para evitar ansiedade
+- **Motivo:** Focar no positivo (metas concluídas) ao invés do negativo (metas faltantes)
+- **Solução:** Removida linha com mensagem, card agora mostra apenas informações positivas
+- **Status:** ✅ Concluído
