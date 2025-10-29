@@ -1699,3 +1699,15 @@ Sistema completo de gestão de planos com:
 - ✅ Template para download
 - ✅ Permissões por role
 - ✅ 29 APIs tRPC funcionais
+
+
+## 📅 BOTÃO BAIXAR TEMPLATE NA PÁGINA PRINCIPAL
+- [x] Adicionar botão "Baixar Template" ao lado de "Novo Plano" e "Importar Planilha"
+- [x] Usar ícone Download
+- [x] Chamar função gerarTemplatePlanilha ao clicar
+- [x] Testar download do template
+- [x] Toast de sucesso exibido
+- [x] Arquivo template_planos_dom.xlsx gerado corretamente
+
+### Status: ✅ COMPLETO
+Botão "Baixar Template" visível e funcional na página de gestão de planos. Download testado e funcionando perfeitamente.

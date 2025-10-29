@@ -226,6 +226,10 @@ export default function GestaoPlanos() {
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Plano
               </Button>
+              <Button variant="outline" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                Baixar Template
+              </Button>
               <Button variant="outline" onClick={() => setModalImportacao(true)}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importar Planilha
