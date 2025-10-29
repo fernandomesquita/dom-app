@@ -1140,3 +1140,106 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [x] Sincronizar estado entre visualização calendário e lista
 
 ---
+
+
+## 💬 FÓRUM INTERATIVO - EM DESENVOLVIMENTO
+
+### Sistema de Tópicos
+- [x] Implementar criação de novos tópicos
+- [x] Implementar seleção de categoria (Dúvidas, Discussão, Questões, Avisos)
+- [x] Implementar seleção de disciplina
+- [x] Implementar editor de conteúdo com formatação básica
+- [x] Implementar visualização detalhada de tópico
+- [ ] Implementar edição de tópicos próprios (backend)
+- [ ] Implementar exclusão de tópicos próprios (backend)
+- [ ] Implementar moderação de tópicos (mentores/master) (backend)
+
+### Sistema de Respostas
+- [x] Implementar criação de respostas
+- [ ] Implementar respostas aninhadas (threading) (futuro)
+- [ ] Implementar edição de respostas próprias (backend)
+- [ ] Implementar exclusão de respostas próprias (backend)
+- [x] Implementar marcação de melhor resposta (autor do tópico ou mentor)
+- [x] Implementar destaque visual para melhor resposta
+- [x] Implementar contador de respostas por tópico
+
+### Sistema de Votação
+- [x] Implementar curtidas em tópicos
+- [x] Implementar curtidas em respostas
+- [ ] Implementar descurtir (backend)
+- [x] Implementar contador de curtidas
+- [x] Implementar ordenação por popularidade
+
+### Filtros e Busca
+- [x] Implementar filtro por categoria
+- [x] Implementar filtro por disciplina
+- [x] Implementar busca por texto (título e conteúdo)
+- [x] Implementar ordenação (recentes, populares, mais respondidos)
+- [ ] Implementar filtro "Meus tópicos" (futuro)
+- [ ] Implementar filtro "Tópicos sem resposta" (futuro)
+
+### Notificações
+- [ ] Notificar autor quando tópico recebe resposta
+- [ ] Notificar participantes quando há nova resposta
+- [ ] Implementar badge de notificações não lidas
+- [ ] Marcar tópicos com novas respostas desde última visualização
+
+### Interface
+- [x] Criar modal de novo tópico
+- [x] Criar página de visualização de tópico com respostas
+- [ ] Implementar paginação de tópicos (futuro)
+- [ ] Implementar paginação de respostas (futuro)
+- [x] Implementar avatares de usuários
+- [x] Implementar badges de perfil (Mentor, Master, etc.)
+
+---
+
+
+## 📝 SISTEMA DE QUESTÕES - EM DESENVOLVIMENTO
+
+### Banco de Questões
+- [x] Criar interface de listagem de questões
+- [x] Implementar filtros por disciplina
+- [ ] Implementar filtros por assunto (futuro)
+- [x] Implementar filtros por banca
+- [ ] Implementar filtros por ano (futuro)
+- [x] Implementar filtros por dificuldade
+- [x] Implementar busca por texto
+- [ ] Implementar ordenação (recentes, dificuldade, taxa de acerto) (futuro)
+
+### Resolução de Questões
+- [x] Criar interface de resolução individual
+- [x] Implementar seleção de alternativa
+- [x] Implementar botão "Responder"
+- [x] Mostrar gabarito após resposta
+- [x] Mostrar comentário/explicação da questão
+- [x] Implementar navegação entre questões (anterior/próxima)
+- [x] Implementar marcação de questões para revisão (UI)
+- [x] Implementar sistema de favoritos (UI)
+
+### Simulados
+- [ ] Criar interface de configuração de simulado
+- [ ] Permitir seleção de disciplinas
+- [ ] Permitir seleção de quantidade de questões
+- [ ] Permitir seleção de tempo limite
+- [ ] Implementar cronômetro de simulado
+- [ ] Implementar pausa de simulado
+- [ ] Mostrar resultado final com estatísticas
+- [ ] Gerar relatório de desempenho
+
+### Estatísticas
+- [x] Mostrar total de questões respondidas
+- [x] Mostrar taxa de acerto geral
+- [ ] Mostrar taxa de acerto por disciplina (futuro)
+- [ ] Mostrar taxa de acerto por assunto (futuro)
+- [ ] Mostrar evolução ao longo do tempo (gráfico) (futuro)
+- [ ] Mostrar questões mais erradas (futuro)
+- [x] Mostrar tempo médio por questão
+
+### Comentários e Discussões
+- [ ] Permitir comentários em questões
+- [ ] Implementar sistema de curtidas em comentários
+- [ ] Permitir reportar erro na questão
+- [ ] Implementar moderação de comentários
+
+---
