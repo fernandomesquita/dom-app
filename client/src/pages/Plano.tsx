@@ -10,19 +10,19 @@ import MetaAMeta from "@/components/MetaAMeta";
 import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { mockMetas } from "@/lib/mockData";
 import { toast } from "sonner";
 import { ConquistaToast } from "@/components/ConquistaToast";
 import { useConquistaNotification } from "@/hooks/useConquistaNotification";
 import { trpc } from "@/lib/trpc";
 import MensagemPosPlanoModal from "@/components/MensagemPosPlanoModal";
+import { useEffect } from "react";
 
 export default function Plano() {
   const { conquistas, mostrarConquistas, limparConquistas } = useConquistaNotification();
   const [, setLocation] = useLocation();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedMeta, setSelectedMeta] = useState<typeof mockMetas[0] | null>(null);
-  const [metas, setMetas] = useState(mockMetas);
+  const [selectedMeta, setSelectedMeta] = useState<any | null>(null);
+  const [metas, setMetas] = useState<any[]>([]);
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroDisciplina, setFiltroDisciplina] = useState<string>("todas");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
@@ -30,18 +30,32 @@ export default function Plano() {
   const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
   const [planoInfo, setPlanoInfo] = useState<any>(null);
   
-  // TODO: Buscar plano real do usuário através da API
-  // Por enquanto, usando mock para demonstração
-  useState(() => {
-    setPlanoInfo({
-      id: 1,
-      nome: "Plano de Estudos - Concurso XYZ",
-      tipo: "gratuito",
-      exibirMensagemPosPlano: true,
-      mensagemPosPlano: "<h3>Parabéns por concluir o plano!</h3><p>Você demonstrou dedicação e comprometimento. Continue estudando e alcance seus objetivos!</p><p><strong>Próximo passo:</strong> Considere adquirir nosso plano premium para ter acesso a mais conteúdos exclusivos.</p>",
-      linkPosPlano: "https://exemplo.com/plano-premium",
-    });
-  });
+  // Buscar metas do plano atribuído ao aluno
+  const { data: minhasMetasData, isLoading: loadingMetas, refetch: refetchMetas } = trpc.metas.minhasMetas.useQuery();
+  
+  useEffect(() => {
+    if (minhasMetasData) {
+      setPlanoInfo(minhasMetasData.plano);
+      // Transformar metas para formato esperado pelo componente
+      const metasFormatadas = minhasMetasData.metas.map((meta: any, index: number) => ({
+        id: meta.id,
+        disciplina: meta.disciplina,
+        assunto: meta.assunto,
+        tipo: meta.tipo,
+        duracao: meta.duracao,
+        incidencia: meta.incidencia,
+        concluida: meta.concluida || false,
+        dataConclusao: meta.dataConclusao,
+        tempoGasto: meta.tempoGasto,
+        dicaEstudo: meta.dicaEstudo,
+        orientacaoEstudos: meta.orientacaoEstudos,
+        // Distribuir metas ao longo da semana (por enquanto)
+        data: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        anotacao: "",
+      }));
+      setMetas(metasFormatadas);
+    }
+  }, [minhasMetasData]);
   
   // Estado para controle de tempo por dia (em minutos)
   const [temposPorDia, setTemposPorDia] = useState<Record<string, number>>({
@@ -112,23 +126,21 @@ export default function Plano() {
     toast.info(`Tempo ajustado para ${formatTime(newMinutes)}. Metas serão realocadas automaticamente.`);
   };
 
-  const marcarMetaMutation = trpc.metas.marcarConcluida.useMutation({
+  const concluirMetaMutation = trpc.metas.concluir.useMutation({
     onSuccess: (data: any) => {
-      // Atualizar estado local
-      const metasAtualizadas = metas.map(meta => 
-        meta.id === selectedMeta?.id ? { ...meta, concluida: !meta.concluida } : meta
-      );
-      setMetas(metasAtualizadas);
+      toast.success("Meta concluída!");
       setSelectedMeta(null);
-      toast.success("Meta atualizada!");
       
-      // Mostrar conquistas desbloqueadas
+      // Refetch para atualizar lista de metas
+      refetchMetas();
+      
+      // Mostrar conquistas desbloqueadas (se houver)
       if (data.conquistasDesbloqueadas && data.conquistasDesbloqueadas.length > 0) {
         mostrarConquistas(data.conquistasDesbloqueadas);
       }
       
       // Verificar se foi a última meta e se o plano tem mensagem pós-conclusão
-      const todasConcluidas = metasAtualizadas.every(m => m.concluida);
+      const todasConcluidas = metas.every(m => m.concluida || m.id === selectedMeta?.id);
       if (todasConcluidas && planoInfo?.tipo === "gratuito" && planoInfo?.exibirMensagemPosPlano) {
         setTimeout(() => {
           setModalMensagemPosPlano(true);
@@ -136,17 +148,14 @@ export default function Plano() {
       }
     },
     onError: () => {
-      toast.error("Erro ao atualizar meta");
+      toast.error("Erro ao concluir meta");
     },
   });
 
-  const handleConcluirMeta = (id: number) => {
-    const meta = metas.find(m => m.id === id);
-    if (!meta) return;
-    
-    marcarMetaMutation.mutate({
+  const handleConcluirMeta = (id: number, tempoGasto?: number) => {
+    concluirMetaMutation.mutate({
       metaId: id,
-      concluida: !meta.concluida,
+      tempoGasto,
     });
   };
 
@@ -216,6 +225,45 @@ export default function Plano() {
   const disciplinasUnicas = Array.from(new Set(metas.map(m => m.disciplina)));
   const metasOrdenadas = [...metas].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
+  if (loadingMetas) {
+    return (
+      <div className="container py-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Breadcrumb items={[{ label: "Meu Plano de Estudos" }]} />
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Carregando seu plano de estudos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!planoInfo) {
+    return (
+      <div className="container py-8 space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <Breadcrumb items={[{ label: "Meu Plano de Estudos" }]} />
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center space-y-4">
+            <p className="text-lg font-semibold text-foreground">Nenhum plano atribuído</p>
+            <p className="text-muted-foreground">Você ainda não possui um plano de estudos atribuído.</p>
+            <p className="text-sm text-muted-foreground">Entre em contato com seu mentor para receber um plano.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container py-8 space-y-6">
       <div className="flex items-center gap-4">
@@ -228,8 +276,13 @@ export default function Plano() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
         <p className="text-muted-foreground mt-2">
-          Plano: <span className="font-semibold text-foreground">TJ-SP 2025 - Tribunal de Justiça de São Paulo</span>
+          Plano: <span className="font-semibold text-foreground">{planoInfo.nome || "Carregando..."}</span>
         </p>
+        {planoInfo.orgao && planoInfo.cargo && (
+          <p className="text-sm text-muted-foreground mt-1">
+            {planoInfo.orgao} - {planoInfo.cargo}
+          </p>
+        )}
       </div>
 
       <Card>

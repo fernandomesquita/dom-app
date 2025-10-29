@@ -23,6 +23,7 @@ import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 import GestaoPlanos from "@/components/admin/GestaoPlanos";
+import AtribuirPlano from "@/components/admin/AtribuirPlano";
 import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
 
@@ -61,6 +62,7 @@ export default function Admin() {
   const availableTabs = {
     usuarios: isMaster || isAdministrativo,
     planos: isMaster || isMentor || isAdministrativo,
+    atribuirPlanos: isMaster || isMentor || isAdministrativo,
     metas: isMaster || isMentor,
     aulas: isMaster || isAdministrativo || isProfessor,
     avisos: isMaster || isMentor || isAdministrativo,
@@ -73,6 +75,7 @@ export default function Admin() {
   const tabs = [
     { value: "usuarios", label: "Usuários", show: availableTabs.usuarios },
     { value: "planos", label: "Planos", show: availableTabs.planos },
+    { value: "atribuirPlanos", label: "Atribuir Planos", show: availableTabs.atribuirPlanos },
     { value: "metas", label: "Metas", show: availableTabs.metas },
     { value: "aulas", label: "Aulas", show: availableTabs.aulas },
     { value: "avisos", label: "Avisos", show: availableTabs.avisos },
@@ -207,6 +210,13 @@ export default function Admin() {
         {availableTabs.planos && (
           <TabsContent value="planos" className="space-y-4">
             <GestaoPlanos />
+          </TabsContent>
+        )}
+
+        {/* Tab: Atribuir Planos (Master, Mentor, Administrativo) */}
+        {availableTabs.atribuirPlanos && (
+          <TabsContent value="atribuirPlanos" className="space-y-4">
+            <AtribuirPlano />
           </TabsContent>
         )}
 

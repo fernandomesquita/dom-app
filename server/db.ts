@@ -1932,3 +1932,133 @@ export async function getAllUsers() {
     throw new Error(`Erro ao buscar usuários: ${error}`);
   }
 }
+
+
+/**
+ * Obter metas do plano atribuído ao aluno
+ */
+export async function getMetasAluno(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar matrícula ativa do aluno
+    const matriculaAtiva = await db
+      .select()
+      .from(matriculas)
+      .where(and(eq(matriculas.userId, userId), eq(matriculas.ativo, 1)));
+
+    if (matriculaAtiva.length === 0) {
+      return { plano: null, metas: [] };
+    }
+
+    const planoId = matriculaAtiva[0].planoId;
+
+    // Buscar informações do plano
+    const planoInfo = await db
+      .select()
+      .from(planos)
+      .where(eq(planos.id, planoId));
+
+    // Buscar metas do plano
+    const metasPlano = await db
+      .select({
+        id: metas.id,
+        disciplina: metas.disciplina,
+        assunto: metas.assunto,
+        tipo: metas.tipo,
+        duracao: metas.duracao,
+        incidencia: metas.incidencia,
+        ordem: metas.ordem,
+        dicaEstudo: metas.dicaEstudo,
+        orientacaoEstudos: metas.orientacaoEstudos,
+      })
+      .from(metas)
+      .where(eq(metas.planoId, planoId))
+      .orderBy(asc(metas.ordem));
+
+    // Buscar progresso de cada meta
+    const metasComProgresso = await Promise.all(
+      metasPlano.map(async (meta) => {
+        const progresso = await db
+          .select()
+          .from(progressoMetas)
+          .where(
+            and(
+              eq(progressoMetas.metaId, meta.id),
+              eq(progressoMetas.userId, userId)
+            )
+          );
+
+        return {
+          ...meta,
+          concluida: progresso.length > 0 && progresso[0].concluida === 1,
+          dataConclusao: progresso.length > 0 ? progresso[0].dataConclusao : null,
+          tempoGasto: progresso.length > 0 ? progresso[0].tempoGasto : null,
+        };
+      })
+    );
+
+    return {
+      plano: planoInfo[0],
+      matricula: matriculaAtiva[0],
+      metas: metasComProgresso,
+    };
+  } catch (error) {
+    console.error("Erro ao buscar metas do aluno:", error);
+    throw new Error(`Erro ao buscar metas do aluno: ${error}`);
+  }
+}
+
+/**
+ * Concluir meta do aluno
+ */
+export async function concluirMeta(userId: number, metaId: number, tempoGasto?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Verificar se já existe progresso
+    const progressoExistente = await db
+      .select()
+      .from(progressoMetas)
+      .where(
+        and(
+          eq(progressoMetas.metaId, metaId),
+          eq(progressoMetas.userId, userId)
+        )
+      );
+
+    if (progressoExistente.length > 0) {
+      // Atualizar progresso existente
+      await db
+        .update(progressoMetas)
+        .set({
+          concluida: 1,
+          dataConclusao: new Date(),
+          tempoGasto: tempoGasto || progressoExistente[0].tempoGasto,
+        })
+        .where(eq(progressoMetas.id, progressoExistente[0].id));
+
+      return { success: true, progressoId: progressoExistente[0].id };
+    } else {
+      // Criar novo progresso
+      const result = await db.insert(progressoMetas).values({
+        userId,
+        metaId,
+        dataAgendada: new Date(), // Data atual como agendamento padrão
+        concluida: 1,
+        dataConclusao: new Date(),
+        tempoGasto: tempoGasto || 0,
+      });
+
+      return {
+        success: true,
+        progressoId: Number((result as any).insertId || 0),
+      };
+    }
+  } catch (error) {
+    console.error("Erro ao concluir meta:", error);
+    throw new Error(`Erro ao concluir meta: ${error}`);
+  }
+}

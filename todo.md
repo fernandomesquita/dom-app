@@ -2027,3 +2027,67 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Melhorar mensagens de erro
 - [ ] Validar responsividade mobile
 - [ ] Testar performance com 100+ metas
+
+
+---
+
+## 🚀 PLANO DE TRABALHO DE 10 HORAS - SISTEMA COMPLETO DE PLANOS E METAS
+
+### FASE 1: Gestão de Planos (Concluída ✅)
+- [x] Componente CriarPlano com formulário completo
+- [x] Componente ImportarPlanilha com upload drag-and-drop
+- [x] Parser de Excel (biblioteca xlsx)
+- [x] Validação de estrutura de planilha
+- [x] Preview de metas em tabela
+- [x] Importação em lote
+- [x] Relatório de erros
+- [x] Botão de download de template Excel
+- [x] Rota tRPC planos.importarPlanilha
+- [x] Função importarPlanoPlanilha no db.ts
+- [x] Integração completa com GestaoPlanos
+
+### FASE 2: Dashboard com Estatísticas (Concluída ✅)
+- [x] Função getProgressoSemanal (agrupar por dia)
+- [x] Rota tRPC dashboard.progressoSemanal
+- [x] Função getEstatisticasDashboard (horas, metas, aulas, questões, sequência)
+- [x] Componente GraficoProgressoSemanal com Recharts
+- [x] Gráfico de linhas dual-axis
+- [x] Resumo de média diária e metas
+- [x] Mensagens motivacionais
+- [x] Dashboard atualizado com estatísticas em tempo real
+
+### FASE 3: Funcionamento das Metas (Concluída ✅)
+- [x] Backend: Função getMetasAluno (buscar metas do plano atribuído)
+- [x] Backend: Função concluirMeta (marcar meta como concluída)
+- [x] Backend: Função atribuirPlano (atribuir plano a aluno)
+- [x] Backend: Função getMatriculas (listar matrículas ativas)
+- [x] Backend: Função getAllUsers (listar todos os usuários)
+- [x] Rota tRPC metas.minhasMetas
+- [x] Rota tRPC metas.concluir
+- [x] Rota tRPC admin.atribuirPlano
+- [x] Rota tRPC admin.getMatriculas
+- [x] Rota tRPC admin.getUsuarios
+- [x] Componente AtribuirPlano (formulário de seleção)
+- [x] Listagem de matrículas ativas
+- [x] Validação de duplicatas
+- [x] Cálculo automático de dataTermino
+- [x] Página Plano atualizada para buscar metas reais via API
+- [x] Loading states e mensagem de "Nenhum plano atribuído"
+- [x] Exibição dinâmica do nome do plano e informações (órgão, cargo)
+- [x] Mutation concluirMeta integrada com refetch automático
+- [x] Tab "Atribuir Planos" adicionada ao painel administrativo
+- [x] Integração completa AtribuirPlano no Admin
+
+### FASE 4: Testes e Integração (Próxima)
+- [ ] Testar fluxo completo: criar plano → atribuir → visualizar → concluir
+- [ ] Testar importação de planilha Excel
+- [ ] Testar dashboard com dados reais
+- [ ] Testar sistema de gamificação (pontos e conquistas)
+- [ ] Testar notificações de conquistas
+- [ ] Corrigir bugs encontrados
+- [ ] Otimizar performance de queries
+- [ ] Adicionar sistema de agendamento de metas (datas específicas)
+- [ ] Implementar redistribuição automática de metas
+- [ ] Adicionar notificações de metas próximas/atrasadas
+
+---

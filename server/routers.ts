@@ -288,6 +288,23 @@ export const appRouter = router({
       const { vincularAulaAMeta } = await import("./db");
       return await vincularAulaAMeta(input.metaId, input.aulaId);
     }),
+
+    // Buscar metas do plano atribuído ao aluno
+    minhasMetas: protectedProcedure.query(async ({ ctx }) => {
+      const { getMetasAluno } = await import("./db");
+      return await getMetasAluno(ctx.user.id);
+    }),
+
+    // Concluir meta do aluno
+    concluir: protectedProcedure
+      .input(z.object({
+        metaId: z.number(),
+        tempoGasto: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { concluirMeta } = await import("./db");
+        return await concluirMeta(ctx.user.id, input.metaId, input.tempoGasto);
+      }),
   }),
 
   aulas: router({
