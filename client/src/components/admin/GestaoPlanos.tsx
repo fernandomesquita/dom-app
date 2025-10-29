@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import GestaoMetas from "./GestaoMetas";
+import PlanoCard from "./PlanoCard";
+import { gerarTemplatePlanilha } from "@/utils/planilhaTemplate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -27,6 +29,8 @@ import {
 interface Plano {
   id: number;
   nome: string;
+  orgao: string;
+  cargo: string;
   concurso: string;
   tipo: "pago" | "gratuito";
   alunos: number;
@@ -34,6 +38,8 @@ interface Plano {
   ativo: boolean;
   duracao: number; // em dias
   horasDiarias: number;
+  createdAt: string;
+  criadorNome?: string;
 }
 
 export default function GestaoPlanos() {
@@ -45,13 +51,17 @@ export default function GestaoPlanos() {
       setPlanos(planosData.map((p: any) => ({
         id: p.id,
         nome: p.nome,
-        concurso: p.concursoArea || '',
+        orgao: p.orgao || '',
+        cargo: p.cargo || '',
+        concurso: p.concursoArea || `${p.orgao || ''} - ${p.cargo || ''}`.trim(),
         tipo: p.tipo,
         alunos: 0, // Será atualizado pela API de estatísticas
         metas: 0, // Será atualizado pela API de estatísticas
         ativo: p.ativo === 1,
         duracao: p.duracaoTotal,
         horasDiarias: p.horasDiariasPadrao,
+        createdAt: p.createdAt || new Date().toISOString(),
+        criadorNome: undefined,
       })));
     }
   }, [planosData]);
@@ -192,8 +202,12 @@ export default function GestaoPlanos() {
   };
 
   const handleDownloadTemplate = () => {
-    toast.info("Download do template iniciado");
-    // Aqui você implementaria o download real do template
+    try {
+      gerarTemplatePlanilha();
+      toast.success("Template baixado com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao gerar template");
+    }
   };
 
   return (
@@ -220,100 +234,61 @@ export default function GestaoPlanos() {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Barra de Filtros */}
+          <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <Input
+                placeholder="Filtrar por órgão..."
+                className="w-full"
+              />
+              <Input
+                placeholder="Filtrar por cargo..."
+                className="w-full"
+              />
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os tipos</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="gratuito">Gratuito</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                Mostrando {planos.length} planos
+              </div>
+              <Button variant="outline" size="sm">
+                Limpar Filtros
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {planos.map((plano) => (
-              <Card key={plano.id} className={`hover:shadow-lg transition-shadow ${!plano.ativo ? 'opacity-60' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {plano.nome}
-                        <Badge variant={plano.tipo === "pago" ? "default" : "secondary"}>
-                          {plano.tipo}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription className="mt-1">{plano.concurso}</CardDescription>
-                    </div>
-                    <button
-                      onClick={() => handleToggleAtivo(plano.id)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {plano.ativo ? (
-                        <ToggleRight className="h-5 w-5 text-green-600" />
-                      ) : (
-                        <ToggleLeft className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-2xl font-bold text-primary">{plano.alunos}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          Alunos
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-2xl font-bold text-primary">{plano.metas}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Target className="h-3 w-3" />
-                          Metas
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Duração:</span>
-                        <div className="font-semibold flex items-center gap-1 mt-0.5">
-                          <Calendar className="h-3 w-3" />
-                          {plano.duracao} dias
-                        </div>
-                      </div>
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Horas/dia:</span>
-                        <div className="font-semibold mt-0.5">
-                          {plano.horasDiarias}h
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => handleEditarPlano(plano)}
-                      >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Editar
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => {
-                          setPlanoSelecionado(plano);
-                          setModalMetas(true);
-                        }}
-                      >
-                        <Eye className="h-3 w-3 mr-1" />
-                        Metas
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleExcluirPlano(plano.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <PlanoCard
+                key={plano.id}
+                plano={plano}
+                onEditar={() => handleEditarPlano(plano)}
+                onMetas={() => {
+                  setPlanoSelecionado(plano);
+                  setModalMetas(true);
+                }}
+                onExcluir={() => handleExcluirPlano(plano.id)}
+                onToggleAtivo={() => handleToggleAtivo(plano.id)}
+              />
             ))}
           </div>
         </CardContent>
