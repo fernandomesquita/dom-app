@@ -1814,3 +1814,121 @@ export async function getProgressoSemanal(userId: number) {
     throw new Error(`Erro ao calcular progresso semanal: ${error}`);
   }
 }
+
+
+/**
+ * Atribuir plano a um aluno
+ */
+export async function atribuirPlano(userId: number, planoId: number, dataInicio: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Verificar se já existe matrícula ativa para este usuário
+    const matriculaExistente = await db
+      .select()
+      .from(matriculas)
+      .where(eq(matriculas.userId, userId));
+
+    if (matriculaExistente.length > 0) {
+      throw new Error("Usuário já possui um plano atribuído");
+    }
+
+    // Buscar duração do plano para calcular dataTermino
+    const planoData = await db
+      .select()
+      .from(planos)
+      .where(eq(planos.id, planoId));
+
+    if (planoData.length === 0) {
+      throw new Error("Plano não encontrado");
+    }
+
+    const duracaoDias = planoData[0].duracaoTotal;
+    const dataInicioDate = new Date(dataInicio);
+    const dataTerminoDate = new Date(dataInicioDate);
+    dataTerminoDate.setDate(dataTerminoDate.getDate() + duracaoDias);
+
+    // Criar matrícula
+    const result = await db.insert(matriculas).values({
+      userId,
+      planoId,
+      dataInicio: dataInicioDate,
+      dataTermino: dataTerminoDate,
+      ativo: 1,
+    });
+
+    return {
+      success: true,
+      matriculaId: Number((result as any).insertId || 0),
+    };
+  } catch (error) {
+    console.error("Erro ao atribuir plano:", error);
+    throw new Error(`Erro ao atribuir plano: ${error}`);
+  }
+}
+
+/**
+ * Obter todas as matrículas (planos atribuídos)
+ */
+export async function getMatriculas() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const result = await db
+      .select({
+        id: matriculas.id,
+        userId: matriculas.userId,
+        planoId: matriculas.planoId,
+        dataInicio: matriculas.dataInicio,
+        ativo: matriculas.ativo,
+        usuario: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+        plano: {
+          id: planos.id,
+          nome: planos.nome,
+          descricao: planos.descricao,
+        },
+      })
+      .from(matriculas)
+      .leftJoin(users, eq(matriculas.userId, users.id))
+      .leftJoin(planos, eq(matriculas.planoId, planos.id))
+      .where(eq(matriculas.ativo, 1));
+
+    return result;
+  } catch (error) {
+    console.error("Erro ao buscar matrículas:", error);
+    throw new Error(`Erro ao buscar matrículas: ${error}`);
+  }
+}
+
+
+/**
+ * Obter todos os usuários
+ */
+export async function getAllUsers() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const result = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        pontos: users.pontos,
+        createdAt: users.createdAt,
+      })
+      .from(users);
+
+    return result;
+  } catch (error) {
+    console.error("Erro ao buscar usuários:", error);
+    throw new Error(`Erro ao buscar usuários: ${error}`);
+  }
+}

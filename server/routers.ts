@@ -525,6 +525,37 @@ export const appRouter = router({
         const { moverMetaParaBaixo } = await import("./db");
         return await moverMetaParaBaixo(input.metaId);
       }),
+
+    // Atribuição de Planos
+    atribuirPlano: protectedProcedure
+      .input(z.object({ 
+        userId: z.number(), 
+        planoId: z.number(), 
+        dataInicio: z.string() 
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { atribuirPlano } = await import("./db");
+        return await atribuirPlano(input.userId, input.planoId, input.dataInicio);
+      }),
+
+    getMatriculas: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+        throw new Error("Unauthorized");
+      }
+      const { getMatriculas } = await import("./db");
+      return await getMatriculas();
+    }),
+
+    getUsuarios: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+        throw new Error("Unauthorized");
+      }
+      const { getAllUsers } = await import("./db");
+      return await getAllUsers();
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

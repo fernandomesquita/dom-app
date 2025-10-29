@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import GestaoMetas from "./GestaoMetas";
 import PlanoCard from "./PlanoCard";
 import ImportarPlanilha from "./ImportarPlanilha";
+import AtribuirPlano from "./AtribuirPlano";
 import { gerarTemplatePlanilha } from "@/utils/planilhaTemplate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
