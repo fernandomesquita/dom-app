@@ -2155,18 +2155,19 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - **Status:** ✅ Corrigido
 
 
-### Problema: Alocação de metas ineficiente (EM IMPLEMENTAÇÃO 🛠️)
+### Problema: Alocação de metas ineficiente (CORRIGIDO ✅)
 - **Data:** 29/10/2025
-- **Descrição:** Metas não estão preenchendo as 4h diárias disponíveis. Exemplo: Quarta tem 4h disponíveis mas apenas 45min usados (desperdício de 3h15)
-- **Impacto:** Aluno não aproveita todo o tempo disponível para estudos
+- **Descrição:** Metas não estavam preenchendo as 4h diárias disponíveis. Exemplo: Quarta tinha 4h disponíveis mas apenas 45min usados (desperdício de 3h15)
+- **Impacto:** Aluno não aproveitava todo o tempo disponível para estudos
 - **Solução implementada:**
-  - ✅ Função distribuirMetasPlano - algoritmo inteligente que preenche 4h diárias
+  - ✅ Função distribuirMetasPlano - algoritmo inteligente que preenche horas diárias
   - ✅ Função redistribuirMetasAluno - reorganiza metas existentes
   - ✅ Modificada atribuirPlano para distribuir automaticamente
   - ✅ Modificada getMetasAluno para incluir dataAgendada
   - ✅ Rota tRPC metas.redistribuir
-  - ⏳ Pendente: Botão na UI + testes
-- **Status:** 🛠️ 80% implementado
+  - ✅ Mutation redistribuirMetas integrada ao ConfigurarCronograma
+  - ✅ Redistribuição automática ao salvar configurações
+- **Status:** ✅ 100% implementado e funcionando
 
 ### Problema: Visualização em telas menores confusa
 - **Data:** 29/10/2025

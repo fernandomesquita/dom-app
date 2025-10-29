@@ -35,6 +35,17 @@ export default function Plano() {
   // Buscar metas do plano atribuído ao aluno
   const { data: minhasMetasData, isLoading: loadingMetas, refetch: refetchMetas } = trpc.metas.minhasMetas.useQuery();
   
+  // Mutation para redistribuir metas
+  const redistribuirMetas = trpc.metas.redistribuir.useMutation({
+    onSuccess: () => {
+      toast.success("Metas redistribuídas com sucesso!");
+      refetchMetas();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao redistribuir metas");
+    },
+  });
+  
   useEffect(() => {
     if (minhasMetasData) {
       setPlanoInfo(minhasMetasData.plano);
@@ -695,7 +706,8 @@ export default function Plano() {
         onClose={() => setModalConfigurarCronograma(false)}
         onSave={(config) => {
           console.log("Nova configuração:", config);
-          // TODO: Implementar redistribuição de metas com base na nova configuração
+          // Redistribuir metas com base na nova configuração
+          redistribuirMetas.mutate();
         }}
       />
     </div>
