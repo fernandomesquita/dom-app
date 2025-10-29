@@ -1836,3 +1836,8 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Preview em tempo real das mudanças
 - [ ] Botão "Resetar para padrão"
 - [ ] Persistir configurações entre sessões
+
+### Ajustes no Fórum
+- [x] Remover campo "Disciplina" do formulário de criação de tópicos
+- [x] Atualizar validação do formulário (remover disciplina obrigatória)
+- [x] Ajustar layout do formulário (2 colunas para 1 coluna + textarea)

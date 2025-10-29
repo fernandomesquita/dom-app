@@ -58,7 +58,6 @@ export default function Forum() {
   const [novoTopico, setNovoTopico] = useState({
     titulo: "",
     categoria: "duvidas",
-    disciplina: "",
     conteudo: "",
   });
   
@@ -73,7 +72,7 @@ export default function Forum() {
   const disciplinasUnicas = Array.from(new Set(topicos.map(t => t.disciplina)));
 
   const handleCriarTopico = () => {
-    if (!novoTopico.titulo || !novoTopico.conteudo || !novoTopico.disciplina) {
+    if (!novoTopico.titulo || !novoTopico.conteudo) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -82,7 +81,7 @@ export default function Forum() {
       id: topicos.length + 1,
       titulo: novoTopico.titulo,
       autor: user?.name || "Usuário",
-      disciplina: novoTopico.disciplina,
+      disciplina: "", // Campo removido, mantido vazio para compatibilidade
       categoria: getCategoriaLabel(novoTopico.categoria),
       conteudo: novoTopico.conteudo,
       respostas: 0,
@@ -92,7 +91,7 @@ export default function Forum() {
     };
 
     setTopicos([topico, ...topicos]);
-    setNovoTopico({ titulo: "", categoria: "duvidas", disciplina: "", conteudo: "" });
+    setNovoTopico({ titulo: "", categoria: "duvidas", conteudo: "" });
     setDialogNovoTopicoAberto(false);
     toast.success("Tópico criado com sucesso!");
   };
@@ -375,41 +374,21 @@ export default function Forum() {
                   onChange={(e) => setNovoTopico({ ...novoTopico, titulo: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Categoria *</Label>
-                  <Select
-                    value={novoTopico.categoria}
-                    onValueChange={(v) => setNovoTopico({ ...novoTopico, categoria: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="duvidas">Dúvidas</SelectItem>
-                      <SelectItem value="discussao">Discussão</SelectItem>
-                      <SelectItem value="questoes">Questões</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Disciplina *</Label>
-                  <Select
-                    value={novoTopico.disciplina}
-                    onValueChange={(v) => setNovoTopico({ ...novoTopico, disciplina: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {disciplinasUnicas.map((disc) => (
-                        <SelectItem key={disc} value={disc}>
-                          {disc}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label>Categoria *</Label>
+                <Select
+                  value={novoTopico.categoria}
+                  onValueChange={(v) => setNovoTopico({ ...novoTopico, categoria: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="duvidas">Dúvidas</SelectItem>
+                    <SelectItem value="discussao">Discussão</SelectItem>
+                    <SelectItem value="questoes">Questões</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Conteúdo *</Label>
