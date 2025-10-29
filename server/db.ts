@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { 
+import {
   InsertUser, users,
   planos, InsertPlano,
   matriculas, InsertMatricula,
@@ -9,6 +9,7 @@ import {
   aulas, InsertAula,
   progressoAulas, InsertProgressoAula,
   questoes,
+  respostasQuestoes,
   forumTopicos, InsertForumTopico,
   forumRespostas, InsertForumResposta,
   avisos, InsertAviso,
@@ -411,4 +412,148 @@ export async function vincularAulaAMeta(metaId: number, aulaId: number) {
   
   await db.update(metas).set({ aulaId }).where(eq(metas.id, metaId));
   return { success: true, metaId, aulaId };
+}
+
+
+// ========== AULAS - PROGRESSO ==========
+
+export async function marcarAulaConcluida(
+  userId: number,
+  aulaId: number,
+  percentual?: number,
+  posicao?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and } = await import("drizzle-orm");
+  
+  // Buscar progresso existente
+  const progressoExistente = await db
+    .select()
+    .from(progressoAulas)
+    .where(and(
+      eq(progressoAulas.aulaId, aulaId),
+      eq(progressoAulas.userId, userId)
+    ))
+    .limit(1);
+  
+  if (progressoExistente.length > 0) {
+    // Atualizar existente
+    await db
+      .update(progressoAulas)
+      .set({
+        concluida: 1,
+        percentualAssistido: percentual || 100,
+        ultimaPosicao: posicao || 0,
+      })
+      .where(eq(progressoAulas.id, progressoExistente[0].id));
+    
+    return { ...progressoExistente[0], concluida: 1 };
+  } else {
+    // Criar novo progresso
+    await db.insert(progressoAulas).values({
+      userId,
+      aulaId,
+      concluida: 1,
+      percentualAssistido: percentual || 100,
+      ultimaPosicao: posicao || 0,
+      tempoAssistido: 0,
+      favoritada: 0,
+    });
+    
+    return { userId, aulaId, concluida: 1 };
+  }
+}
+
+export async function salvarProgressoAula(
+  userId: number,
+  aulaId: number,
+  posicao: number,
+  percentual: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and } = await import("drizzle-orm");
+  
+  // Buscar progresso existente
+  const progressoExistente = await db
+    .select()
+    .from(progressoAulas)
+    .where(and(
+      eq(progressoAulas.aulaId, aulaId),
+      eq(progressoAulas.userId, userId)
+    ))
+    .limit(1);
+  
+  if (progressoExistente.length > 0) {
+    // Atualizar progresso
+    await db
+      .update(progressoAulas)
+      .set({
+        ultimaPosicao: posicao,
+        percentualAssistido: percentual,
+        concluida: percentual >= 95 ? 1 : 0,
+      })
+      .where(eq(progressoAulas.id, progressoExistente[0].id));
+    
+    return { ...progressoExistente[0], ultimaPosicao: posicao, percentualAssistido: percentual };
+  } else {
+    // Criar novo progresso
+    await db.insert(progressoAulas).values({
+      userId,
+      aulaId,
+      concluida: percentual >= 95 ? 1 : 0,
+      percentualAssistido: percentual,
+      ultimaPosicao: posicao,
+      tempoAssistido: 0,
+      favoritada: 0,
+    });
+    
+    return { userId, aulaId, ultimaPosicao: posicao, percentualAssistido: percentual };
+  }
+}
+
+
+// ========== QUESTÕES - RESPOSTAS E ESTATÍSTICAS ==========
+
+export async function salvarRespostaQuestao(
+  userId: number,
+  questaoId: number,
+  respostaAluno: string,
+  acertou: boolean
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(respostasQuestoes).values({
+    userId,
+    questaoId,
+    respostaAluno,
+    acertou: acertou ? 1 : 0,
+    tempoResposta: 0,
+  });
+  
+  return { success: true };
+}
+
+export async function getRespostasQuestoesByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(respostasQuestoes).where(eq(respostasQuestoes.userId, userId));
+}
+
+export async function getEstatisticasQuestoes(userId: number) {
+  const db = await getDb();
+  if (!db) return { total: 0, corretas: 0, taxaAcerto: 0 };
+  
+  const respostas = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  const total = respostas.length;
+  const corretas = respostas.filter(r => r.acertou === 1).length;
+  const taxaAcerto = total > 0 ? (corretas / total) * 100 : 0;
+  
+  return { total, corretas, taxaAcerto: Math.round(taxaAcerto) };
 }

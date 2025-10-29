@@ -1312,9 +1312,9 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Sincronização calendário ↔ lista
 
 ### FASE 4: Funcionalidades Principais dos Alunos (4-5h)
-- [ ] Backend: CRUD de progresso de aulas
-- [ ] Marcar aula como assistida
-- [ ] Salvar ponto de parada do vídeo
+- [x] Backend: CRUD de progresso de aulas
+- [x] Marcar aula como assistida
+- [x] Salvar ponto de parada do vídeo
 - [ ] Anotações por aula com timestamps
 - [ ] Player de vídeo com controles avançados
 - [ ] Backend: Salvar respostas de questões
