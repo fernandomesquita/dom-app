@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import GestaoMetas from "./GestaoMetas";
 import PlanoCard from "./PlanoCard";
+import ImportarPlanilha from "./ImportarPlanilha";
 import { gerarTemplatePlanilha } from "@/utils/planilhaTemplate";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -531,6 +532,13 @@ export default function GestaoPlanos() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Importação de Planilha */}
+      <ImportarPlanilha
+        aberto={modalImportacao}
+        onFechar={() => setModalImportacao(false)}
+        onSucesso={() => refetch()}
+      />
 
       {/* Modal de Gestão de Metas */}
       {planoSelecionado && (

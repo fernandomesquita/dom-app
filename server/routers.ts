@@ -47,6 +47,29 @@ export const appRouter = router({
     }),
     
     // Rotas administrativas
+    importarPlanilha: protectedProcedure
+      .input(z.object({
+        dados: z.object({
+          nomePlano: z.string(),
+          descricaoPlano: z.string().optional(),
+          metas: z.array(z.object({
+            disciplina: z.string(),
+            assunto: z.string(),
+            tipo: z.enum(["estudo", "revisao", "questoes"]),
+            duracao: z.number(),
+            incidencia: z.enum(["alta", "media", "baixa"]).nullable(),
+            ordem: z.number(),
+          })),
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        const { importarPlanoPlanilha } = await import("./db");
+        return await importarPlanoPlanilha(input.dados, ctx.user.id);
+      }),
+    
     create: protectedProcedure
       .input(z.object({
         nome: z.string(),

@@ -1970,15 +1970,17 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [x] Adicionar preview do plano antes de salvar
 - [x] Toast de sucesso/erro
 - [x] Componente GestaoPlanos já implementado com modal de criação
-- [x] Rota planos.admin.create já funcional
-- [ ] Criar componente de upload de arquivo (drag & drop)
-- [ ] Parser de planilha Excel (.xlsx)
-- [ ] Validar estrutura da planilha
-- [ ] Preview dos dados antes de importar
-- [ ] Criar plano + metas em lote via API
-- [ ] Relatório de importação (sucessos/erros)
-
-### FASE 2: Dashboard dos Alunos (3h)
+- [x] Rota planos.admin.create já funcion- [x] Criar componente de upload de arquivo (drag & drop)
+- [x] Parser de planilha Excel (.xlsx) com biblioteca xlsx
+- [x] Validar estrutura da planilha (colunas obrigatórias)
+- [x] Preview dos dados antes de importar (tabela com metas)
+- [x] Importar metas em lote (criar plano + metas)
+- [x] Feedback de progresso da importação (toast + resultado)
+- [x] Relatório de erros/avisos após importação
+- [x] Botão de baixar template Excel
+- [x] Rota tRPC planos.importarPlanilha
+- [x] Função importarPlanoPlanilha no db.ts
+- [x] Integração com GestaoPlanos Alunos (3h)
 - [ ] Implementar query dashboard.estatisticas no backend
 - [ ] Calcular horas estudadas (soma tempoGasto)
 - [ ] Calcular metas concluídas

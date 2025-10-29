@@ -1679,3 +1679,77 @@ export async function moverMetaParaBaixo(metaId: number) {
   return { success: true, message: "Meta movida para baixo" };
 }
 
+
+
+/**
+ * Importar plano a partir de planilha
+ */
+export async function importarPlanoPlanilha(
+  dados: {
+    nomePlano: string;
+    descricaoPlano?: string;
+    metas: Array<{
+      disciplina: string;
+      assunto: string;
+      tipo: "estudo" | "revisao" | "questoes";
+      duracao: number;
+      incidencia: "alta" | "media" | "baixa" | null;
+      ordem: number;
+    }>;
+  },
+  userId: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // 1. Criar o plano
+    const duracaoTotal = Math.ceil(dados.metas.reduce((acc, meta) => acc + meta.duracao, 0) / 60 / 4); // Estimativa em dias (4h/dia)
+    
+    const resultPlano = await db.insert(planos).values({
+      nome: dados.nomePlano,
+      descricao: dados.descricaoPlano || `Plano importado com ${dados.metas.length} metas`,
+      duracaoTotal,
+      tipo: "pago",
+      ativo: 1,
+      horasDiariasPadrao: 4,
+      diasEstudoPadrao: "1,2,3,4,5",
+      createdBy: userId,
+    });
+
+    const planoId = Number((resultPlano as any).insertId);
+
+    // 2. Criar as metas
+    let sucesso = 0;
+    let erros = 0;
+    const detalhes: string[] = [];
+
+    for (const meta of dados.metas) {
+      try {
+        await db.insert(metas).values({
+          planoId,
+          disciplina: meta.disciplina,
+          assunto: meta.assunto,
+          tipo: meta.tipo,
+          duracao: meta.duracao,
+          incidencia: meta.incidencia,
+          ordem: meta.ordem,
+        });
+        sucesso++;
+      } catch (error) {
+        erros++;
+        detalhes.push(`Erro ao criar meta "${meta.disciplina} - ${meta.assunto}": ${error}`);
+      }
+    }
+
+    return {
+      planoId,
+      sucesso,
+      erros,
+      detalhes,
+    };
+  } catch (error) {
+    console.error("Erro ao importar plano:", error);
+    throw new Error(`Erro ao importar plano: ${error}`);
+  }
+}
