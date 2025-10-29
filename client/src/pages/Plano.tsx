@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
+import MetaAMeta from "@/components/MetaAMeta";
 import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -25,7 +26,7 @@ export default function Plano() {
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroDisciplina, setFiltroDisciplina] = useState<string>("todas");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
-  const [visualizacao, setVisualizacao] = useState<"calendario" | "lista">("calendario");
+  const [visualizacao, setVisualizacao] = useState<"calendario" | "lista" | "metaAMeta">("calendario");
   const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
   const [planoInfo, setPlanoInfo] = useState<any>(null);
   
@@ -274,14 +275,18 @@ export default function Plano() {
       </Card>
 
       <Tabs value={visualizacao} onValueChange={(v) => setVisualizacao(v as typeof visualizacao)}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-2xl grid-cols-3">
           <TabsTrigger value="calendario" className="flex items-center gap-2">
             <CalendarIcon className="h-4 w-4" />
             Calendário Semanal
           </TabsTrigger>
+          <TabsTrigger value="metaAMeta" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Meta a Meta
+          </TabsTrigger>
           <TabsTrigger value="lista" className="flex items-center gap-2">
             <List className="h-4 w-4" />
-            Lista de Metas
+            Lista Completa
           </TabsTrigger>
         </TabsList>
 
@@ -405,6 +410,22 @@ export default function Plano() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="metaAMeta" className="space-y-4">
+          <MetaAMeta 
+            metas={metasOrdenadas
+              .filter(meta => {
+                const tipoMatch = filtroTipo === "todos" || meta.tipo === filtroTipo;
+                const disciplinaMatch = filtroDisciplina === "todas" || meta.disciplina === filtroDisciplina;
+                return tipoMatch && disciplinaMatch;
+              })
+              .map((meta, index) => ({
+                ...meta,
+                numero: index + 1, // Numeração sequencial
+              }))}
+            onMetaConcluida={handleConcluirMeta}
+          />
         </TabsContent>
 
         <TabsContent value="lista" className="space-y-4">

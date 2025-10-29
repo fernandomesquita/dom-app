@@ -1841,3 +1841,24 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [x] Remover campo "Disciplina" do formulário de criação de tópicos
 - [x] Atualizar validação do formulário (remover disciplina obrigatória)
 - [x] Ajustar layout do formulário (2 colunas para 1 coluna + textarea)
+
+### Visualização "Meta a Meta"
+- [x] Criar nova página/componente MetaAMeta
+- [x] Implementar toggle para alternar entre calendário e meta a meta
+- [x] Criar cards de metas numerados (numeração fixa do plano)
+- [x] Implementar linha de progressão conectando as metas
+- [x] Adicionar contadores "Metas do dia: X" e "Metas da semana: Y"
+- [x] Implementar prévia de metas adjacentes (fade out)
+- [x] Criar barra de progresso geral do plano (% concluído)
+- [x] Adicionar botões de navegação (Meta anterior / Próxima meta)
+- [x] Persistir posição da última meta visualizada (localStorage)
+- [x] Aplicar cores por tipo de meta (estudo, revisão, questões)
+- [x] Implementar status visuais (ativa, concluída, desabilitada)
+- [x] Adicionar transições suaves entre metas (CSS transitions)
+- [x] Suporte a setas do teclado (desktop)
+- [x] Integração com página Plano (3 tabs: Calendário, Meta a Meta, Lista)
+- [x] Click no card abre modal com detalhes da meta
+- [x] Botão "Concluir Meta" integrado
+- [ ] Implementar scroll contínuo (infinite scroll) - usar navegação por botões
+- [ ] Suporte a swipe (mobile) - requer biblioteca adicional
+- [ ] Modo responsivo otimizado (horizontal mobile / vertical desktop)
