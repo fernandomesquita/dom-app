@@ -176,11 +176,13 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-sm text-muted-foreground">Metas Concluídas</div>
-                  <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
+                  <div className="text-2xl font-bold">
+                    {stats?.metasConcluidas || 0} {(stats?.metasConcluidas || 0) === 1 ? 'meta' : 'metas'}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-3xl font-bold text-primary">
-                    {stats?.totalMetas ? Math.round(((stats?.metasConcluidas || 0) / stats.totalMetas) * 100) : 0}%
+                    {stats?.totalMetas ? (((stats?.metasConcluidas || 0) / stats.totalMetas) * 100).toFixed(1).replace('.', ',') : '0,0'}%
                   </div>
                   <div className="text-xs text-muted-foreground">Completo</div>
                 </div>
@@ -188,7 +190,7 @@ export default function Dashboard() {
               <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
                 <div 
                   className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500" 
-                  style={{ width: `${stats?.totalMetas ? ((stats?.metasConcluidas || 0) / stats.totalMetas) * 100 : 0}%` }}
+                  style={{ width: `${stats?.totalMetas ? (((stats?.metasConcluidas || 0) / stats.totalMetas) * 100).toFixed(1) : 0}%` }}
                 />
               </div>
               <p className="text-xs text-muted-foreground">

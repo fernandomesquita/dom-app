@@ -2289,3 +2289,13 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - ✅ Mensagem: "Faltam X metas para concluir seu plano"
   - ✅ Card ocupa 2 colunas (md:col-span-2)
 - **Status:** ✅ 100% Concluído
+
+### Melhorias no Card de Progresso no Dashboard (CONCLUÍDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Ajustes visuais no card de progresso do plano
+- **Tarefas:**
+  - ✅ Remover "/ 121" - mostrar apenas "X meta(s) concluída(s)"
+  - ✅ Percentual com uma casa decimal - "0,8%" ao invés de "1%"
+  - ✅ Barra de progresso usa valor com decimal para precisão
+  - ✅ Mantida mensagem "Faltam X metas para concluir seu plano"
+- **Status:** ✅ 100% Concluído
