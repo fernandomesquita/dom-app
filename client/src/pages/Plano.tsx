@@ -149,7 +149,21 @@ export default function Plano() {
 
   const handleTimeAdjust = (dateKey: string, newMinutes: number) => {
     setTemposPorDia(prev => ({ ...prev, [dateKey]: newMinutes }));
-    toast.info(`Tempo ajustado para ${formatTime(newMinutes)}. Metas serão realocadas automaticamente.`);
+    
+    // Converter horas para redistribuição
+    const horasDiarias = newMinutes / 60;
+    
+    // Usar dias da semana padrão (seg-sex) por enquanto
+    // TODO: pegar configuração salva do usuário
+    const diasSemana = [1, 2, 3, 4, 5]; // seg-sex
+    
+    console.log(`[handleTimeAdjust] Ajustando tempo para ${formatTime(newMinutes)} (${horasDiarias}h)`);
+    
+    // Redistribuir metas com novo tempo
+    redistribuirMetas.mutate({
+      horasDiarias,
+      diasSemana,
+    });
   };
 
   const concluirMetaMutation = trpc.metas.concluir.useMutation({
@@ -312,7 +326,7 @@ export default function Plano() {
           )}
         </div>
         <Button 
-          variant="outline" 
+          variant="default" 
           size="lg"
           onClick={() => setModalConfigurarCronograma(true)}
           className="flex items-center gap-2"
@@ -487,7 +501,7 @@ export default function Plano() {
               const isToday = formatDateKey(new Date()) === dateKey;
 
               return (
-                <div key={index} className="space-y-2">
+                <div key={index} className="flex flex-col">
                   <div className={`text-center p-2 rounded-lg ${isToday ? "bg-primary text-primary-foreground" : "bg-accent"}`}>
                     <div className="font-semibold text-sm">
                       {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"][index]}
@@ -495,7 +509,7 @@ export default function Plano() {
                     <div className="text-xs">{formatDate(day)}</div>
                   </div>
 
-                  <div className="space-y-3 min-h-[250px]">
+                  <div className="space-y-3 min-h-[250px] flex-1">
                     {dayMetas.length === 0 ? (
                       <div className="text-center text-sm text-muted-foreground p-4 border-2 border-dashed rounded-lg">
                         Sem metas

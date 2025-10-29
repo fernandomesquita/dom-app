@@ -2181,15 +2181,19 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - **Status:** ⏳ A implementar
 
 
-### Bug: Redistribuição de metas não está funcionando
+### Bug: Redistribuição de metas não está funcionando (CORRIGIDO ✅)
 - **Data:** 29/10/2025
-- **Descrição:** Ao clicar em "Salvar Configurações" no ConfigurarCronograma, toast aparece mas metas não são redistribuídas
-- **Impacto:** Aluno não consegue reorganizar metas para preencher tempo disponível
-- **Possíveis causas:**
-  - Função redistribuirMetasAluno pode ter bug
-  - Registros de progressoMetas não estão sendo deletados corretamente
-  - Distribuição não está respeitando datas corretas
-- **Status:** 🔍 Investigando
+- **Descrição:** Ao clicar em "Salvar Configurações" no ConfigurarCronograma, toast aparecia mas metas não eram redistribuídas na UI
+- **Causa raiz:** Frontend estava ignorando `dataAgendada` do backend e usando datas mockadas (Date.now() + index)
+- **Solução implementada:**
+  - ✅ Frontend agora usa `meta.dataAgendada` do banco de dados
+  - ✅ Logs detalhados adicionados em todo o fluxo:
+    * Frontend: dados recebidos, formatação de metas, mutation, refetch
+    * Backend: parâmetros, planoId, delete de registros, redistribuição
+  - ✅ Função redistribuirMetasAluno aceita parâmetros personalizados (horasDiarias, diasSemana)
+  - ✅ Rota tRPC configurada corretamente
+  - ✅ Frontend envia configurações ao salvar cronograma
+- **Status:** ✅ Corrigido (pendente teste com usuário autenticado)
 
 ### Bug: Anotações de metas não aparecem no dashboard
 - **Data:** 29/10/2025
@@ -2208,4 +2212,25 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - ✅ Cards maiores: padding p-4, altura mínima 140px
   - ✅ Texto maior: text-base para títulos, text-sm para disciplinas
   - ✅ Tooltip com título completo ao passar o mouse
+- **Status:** ✅ Corrigido
+
+### Bug: Dials desalinhados no calendário semanal (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Dials de tempo alocado apareciam em alturas diferentes, criando layout bagunçado
+- **Solução implementada:** Usado `flex flex-col` no container e `flex-1` na área de metas para alinhar todos os dials na mesma altura
+- **Status:** ✅ Corrigido
+
+### Melhoria: Botão "Configurar Cronograma" sem destaque (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Botão "Configurar Cronograma" estava com estilo outline (sem destaque)
+- **Solução implementada:** Mudado para variant="default" (azul) para destacar
+- **Status:** ✅ Corrigido
+
+### Bug: Dials não redistribuem metas (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Ajustar tempo nos dials do calendário não redistribuía as metas automaticamente
+- **Solução implementada:** 
+  - Modificada função handleTimeAdjust para chamar redistribuirMetas.mutate()
+  - Conversão automática de minutos → horas
+  - Redistribuição automática ao ajustar dial
 - **Status:** ✅ Corrigido
