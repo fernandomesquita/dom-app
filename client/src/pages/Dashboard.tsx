@@ -1,14 +1,19 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getLoginUrl } from "@/const";
-import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target } from "lucide-react";
+import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye } from "lucide-react";
 import { Link } from "wouter";
 import { mockEstatisticas } from "@/lib/mockData";
+import { useState } from "react";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
+  const [visualizarComo, setVisualizarComo] = useState<string>("proprio");
   const stats = mockEstatisticas;
+  
+  const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
 
   if (loading) {
     return (
@@ -51,13 +56,49 @@ export default function Dashboard() {
   return (
     <div className="container py-8 space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          Olá, {user?.name?.split(" ")[0] || "Aluno"}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Bem-vindo de volta. Continue seus estudos de onde parou.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">
+            Olá, {user?.name?.split(" ")[0] || "Aluno"}! 👋
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Bem-vindo de volta. Continue seus estudos de onde parou.
+          </p>
+        </div>
+        
+        {/* Visualizar Como (apenas para admins) */}
+        {isAdmin && (
+          <Card className="w-64">
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Visualizar como
+                </label>
+                <Select value={visualizarComo} onValueChange={setVisualizarComo}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="proprio">Próprio ({user?.role})</SelectItem>
+                    <SelectItem value="aluno">Aluno</SelectItem>
+                    <SelectItem value="professor">Professor</SelectItem>
+                    <SelectItem value="mentor">Mentor</SelectItem>
+                    <SelectItem value="administrativo">Administrativo</SelectItem>
+                    {user?.role === "master" && (
+                      <SelectItem value="master">Master</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                {visualizarComo !== "proprio" && (
+                  <p className="text-xs text-muted-foreground">
+                    Visualizando como: <span className="font-semibold">{visualizarComo}</span>
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Estatísticas Rápidas */}

@@ -978,3 +978,40 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Implementar visualização de histórico de metas concluídas
 
 ---
+
+
+---
+
+## 🎯 NOVAS FUNCIONALIDADES - PAINEL DE METAS AVANÇADO
+
+### Melhorias Visuais
+- [x] Meta concluída deve ficar acinzentada com opacidade 50%
+- [x] Painel de filtros deve ser colapsável
+- [x] Exibir nome do plano no topo da página "Meu plano de estudos"
+
+### Cronômetro e Controle de Tempo
+- [x] Implementar cronômetro regressivo dentro da meta específica
+- [x] Implementar barra de progresso proporcional ao tempo dedicado
+- [x] Implementar modal "Você finalizou os estudos?" ao término do tempo
+- [x] Implementar opções "Estudo finalizado" ou "Preciso de mais tempo"
+- [ ] Redistribuir meta automaticamente quando usuário precisar de mais tempo (backend)
+
+### Dashboard Administrativo
+- [x] Implementar opção "Visualizar como" para usuários administrativos
+- [x] Permitir trocar visualização entre perfis (aluno, professor, mentor, etc.)
+- [x] Implementar dropdown de seleção de perfil de visualização
+
+### Edição de Metas (Master)
+- [x] Adicionar botão "Editar meta" dentro do modal de meta (apenas para master)
+- [x] Criar painel de edição de meta pré-preenchido
+- [ ] Implementar salvamento de alterações na meta (backend)
+
+### Campo de Orientação de Estudos
+- [x] Criar campo "Orientação de estudos" com editor rich text HTML
+- [ ] Implementar detecção automática de links de vídeo (YouTube/Vimeo)
+- [ ] Implementar embed automático de vídeos
+- [x] Implementar funcionalidade de gravação de áudio (UI)
+- [ ] Implementar player de áudio para reprodução
+- [ ] Salvar áudios gravados no storage S3
+
+---

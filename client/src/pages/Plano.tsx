@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
-import { Calendar, ChevronLeft, ChevronRight, Clock, Filter, ArrowLeft } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Clock, Filter, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
-import { mockMetas, mockMatricula } from "@/lib/mockData";
+import { mockMetas, mockMatricula, mockPlanos } from "@/lib/mockData";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -16,9 +16,11 @@ export default function Plano() {
   const [metasConcluidas, setMetasConcluidas] = useState<Set<number>>(new Set());
   const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
   const [filtroDisciplina, setFiltroDisciplina] = useState<string | null>(null);
+  const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
 
   const matricula = mockMatricula;
   const metas = mockMetas;
+  const plano = mockPlanos.find(p => p.id === matricula.planoId);
 
   // Gera os dias da semana atual
   const getWeekDays = (weekOffset: number) => {
@@ -58,7 +60,7 @@ export default function Plano() {
 
   const getTipoColor = (tipo: string, concluida: boolean = false) => {
     if (concluida) {
-      return "bg-green-50 text-green-800 border-green-200 opacity-70";
+      return "bg-gray-100 text-gray-500 border-gray-300 opacity-50";
     }
     switch (tipo) {
       case "estudo":
@@ -109,6 +111,13 @@ export default function Plano() {
     }
   };
 
+  const handleNeedMoreTime = () => {
+    if (selectedMeta) {
+      toast.info("Meta reagendada para redistribuição automática");
+      // TODO: Implementar lógica de redistribuição
+    }
+  };
+
   // Filtragem
   const metasFiltradas = metas.filter(meta => {
     if (filtroTipo && meta.tipo !== filtroTipo) return false;
@@ -142,6 +151,11 @@ export default function Plano() {
       <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
+          {plano && (
+            <p className="text-lg font-semibold text-primary mt-1">
+              {plano.nome}
+            </p>
+          )}
           <p className="text-muted-foreground mt-2">
             Visualize e acompanhe suas metas semanais
           </p>
@@ -202,9 +216,31 @@ export default function Plano() {
       {/* Filtros */}
       <Card>
         <CardContent className="pt-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
+            >
+              {filtrosVisiveis ? (
+                <>
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                  Ocultar
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                  Mostrar
+                </>
+              )}
+            </Button>
+          </div>
+          {filtrosVisiveis && (
           <div className="flex items-center gap-2 flex-wrap">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium mr-2">Filtros:</span>
             
             <Button
               variant={filtroTipo === null ? "default" : "outline"}
@@ -238,6 +274,7 @@ export default function Plano() {
               </Button>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -352,6 +389,7 @@ export default function Plano() {
         open={!!selectedMeta}
         onClose={() => setSelectedMeta(null)}
         onConcluir={handleConcluirMeta}
+        onNeedMoreTime={handleNeedMoreTime}
       />
     </div>
   );
