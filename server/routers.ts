@@ -308,9 +308,17 @@ export const appRouter = router({
 
     // Redistribuir metas do aluno
     redistribuir: protectedProcedure
-      .mutation(async ({ ctx }) => {
+      .input(z.object({
+        horasDiarias: z.number().min(1).max(12).optional(),
+        diasSemana: z.array(z.number().min(0).max(6)).optional(),
+      }).optional())
+      .mutation(async ({ ctx, input }) => {
         const { redistribuirMetasAluno } = await import("./db");
-        return await redistribuirMetasAluno(ctx.user.id);
+        return await redistribuirMetasAluno(
+          ctx.user.id,
+          input?.horasDiarias,
+          input?.diasSemana
+        );
       }),
   }),
 

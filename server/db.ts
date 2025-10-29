@@ -2319,7 +2319,11 @@ export async function distribuirMetasPlano(
  * Redistribuir metas de um aluno que já tem plano atribuído
  * Útil para corrigir distribuição ou quando aluno altera configurações
  */
-export async function redistribuirMetasAluno(userId: number) {
+export async function redistribuirMetasAluno(
+  userId: number,
+  horasDiarias: number = 4,
+  diasSemana: number[] = [1, 2, 3, 4, 5]
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -2347,8 +2351,8 @@ export async function redistribuirMetasAluno(userId: number) {
         )
       );
 
-    // Redistribuir metas
-    await distribuirMetasPlano(userId, planoId, dataInicio, 4, [1, 2, 3, 4, 5]);
+    // Redistribuir metas com configurações personalizadas
+    await distribuirMetasPlano(userId, planoId, dataInicio, horasDiarias, diasSemana);
 
     return { success: true };
   } catch (error) {

@@ -2179,3 +2179,33 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - Títulos completos ou com tooltip
   - Layout responsivo otimizado
 - **Status:** ⏳ A implementar
+
+
+### Bug: Redistribuição de metas não está funcionando
+- **Data:** 29/10/2025
+- **Descrição:** Ao clicar em "Salvar Configurações" no ConfigurarCronograma, toast aparece mas metas não são redistribuídas
+- **Impacto:** Aluno não consegue reorganizar metas para preencher tempo disponível
+- **Possíveis causas:**
+  - Função redistribuirMetasAluno pode ter bug
+  - Registros de progressoMetas não estão sendo deletados corretamente
+  - Distribuição não está respeitando datas corretas
+- **Status:** 🔍 Investigando
+
+### Bug: Anotações de metas não aparecem no dashboard
+- **Data:** 29/10/2025
+- **Descrição:** Anotações salvas no MetaModal não aparecem na página "Anotações de Meta" do dashboard
+- **Impacto:** Aluno perde anotações importantes
+- **Causa provável:** Página "Anotações de Meta" não existe ou não está buscando dados corretos
+- **Status:** ⏳ A investigar
+
+### Problema: Cards de metas truncados em telas menores (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Títulos truncados ("Pr f...", "Cr c...", "Di e..."), difícil de ler
+- **Impacto:** UX ruim em dispositivos móveis
+- **Solução implementada:**
+  - ✅ Layout responsivo: 1 coluna (mobile) → 2 (sm) → 3 (md) → 5 (lg) → 7 (xl)
+  - ✅ Título completo sem truncamento (removido line-clamp-2)
+  - ✅ Cards maiores: padding p-4, altura mínima 140px
+  - ✅ Texto maior: text-base para títulos, text-sm para disciplinas
+  - ✅ Tooltip com título completo ao passar o mouse
+- **Status:** ✅ Corrigido

@@ -465,7 +465,7 @@ export default function Plano() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-4">
             {getDaysOfWeek().map((day, index) => {
               const dayMetas = getMetasForDay(day);
               const dateKey = formatDateKey(day);
@@ -482,7 +482,7 @@ export default function Plano() {
                     <div className="text-xs">{formatDate(day)}</div>
                   </div>
 
-                  <div className="space-y-2 min-h-[200px]">
+                  <div className="space-y-3 min-h-[250px]">
                     {dayMetas.length === 0 ? (
                       <div className="text-center text-sm text-muted-foreground p-4 border-2 border-dashed rounded-lg">
                         Sem metas
@@ -491,7 +491,7 @@ export default function Plano() {
                       dayMetas.map((meta) => (
                         <div
                           key={meta.id}
-                          className={`relative p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] group ${
+                          className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] group min-h-[140px] ${
                             meta.concluida ? "opacity-60" : ""
                           }`}
                           style={{
@@ -516,10 +516,10 @@ export default function Plano() {
 
                           {/* Conteúdo do Box */}
                           <div className="pr-12">
-                            <div className="font-bold text-sm line-clamp-2 mb-1" style={{ fontSize: '0.875rem' }}>
+                            <div className="font-bold text-base mb-2 leading-tight" title={meta.assunto}>
                               {meta.assunto}
                             </div>
-                            <div className="text-xs text-muted-foreground mb-2 font-medium">
+                            <div className="text-sm text-muted-foreground mb-3 font-medium">
                               {meta.disciplina}
                             </div>
                             <div className="flex items-center gap-2 mb-2">
@@ -706,8 +706,22 @@ export default function Plano() {
         onClose={() => setModalConfigurarCronograma(false)}
         onSave={(config) => {
           console.log("Nova configuração:", config);
-          // Redistribuir metas com base na nova configuração
-          redistribuirMetas.mutate();
+          
+          // Converter dias da semana para array de números (0=domingo, 6=sábado)
+          const diasSemana: number[] = [];
+          if (config.diasSemana.domingo) diasSemana.push(0);
+          if (config.diasSemana.segunda) diasSemana.push(1);
+          if (config.diasSemana.terca) diasSemana.push(2);
+          if (config.diasSemana.quarta) diasSemana.push(3);
+          if (config.diasSemana.quinta) diasSemana.push(4);
+          if (config.diasSemana.sexta) diasSemana.push(5);
+          if (config.diasSemana.sabado) diasSemana.push(6);
+          
+          // Redistribuir metas com configurações personalizadas
+          redistribuirMetas.mutate({
+            horasDiarias: config.horasDiarias,
+            diasSemana: diasSemana,
+          });
         }}
       />
     </div>

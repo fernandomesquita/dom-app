@@ -200,48 +200,28 @@ export default function ConfigurarCronograma({ open, onClose, onSave, configAtua
             </div>
           </div>
 
-          {/* Datas de Início e Término */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Data de Início</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {config.dataInicio ? format(config.dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={config.dataInicio}
-                    onSelect={(date) => setConfig({ ...config, dataInicio: date })}
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-base font-semibold">Data de Término (Opcional)</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {config.dataTermino ? format(config.dataTermino, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={config.dataTermino}
-                    onSelect={(date) => setConfig({ ...config, dataTermino: date })}
-                    locale={ptBR}
-                    disabled={(date) => config.dataInicio ? date < config.dataInicio : false}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          {/* Data de Início */}
+          <div className="space-y-2">
+            <Label className="text-base font-semibold">Data de Início</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-full justify-start text-left">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {config.dataInicio ? format(config.dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Selecione"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={config.dataInicio}
+                  onSelect={(date) => setConfig({ ...config, dataInicio: date })}
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+            <p className="text-xs text-muted-foreground">
+              A data de término será calculada automaticamente com base na duração do plano
+            </p>
           </div>
 
           {/* Pausas/Férias */}
