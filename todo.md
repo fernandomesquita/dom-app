@@ -1317,9 +1317,9 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [x] Salvar ponto de parada do vídeo
 - [ ] Anotações por aula com timestamps
 - [ ] Player de vídeo com controles avançados
-- [ ] Backend: Salvar respostas de questões
-- [ ] Histórico completo de respostas
-- [ ] Estatísticas por disciplina/assunto
+- [x] Backend: Salvar respostas de questões
+- [x] Histórico completo de respostas
+- [x] Estatísticas por disciplina/assunto
 - [ ] Modo simulado de questões
 - [ ] Relatório de desempenho detalhado
 - [ ] Dashboard com dados reais do backend

@@ -12,6 +12,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { mockQuestoes, type Questao } from "@/lib/mockQuestoes";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 export default function Questoes() {
   const [, setLocation] = useLocation();
@@ -26,13 +27,16 @@ export default function Questoes() {
   const [filtroDificuldade, setFiltroDificuldade] = useState("todas");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
 
-  const [estatisticas] = useState({
-    totalRespondidas: 156,
-    acertos: 114,
-    erros: 42,
-    taxaAcerto: 73,
-    sequenciaAcertos: 5,
-  });
+  // Buscar estatísticas reais do backend
+  const { data: estatisticasData } = trpc.questoes.estatisticas.useQuery();
+  const estatisticas = estatisticasData || {
+    total: 0,
+    corretas: 0,
+    taxaAcerto: 0,
+  };
+  
+  // Mutation para salvar resposta
+  const responderMutation = trpc.questoes.responder.useMutation();
 
   const disciplinasUnicas = Array.from(new Set(mockQuestoes.map(q => q.disciplina)));
   const bancasUnicas = Array.from(new Set(mockQuestoes.map(q => q.banca)));
@@ -46,7 +50,7 @@ export default function Questoes() {
     return buscaMatch && disciplinaMatch && bancaMatch && dificuldadeMatch;
   });
 
-  const handleResponder = () => {
+  const handleResponder = async () => {
     if (!respostaSelecionada || !questaoAtual) {
       toast.error("Selecione uma alternativa");
       return;
@@ -56,10 +60,20 @@ export default function Questoes() {
     setAcertou(acertouQuestao);
     setRespondida(true);
     
-    if (acertouQuestao) {
-      toast.success("Parabéns! Resposta correta! 🎉");
-    } else {
-      toast.error("Resposta incorreta. Veja a explicação abaixo.");
+    try {
+      await responderMutation.mutateAsync({
+        questaoId: questaoAtual.id,
+        alternativaSelecionada: respostaSelecionada,
+        correta: acertouQuestao,
+      });
+      
+      if (acertouQuestao) {
+        toast.success("Parabéns! Resposta correta! 🎉");
+      } else {
+        toast.error("Resposta incorreta. Veja a explicação abaixo.");
+      }
+    } catch (error) {
+      toast.error("Erro ao salvar resposta");
     }
   };
 
@@ -283,8 +297,8 @@ export default function Questoes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{estatisticas.totalRespondidas}</div>
-            <Progress value={(estatisticas.totalRespondidas / 500) * 100} className="mt-2" />
+            <div className="text-2xl font-bold">{estatisticas.total}</div>
+            <Progress value={(estatisticas.total / 500) * 100} className="mt-2" />
           </CardContent>
         </Card>
 
@@ -298,7 +312,7 @@ export default function Questoes() {
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{estatisticas.taxaAcerto}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {estatisticas.acertos} acertos / {estatisticas.erros} erros
+              {estatisticas.corretas} acertos / {estatisticas.total - estatisticas.corretas} erros
             </p>
           </CardContent>
         </Card>
@@ -311,7 +325,7 @@ export default function Questoes() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{estatisticas.sequenciaAcertos}</div>
+            <div className="text-2xl font-bold text-blue-600">-</div>
             <p className="text-xs text-muted-foreground mt-1">acertos seguidos</p>
           </CardContent>
         </Card>
