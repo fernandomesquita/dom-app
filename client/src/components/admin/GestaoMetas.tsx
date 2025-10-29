@@ -52,6 +52,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     tipo: "estudo" as "estudo" | "revisao" | "questoes",
     duracao: 60,
     prioridade: 3,
+    incidencia: "media" as "baixa" | "media" | "alta",
     dicaEstudo: "",
     orientacaoEstudos: "",
   });
@@ -137,6 +138,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       tipo: "estudo",
       duracao: 60,
       prioridade: 3,
+      incidencia: "media",
       dicaEstudo: "",
       orientacaoEstudos: "",
     });
@@ -156,6 +158,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       tipo: meta.tipo,
       duracao: meta.duracao,
       prioridade: meta.prioridade,
+      incidencia: meta.incidencia || "media",
       dicaEstudo: meta.dicaEstudo || "",
       orientacaoEstudos: meta.orientacaoEstudos || "",
     });
@@ -385,7 +388,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="duracao">Duração (minutos)</Label>
                 <Input
@@ -411,6 +414,25 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
                     setFormData({ ...formData, prioridade: parseInt(e.target.value) || 3 })
                   }
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="incidencia">Incidência</Label>
+                <Select
+                  value={formData.incidencia}
+                  onValueChange={(value: "baixa" | "media" | "alta") =>
+                    setFormData({ ...formData, incidencia: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="baixa">🟢 Baixa</SelectItem>
+                    <SelectItem value="media">🟡 Média</SelectItem>
+                    <SelectItem value="alta">🔴 Alta</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

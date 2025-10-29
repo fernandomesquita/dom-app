@@ -2102,3 +2102,19 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Implementar sistema de cache com Redis
 
 ---
+
+
+---
+
+## 🐛 BUGS CORRIGIDOS
+
+### Bug: Edição de metas não salvava duração e incidência
+- **Data:** 29/10/2025
+- **Descrição:** Ao editar uma meta individual, as alterações nos campos duração e incidência não eram salvas no banco de dados
+- **Causa:** Campo `incidencia` não estava incluído no formData do componente GestaoMetas
+- **Solução:** 
+  - Adicionado campo `incidencia` ao estado formData
+  - Adicionado `incidencia` ao carregar meta para edição
+  - Criado campo visual de seleção de incidência no formulário (Baixa/Média/Alta)
+  - Adicionado `incidencia` ao resetForm
+- **Status:** ✅ Corrigido
