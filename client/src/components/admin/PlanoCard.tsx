@@ -141,20 +141,20 @@ export default function PlanoCard({ plano, onEditar, onMetas, onExcluir, onToggl
           )}
         </div>
 
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1" onClick={onEditar}>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={onEditar}>
             <Edit className="h-3 w-3 mr-1" />
             Editar
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={onMetas}>
+          <Button variant="outline" size="sm" onClick={onMetas}>
             <Eye className="h-3 w-3 mr-1" />
             Metas
           </Button>
-          <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowEngajamento(true)}>
+          <Button variant="outline" size="sm" onClick={() => setShowEngajamento(true)}>
             <BarChart3 className="h-3 w-3 mr-1" />
             Engajamento
           </Button>
-          <Button variant="outline" size="sm" onClick={onExcluir}>
+          <Button variant="outline" size="sm" onClick={onExcluir} className="ml-auto">
             <Trash2 className="h-3 w-3 text-destructive" />
           </Button>
         </div>

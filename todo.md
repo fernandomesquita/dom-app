@@ -1749,3 +1749,14 @@ Botão "Baixar Template" visível e funcional na página de gestão de planos. D
 
 ### Status: ✅ COMPLETO
 Índice de engajamento totalmente funcional com gráfico de barras, alerta de maior abandono e tabela detalhada. Administradores podem ver onde os alunos estão abandonando cada plano.
+
+
+## 🎨 AJUSTE DE LAYOUT DOS BOTÕES DOS PLANOS
+- [x] Ajustar distribuição dos botões no PlanoCard
+- [x] Remover flex-1 para botões não ocuparem toda a largura
+- [x] Adicionar flex-wrap para permitir quebra de linha se necessário
+- [x] Botão de excluir alinhado à direita com ml-auto
+- [x] Melhorar espaçamento entre botões
+
+### Status: ✅ COMPLETO
+Botões agora têm largura automática baseada no conteúdo, melhor distribuição e botão de excluir alinhado à direita.
