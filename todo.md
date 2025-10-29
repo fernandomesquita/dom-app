@@ -1864,14 +1864,19 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Modo responsivo otimizado (horizontal mobile / vertical desktop)
 
 ### Controle de Funcionalidades (Master Admin)
-- [ ] Criar toggle switches no painel admin para habilitar/desabilitar funcionalidades
-- [ ] Implementar controle de Questões (habilitar/desabilitar)
-- [ ] Implementar controle de Fórum (habilitar/desabilitar)
-- [ ] Implementar controle de Materiais (habilitar/desabilitar)
-- [ ] Criar tabela no banco para armazenar configurações de funcionalidades
-- [ ] Aplicar estilo cinza para funcionalidades desabilitadas no admin
-- [ ] Ocultar funcionalidades desabilitadas no painel do aluno
-- [ ] Atualizar menu lateral do aluno dinamicamente
+- [x] Criar toggle switches no painel admin para habilitar/desabilitar funcionalidades
+- [x] Implementar controle de Questões (habilitar/desabilitar)
+- [x] Implementar controle de Fórum (habilitar/desabilitar)
+- [x] Implementar controle de Materiais (habilitar/desabilitar)
+- [x] Criar tabela config_funcionalidades no banco de dados
+- [x] Criar componente ControleFuncionalidades com UI completa
+- [x] Aplicar estilo cinza (bg-gray-50, opacity-60) para desabilitadas
+- [x] Badges de status (Habilitado/Desabilitado) com cores
+- [x] Card informativo sobre impacto das alterações
+- [x] APIs backend (getConfigFuncionalidades, atualizarConfigFuncionalidades)
+- [x] Integrar na tab Configurações do painel Admin
+- [ ] Ocultar funcionalidades desabilitadas no menu lateral do aluno
+- [ ] Aplicar filtro de funcionalidades nas rotas do frontend
 
 ### Melhorias na Página de Questões
 - [x] Tornar toda área da alternativa clicável (não só o radio button)

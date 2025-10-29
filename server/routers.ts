@@ -403,5 +403,30 @@ export const appRouter = router({
       return await getEstatisticasDashboard(ctx.user.id);
     }),
   }),
+
+  admin: router({
+    getConfigFuncionalidades: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user || ctx.user.role !== "master") {
+        throw new Error("Unauthorized");
+      }
+      const { getConfigFuncionalidades } = await import("./db");
+      return await getConfigFuncionalidades();
+    }),
+    
+    atualizarConfigFuncionalidades: protectedProcedure
+      .input((val: unknown) => {
+        if (typeof val === "object" && val !== null) {
+          return val as { questoesHabilitado?: number; forumHabilitado?: number; materiaisHabilitado?: number };
+        }
+        throw new Error("Invalid input");
+      })
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || ctx.user.role !== "master") {
+          throw new Error("Unauthorized");
+        }
+        const { atualizarConfigFuncionalidades } = await import("./db");
+        return await atualizarConfigFuncionalidades(input);
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

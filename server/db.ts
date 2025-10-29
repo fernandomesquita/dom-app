@@ -16,7 +16,8 @@ import {
   avisos, InsertAviso,
   avisosDispensados,
   conquistas,
-  userConquistas
+  userConquistas,
+  configFuncionalidades
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1389,4 +1390,57 @@ export async function marcarNotificacaoForumLida(userId: number, respostaId: num
     console.error("[marcarNotificacaoForumLida] Erro:", error);
     return { success: false };
   }
+}
+
+// ========== CONFIGURAÇÕES DE FUNCIONALIDADES ==========
+
+export async function getConfigFuncionalidades() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(configFuncionalidades).limit(1);
+  
+  // Se não existir configuração, criar uma padrão
+  if (result.length === 0) {
+    await db.insert(configFuncionalidades).values({
+      questoesHabilitado: 1,
+      forumHabilitado: 1,
+      materiaisHabilitado: 1,
+    });
+    return {
+      id: 1,
+      questoesHabilitado: 1,
+      forumHabilitado: 1,
+      materiaisHabilitado: 1,
+      updatedAt: new Date(),
+    };
+  }
+  
+  return result[0];
+}
+
+export async function atualizarConfigFuncionalidades(updates: {
+  questoesHabilitado?: number;
+  forumHabilitado?: number;
+  materiaisHabilitado?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Garantir que existe um registro
+  const existing = await db.select().from(configFuncionalidades).limit(1);
+  
+  if (existing.length === 0) {
+    await db.insert(configFuncionalidades).values({
+      questoesHabilitado: updates.questoesHabilitado ?? 1,
+      forumHabilitado: updates.forumHabilitado ?? 1,
+      materiaisHabilitado: updates.materiaisHabilitado ?? 1,
+    });
+  } else {
+    await db.update(configFuncionalidades)
+      .set(updates)
+      .where(eq(configFuncionalidades.id, existing[0].id));
+  }
+
+  return await getConfigFuncionalidades();
 }

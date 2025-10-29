@@ -24,6 +24,7 @@ import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 import GestaoPlanos from "@/components/admin/GestaoPlanos";
 import CentroComando from "@/components/admin/CentroComando";
+import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -294,23 +295,15 @@ export default function Admin() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">Cores e Temas</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Definir cores padrão das metas e temas visuais da aplicação
-                    </p>
-                    <Button variant="outline" size="sm">
-                      Configurar Cores
-                    </Button>
-                  </div>
+                  <ControleFuncionalidades />
                   
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold mb-2">DMR e Segurança</h4>
+                  <div className="p-4 border rounded-lg mt-4">
+                    <h4 className="font-semibold mb-2">DMR e Seguran\u00e7a</h4>
                     <p className="text-sm text-muted-foreground mb-3">
-                      Gerenciar configurações de DMR, validação de CPF e controle de logs
+                      Gerenciar configura\u00e7\u00f5es de DMR, valida\u00e7\u00e3o de CPF e controle de logs
                     </p>
                     <Button variant="outline" size="sm">
-                      Configurar Segurança
+                      Configurar Seguran\u00e7a
                     </Button>
                   </div>
                   
