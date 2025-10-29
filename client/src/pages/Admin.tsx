@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
+import GestaoPlanos from "@/components/admin/GestaoPlanos";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -200,73 +201,7 @@ export default function Admin() {
         {/* Tab: Gestão de Planos (Master, Mentor, Administrativo) */}
         {availableTabs.planos && (
           <TabsContent value="planos" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Gestão de Planos de Estudo</CardTitle>
-                    <CardDescription>
-                      {isMaster && "Criar, editar e excluir planos. Importar via Excel/CSV ou gerar automaticamente a partir de editais"}
-                      {isMentor && "Criar planos próprios, configurar ciclo de estudos e importar editais"}
-                      {isAdministrativo && "Importar e distribuir planos prontos, carregar planilhas com metas"}
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    {(isMaster || isMentor) && (
-                      <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                        <Target className="h-4 w-4 mr-2" />
-                        Novo Plano
-                      </Button>
-                    )}
-                    {(isMaster || isAdministrativo) && (
-                      <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { nome: "TJ-SP 2025", concurso: "Tribunal de Justiça de SP", alunos: 45, metas: 320 },
-                    { nome: "OAB XXXIX", concurso: "Exame da Ordem", alunos: 78, metas: 180 },
-                    { nome: "Magistratura Federal", concurso: "Juiz Federal", alunos: 23, metas: 450 },
-                    { nome: "MPF 2025", concurso: "Ministério Público Federal", alunos: 34, metas: 380 },
-                  ].map((plano, index) => (
-                    <Card key={index} className="hover:shadow-lg transition-shadow">
-                      <CardHeader>
-                        <CardTitle className="text-lg">{plano.nome}</CardTitle>
-                        <CardDescription>{plano.concurso}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <div className="text-2xl font-bold text-primary">{plano.alunos}</div>
-                            <div className="text-xs text-muted-foreground">Alunos matriculados</div>
-                          </div>
-                          <div>
-                            <div className="text-2xl font-bold text-primary">{plano.metas}</div>
-                            <div className="text-xs text-muted-foreground">Metas criadas</div>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          {(isMaster || isMentor) && (
-                            <Button variant="outline" size="sm" className="flex-1">
-                              Editar
-                            </Button>
-                          )}
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Ver Metas
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <GestaoPlanos />
           </TabsContent>
         )}
 

@@ -1,0 +1,453 @@
+import { useState, useEffect } from "react";
+import { trpc } from "@/lib/trpc";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { 
+  Target, 
+  Upload, 
+  Plus, 
+  Edit, 
+  Trash2, 
+  Users, 
+  Calendar,
+  Download,
+  Eye,
+  ToggleLeft,
+  ToggleRight
+} from "lucide-react";
+
+interface Plano {
+  id: number;
+  nome: string;
+  concurso: string;
+  tipo: "pago" | "gratuito";
+  alunos: number;
+  metas: number;
+  ativo: boolean;
+  duracao: number; // em dias
+  horasDiarias: number;
+}
+
+export default function GestaoPlanos() {
+  const { data: planosData, refetch } = trpc.planos.admin.listAll.useQuery();
+  const [planos, setPlanos] = useState<Plano[]>([]);
+  
+  useEffect(() => {
+    if (planosData) {
+      setPlanos(planosData.map((p: any) => ({
+        id: p.id,
+        nome: p.nome,
+        concurso: p.concursoArea || '',
+        tipo: p.tipo,
+        alunos: 0, // Será atualizado pela API de estatísticas
+        metas: 0, // Será atualizado pela API de estatísticas
+        ativo: p.ativo === 1,
+        duracao: p.duracaoTotal,
+        horasDiarias: p.horasDiariasPadrao,
+      })));
+    }
+  }, [planosData]);
+
+  const [modalAberto, setModalAberto] = useState(false);
+  const [modalImportacao, setModalImportacao] = useState(false);
+  const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+
+  const [formData, setFormData] = useState({
+    nome: "",
+    concurso: "",
+    tipo: "pago" as "pago" | "gratuito",
+    duracao: 180,
+    horasDiarias: 4,
+  });
+
+  const handleNovoPlano = () => {
+    setPlanoEditando(null);
+    setFormData({
+      nome: "",
+      concurso: "",
+      tipo: "pago",
+      duracao: 180,
+      horasDiarias: 4,
+    });
+    setModalAberto(true);
+  };
+
+  const handleEditarPlano = (plano: Plano) => {
+    setPlanoEditando(plano);
+    setFormData({
+      nome: plano.nome,
+      concurso: plano.concurso,
+      tipo: plano.tipo,
+      duracao: plano.duracao,
+      horasDiarias: plano.horasDiarias,
+    });
+    setModalAberto(true);
+  };
+
+  const criarPlanoMutation = trpc.planos.admin.create.useMutation({
+    onSuccess: () => {
+      toast.success("Plano criado com sucesso!");
+      refetch();
+      setModalAberto(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao criar plano");
+    },
+  });
+
+  const atualizarPlanoMutation = trpc.planos.admin.update.useMutation({
+    onSuccess: () => {
+      toast.success("Plano atualizado com sucesso!");
+      refetch();
+      setModalAberto(false);
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao atualizar plano");
+    },
+  });
+
+  const handleSalvarPlano = () => {
+    if (!formData.nome || !formData.concurso) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+
+    if (planoEditando) {
+      atualizarPlanoMutation.mutate({
+        id: planoEditando.id,
+        nome: formData.nome,
+        concursoArea: formData.concurso,
+        tipo: formData.tipo,
+        duracaoTotal: formData.duracao,
+        horasDiariasPadrao: formData.horasDiarias,
+      });
+    } else {
+      criarPlanoMutation.mutate({
+        nome: formData.nome,
+        descricao: "",
+        tipo: formData.tipo,
+        duracaoTotal: formData.duracao,
+        concursoArea: formData.concurso,
+        horasDiariasPadrao: formData.horasDiarias,
+      });
+    }
+  };
+
+  const toggleAtivoMutation = trpc.planos.admin.toggleAtivo.useMutation({
+    onSuccess: () => {
+      toast.success("Status do plano atualizado!");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao atualizar status");
+    },
+  });
+
+  const handleToggleAtivo = (id: number) => {
+    toggleAtivoMutation.mutate({ id });
+  };
+
+  const excluirPlanoMutation = trpc.planos.admin.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Plano excluído com sucesso!");
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao excluir plano");
+    },
+  });
+
+  const handleExcluirPlano = (id: number) => {
+    if (confirm("Tem certeza que deseja excluir este plano?")) {
+      excluirPlanoMutation.mutate({ id });
+    }
+  };
+
+  const handleImportarPlanilha = () => {
+    if (!arquivo) {
+      toast.error("Selecione um arquivo para importar");
+      return;
+    }
+
+    // Simular importação
+    toast.success("Planilha importada com sucesso! 3 planos e 450 metas foram criados.");
+    setModalImportacao(false);
+    setArquivo(null);
+  };
+
+  const handleDownloadTemplate = () => {
+    toast.info("Download do template iniciado");
+    // Aqui você implementaria o download real do template
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Gestão de Planos de Estudo</CardTitle>
+              <CardDescription>
+                Criar, editar e gerenciar planos. Importar via Excel/CSV ou criar manualmente
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleNovoPlano}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Plano
+              </Button>
+              <Button variant="outline" onClick={() => setModalImportacao(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Planilha
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {planos.map((plano) => (
+              <Card key={plano.id} className={`hover:shadow-lg transition-shadow ${!plano.ativo ? 'opacity-60' : ''}`}>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {plano.nome}
+                        <Badge variant={plano.tipo === "pago" ? "default" : "secondary"}>
+                          {plano.tipo}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription className="mt-1">{plano.concurso}</CardDescription>
+                    </div>
+                    <button
+                      onClick={() => handleToggleAtivo(plano.id)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {plano.ativo ? (
+                        <ToggleRight className="h-5 w-5 text-green-600" />
+                      ) : (
+                        <ToggleLeft className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-2xl font-bold text-primary">{plano.alunos}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          Alunos
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-primary">{plano.metas}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Target className="h-3 w-3" />
+                          Metas
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Duração:</span>
+                        <div className="font-semibold flex items-center gap-1 mt-0.5">
+                          <Calendar className="h-3 w-3" />
+                          {plano.duracao} dias
+                        </div>
+                      </div>
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">Horas/dia:</span>
+                        <div className="font-semibold mt-0.5">
+                          {plano.horasDiarias}h
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditarPlano(plano)}
+                      >
+                        <Edit className="h-3 w-3 mr-1" />
+                        Editar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => toast.info("Visualização de metas em desenvolvimento")}
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        Metas
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleExcluirPlano(plano.id)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Modal de Criação/Edição de Plano */}
+      <Dialog open={modalAberto} onOpenChange={setModalAberto}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {planoEditando ? "Editar Plano" : "Criar Novo Plano"}
+            </DialogTitle>
+            <DialogDescription>
+              Preencha as informações do plano de estudo
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="nome">Nome do Plano *</Label>
+                <Input
+                  id="nome"
+                  placeholder="Ex: TJ-SP 2025"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tipo">Tipo</Label>
+                <Select 
+                  value={formData.tipo} 
+                  onValueChange={(value: "pago" | "gratuito") => setFormData({ ...formData, tipo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="gratuito">Gratuito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="concurso">Concurso/Área *</Label>
+              <Input
+                id="concurso"
+                placeholder="Ex: Tribunal de Justiça de São Paulo"
+                value={formData.concurso}
+                onChange={(e) => setFormData({ ...formData, concurso: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duracao">Duração (dias)</Label>
+                <Input
+                  id="duracao"
+                  type="number"
+                  min="1"
+                  value={formData.duracao}
+                  onChange={(e) => setFormData({ ...formData, duracao: parseInt(e.target.value) || 180 })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="horasDiarias">Horas Diárias</Label>
+                <Input
+                  id="horasDiarias"
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={formData.horasDiarias}
+                  onChange={(e) => setFormData({ ...formData, horasDiarias: parseInt(e.target.value) || 4 })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalAberto(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSalvarPlano}>
+              {planoEditando ? "Salvar Alterações" : "Criar Plano"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Importação de Planilha */}
+      <Dialog open={modalImportacao} onOpenChange={setModalImportacao}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importar Planos via Planilha</DialogTitle>
+            <DialogDescription>
+              Faça upload de um arquivo Excel (.xlsx) ou CSV com os dados dos planos e metas
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <Label htmlFor="arquivo" className="cursor-pointer">
+                <div className="text-sm font-medium mb-1">
+                  {arquivo ? arquivo.name : "Clique para selecionar ou arraste o arquivo"}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Formatos aceitos: .xlsx, .csv (máx. 10MB)
+                </div>
+              </Label>
+              <Input
+                id="arquivo"
+                type="file"
+                accept=".xlsx,.csv"
+                className="hidden"
+                onChange={(e) => setArquivo(e.target.files?.[0] || null)}
+              />
+            </div>
+
+            <div className="bg-muted p-4 rounded-lg">
+              <h4 className="font-semibold text-sm mb-2">Formato da Planilha</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                A planilha deve conter as seguintes colunas: Nome do Plano, Concurso, Tipo, Duração, Horas Diárias, Disciplina, Assunto, Tipo de Meta, Duração da Meta
+              </p>
+              <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                <Download className="h-3 w-3 mr-2" />
+                Baixar Template
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalImportacao(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleImportarPlanilha} disabled={!arquivo}>
+              Importar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

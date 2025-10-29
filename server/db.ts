@@ -1,4 +1,4 @@
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, and, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -961,4 +961,148 @@ export async function getEstatisticasDashboard(userId: number) {
     taxaAcerto,
     sequenciaDias: diasUnicos,
   };
+}
+
+
+// ===== GESTÃO DE PLANOS (ADMIN) =====
+export async function getAllPlanos() {
+  const db = await getDb();
+  if (!db) return [];
+  const result = await db.select().from(planos);
+  return result;
+}
+
+export async function updatePlano(id: number, data: Partial<InsertPlano>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(planos).set(data).where(eq(planos.id, id));
+  return { success: true };
+}
+
+export async function deletePlano(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Verificar se há matrículas ativas
+  const matriculasAtivas = await db.select().from(matriculas)
+    .where(and(eq(matriculas.planoId, id), eq(matriculas.ativo, 1)));
+  
+  if (matriculasAtivas.length > 0) {
+    throw new Error("Não é possível excluir um plano com matrículas ativas");
+  }
+  
+  // Deletar metas relacionadas
+  await db.delete(metas).where(eq(metas.planoId, id));
+  
+  // Deletar plano
+  await db.delete(planos).where(eq(planos.id, id));
+  
+  return { success: true };
+}
+
+export async function togglePlanoAtivo(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const plano = await getPlanoById(id);
+  if (!plano) throw new Error("Plano não encontrado");
+  
+  await db.update(planos).set({ ativo: plano.ativo === 1 ? 0 : 1 }).where(eq(planos.id, id));
+  
+  return { success: true, ativo: plano.ativo === 1 ? 0 : 1 };
+}
+
+export async function getPlanoComEstatisticas(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  
+  const plano = await getPlanoById(id);
+  if (!plano) return undefined;
+  
+  // Contar matrículas
+  const matriculasResult = await db.select({ count: sql<number>`count(*)` })
+    .from(matriculas)
+    .where(and(eq(matriculas.planoId, id), eq(matriculas.ativo, 1)));
+  
+  // Contar metas
+  const metasResult = await db.select({ count: sql<number>`count(*)` })
+    .from(metas)
+    .where(eq(metas.planoId, id));
+  
+  return {
+    ...plano,
+    totalAlunos: Number(matriculasResult[0]?.count) || 0,
+    totalMetas: Number(metasResult[0]?.count) || 0,
+  };
+}
+
+export async function importarPlanosDeExcel(dados: any[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const planosImportados: number[] = [];
+  const metasImportadas: number[] = [];
+  
+  try {
+    // Agrupar dados por plano
+    const planosPorNome = new Map<string, any[]>();
+    
+    for (const linha of dados) {
+      const nomePlano = linha.nomePlano || linha["Nome do Plano"];
+      if (!nomePlano) continue;
+      
+      if (!planosPorNome.has(nomePlano)) {
+        planosPorNome.set(nomePlano, []);
+      }
+      planosPorNome.get(nomePlano)!.push(linha);
+    }
+    
+    // Criar planos e metas
+    for (const [nomePlano, linhas] of Array.from(planosPorNome.entries())) {
+      const primeiraLinha = linhas[0];
+      
+      // Criar plano
+      const novoPlano: InsertPlano = {
+        nome: nomePlano,
+        descricao: primeiraLinha.descricao || primeiraLinha["Descrição"] || "",
+        tipo: (primeiraLinha.tipo || primeiraLinha["Tipo"] || "pago") as "pago" | "gratuito",
+        duracaoTotal: parseInt(primeiraLinha.duracao || primeiraLinha["Duração"] || "180"),
+        concursoArea: primeiraLinha.concurso || primeiraLinha["Concurso"] || "",
+        horasDiariasPadrao: parseInt(primeiraLinha.horasDiarias || primeiraLinha["Horas Diárias"] || "4"),
+      };
+      
+      const resultPlano = await db.insert(planos).values(novoPlano);
+      const planoId = Number((resultPlano as any).insertId);
+      planosImportados.push(planoId);
+      
+      // Criar metas
+      let ordem = 1;
+      for (const linha of linhas) {
+        if (!linha.disciplina && !linha["Disciplina"]) continue;
+        
+        const novaMeta: InsertMeta = {
+          planoId: planoId,
+          disciplina: linha.disciplina || linha["Disciplina"] || "",
+          assunto: linha.assunto || linha["Assunto"] || "",
+          tipo: (linha.tipoMeta || linha["Tipo de Meta"] || "estudo") as "estudo" | "revisao" | "questoes",
+          duracao: parseInt(linha.duracaoMeta || linha["Duração da Meta"] || "60"),
+          prioridade: parseInt(linha.prioridade || linha["Prioridade"] || "3"),
+          ordem: ordem++,
+        };
+        
+        const resultMeta = await db.insert(metas).values(novaMeta);
+        metasImportadas.push(Number((resultMeta as any).insertId));
+      }
+    }
+    
+    return {
+      success: true,
+      planosImportados: planosImportados.length,
+      metasImportadas: metasImportadas.length,
+      planoIds: planosImportados,
+    };
+  } catch (error) {
+    console.error("[Database] Erro ao importar planilha:", error);
+    throw error;
+  }
 }

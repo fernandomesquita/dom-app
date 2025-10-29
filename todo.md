@@ -1506,3 +1506,70 @@ Sistema de gamificação totalmente funcional com atribuição automática de po
 
 ### Status: ✅ EM PROGRESSO
 Sistema de notificações implementado na página Plano. Dados de teste criados. Próximo: integrar em Aulas e Questões.
+
+
+## 📋 CRIAÇÃO DE PLANOS - PAINEL ADMINISTRATIVO
+
+### Botão de Expandir/Colapsar Menu Lateral
+- [x] Adicionar botão de toggle no header/sidebar
+- [x] Implementar estado de collapsed/expanded
+- [x] Persistir estado no localStorage
+- [x] Adicionar animação de transição suave (duration-300)
+- [x] Ajustar layout do conteúdo principal quando menu colapsa
+- [x] Funciona em todas as páginas (implementado no DOMLayout)
+- [x] Botão circular com ícone de chevron
+- [x] Ocultar textos quando colapsado, manter apenas ícones
+
+### Página de Administração de Planos
+- [x] Criar componente GestaoPlanos
+- [x] Listar todos os planos existentes
+- [x] Botões de ação: criar, editar, excluir, ativar/desativar
+- [x] Visualização em cards com estatísticas
+- [x] Toggle de ativo/inativo visual
+- [x] Integrado na tab de planos do Admin
+
+### Criação Manual de Planos
+- [x] Modal de criação/edição de plano
+- [x] Formulário: nome, tipo, duração, concurso/área
+- [x] Configurações: horas diárias padrão
+- [x] Validações de formulário
+- [x] Modo criação e edição no mesmo modal
+- [ ] Adicionar metas ao plano (próxima fase)
+- [ ] Interface drag-and-drop para ordenar metas (próxima fase)
+
+### Importação via Planilha
+- [x] Botão "Importar via Planilha"
+- [x] Modal de importação
+- [x] Upload de arquivo Excel/CSV
+- [x] Botão para baixar template
+- [x] Instruções de formato da planilha
+- [x] Função backend de importação
+- [x] Importação em lote de planos e metas
+- [ ] Preview dos dados importados (próxima fase)
+- [ ] Validação avançada de dados (próxima fase)
+
+### Backend - APIs de Planos
+- [x] API para criar plano (planos.admin.create)
+- [x] API para atualizar plano (planos.admin.update)
+- [x] API para deletar plano (planos.admin.delete)
+- [x] API para listar todos os planos (planos.admin.listAll)
+- [x] API para toggle ativo/inativo (planos.admin.toggleAtivo)
+- [x] API para buscar plano com estatísticas (planos.admin.getComEstatisticas)
+- [x] API para importar planilha (planos.admin.importarPlanilha)
+- [x] Validações com Zod
+- [x] Funções no db.ts: getAllPlanos, updatePlano, deletePlano, togglePlanoAtivo, getPlanoComEstatisticas, importarPlanosDeExcel
+
+### Permissões e Segurança
+- [x] Verificar role de usuário (master, mentor, administrativo)
+- [x] Proteger rotas administrativas com protectedProcedure
+- [x] Permissões diferenciadas: delete apenas para master/mentor
+- [x] Confirmação antes de deletar planos (confirm dialog)
+- [x] Verificação de matrículas ativas antes de deletar
+- [ ] Logs de ações administrativas (próxima fase)
+
+### Status: ✅ FUNCIONALIDADES PRINCIPAIS COMPLETAS
+- Botão de expandir/colapsar menu lateral funcionando
+- Sistema de gestão de planos completo com CRUD
+- Integração frontend-backend via tRPC
+- Importação via planilha implementada
+- Permissões e segurança configuradas

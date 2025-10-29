@@ -45,6 +45,96 @@ export const appRouter = router({
       const { getPlanoById } = await import("./db");
       return await getPlanoById(input.id);
     }),
+    
+    // Rotas administrativas
+    admin: router({
+      listAll: protectedProcedure.query(async ({ ctx }) => {
+        // Verificar permissões
+        if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        const { getAllPlanos } = await import("./db");
+        return await getAllPlanos();
+      }),
+      
+      create: protectedProcedure
+        .input(z.object({
+          nome: z.string(),
+          descricao: z.string().optional(),
+          tipo: z.enum(["pago", "gratuito"]),
+          duracaoTotal: z.number(),
+          concursoArea: z.string().optional(),
+          horasDiariasPadrao: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { createPlano } = await import("./db");
+          return await createPlano(input);
+        }),
+      
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          nome: z.string().optional(),
+          descricao: z.string().optional(),
+          tipo: z.enum(["pago", "gratuito"]).optional(),
+          duracaoTotal: z.number().optional(),
+          concursoArea: z.string().optional(),
+          horasDiariasPadrao: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { id, ...data } = input;
+          const { updatePlano } = await import("./db");
+          return await updatePlano(id, data);
+        }),
+      
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { deletePlano } = await import("./db");
+          return await deletePlano(input.id);
+        }),
+      
+      toggleAtivo: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { togglePlanoAtivo } = await import("./db");
+          return await togglePlanoAtivo(input.id);
+        }),
+      
+      getComEstatisticas: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { getPlanoComEstatisticas } = await import("./db");
+          return await getPlanoComEstatisticas(input.id);
+        }),
+      
+      importarPlanilha: protectedProcedure
+        .input(z.object({
+          dados: z.array(z.any()),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { importarPlanosDeExcel } = await import("./db");
+          return await importarPlanosDeExcel(input.dados);
+        }),
+    }),
   }),
 
   metas: router({

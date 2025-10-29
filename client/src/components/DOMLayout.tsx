@@ -15,8 +15,10 @@ import {
   Menu,
   X,
   Shield,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface NavItem {
   icon: React.ReactNode;
@@ -29,6 +31,22 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // Carregar estado do sidebar do localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    if (saved !== null) {
+      setSidebarCollapsed(JSON.parse(saved));
+    }
+  }, []);
+
+  // Salvar estado do sidebar no localStorage
+  const toggleSidebar = () => {
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+  };
 
   const navItems: NavItem[] = [
     { icon: <Home size={20} />, label: "Dashboard", path: "/" },
@@ -54,20 +72,30 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
   const NavContent = () => (
     <>
       {/* Logo e Título */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-b border-border relative">
         <div className="flex items-center gap-3">
           {APP_LOGO && (
             <img src={APP_LOGO} alt={APP_TITLE} className="h-10 w-10 object-contain" />
           )}
-          <div>
-            <h1 className="text-xl font-bold text-foreground">{APP_TITLE}</h1>
-            {user && (
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {user.name || user.email}
-              </p>
-            )}
-          </div>
+          {!sidebarCollapsed && (
+            <div>
+              <h1 className="text-xl font-bold text-foreground">{APP_TITLE}</h1>
+              {user && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {user.name || user.email}
+                </p>
+              )}
+            </div>
+          )}
         </div>
+        
+        {/* Botão de Toggle - apenas desktop */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden lg:flex absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-primary text-primary-foreground rounded-full items-center justify-center hover:bg-primary/90 transition-colors shadow-md z-10"
+        >
+          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        </button>
       </div>
 
       {/* Menu de Navegação */}
@@ -85,7 +113,7 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {item.icon}
-                <span className="font-medium">{item.label}</span>
+                {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
                 {item.badge && (
                   <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full">
                     {item.badge}
@@ -106,7 +134,7 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
             onClick={handleLogout}
           >
             <LogOut size={20} />
-            <span>Sair</span>
+            {!sidebarCollapsed && <span>Sair</span>}
           </Button>
         ) : (
           <Button
@@ -124,7 +152,9 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar Desktop */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col bg-card border-r border-border">
+      <aside className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-card border-r border-border transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'
+      }`}>
         <NavContent />
       </aside>
 
@@ -161,7 +191,9 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-72 pt-16 lg:pt-0 flex flex-col min-h-screen">
+      <main className={`pt-16 lg:pt-0 flex flex-col min-h-screen transition-all duration-300 ${
+        sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+      }`}>
         <div className="flex-1">{children}</div>
         <Footer />
       </main>
