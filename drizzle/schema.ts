@@ -78,6 +78,7 @@ export const metas = mysqlTable("metas", {
   prioridade: int("prioridade").default(3).notNull(), // 1-5
   ordem: int("ordem").notNull(),
   dicaEstudo: text("dica_estudo"),
+  orientacaoEstudos: text("orientacao_estudos"),
   aulaId: int("aula_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

@@ -1269,3 +1269,81 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Gráfico de evolução de revisões (futuro)
 
 ---
+
+
+---
+
+## 🚀 PLANO DE 16 HORAS - BACKEND/FRONTEND METAS + FUNCIONALIDADES ALUNOS
+
+### FASE 1: Backend de Metas (3-4h)
+- [x] API `metas.create` - Criar nova meta
+- [x] API `metas.update` - Atualizar meta existente
+- [x] API `metas.delete` - Excluir meta
+- [x] API `metas.marcarConcluida` - Marcar meta como concluída
+- [ ] API `metas.ajustarTempo` - Ajustar duração da meta
+- [ ] API `metas.redistribuir` - Redistribuir metas quando tempo do dia muda
+- [x] API `metas.adicionarAnotacao` - Adicionar/editar anotação da meta
+- [x] API `metas.vincularAula` - Vincular aula à meta
+- [ ] API `metas.vincularQuestoes` - Vincular questões à meta
+- [ ] Algoritmo de realocação de metas (aumento de tempo)
+- [ ] Algoritmo de prorrogação de metas (diminuição de tempo)
+- [ ] Sistema de progresso e tempo dedicado
+- [ ] Histórico de sessões de estudo
+- [ ] Criação automática de revisões ao concluir meta
+
+### FASE 2: Frontend de Metas Individuais (2-3h)
+- [ ] Salvar edições de meta no backend
+- [ ] Persistir anotações no banco
+- [ ] Atualizar UI em tempo real
+- [ ] Cronômetro com persistência no backend
+- [ ] Recuperar tempo ao reabrir meta
+- [ ] Editor rich text real (TipTap)
+- [ ] Detecção e embed automático de vídeos
+- [ ] Gravação de áudio com MediaRecorder
+- [ ] Upload de áudio para S3
+- [ ] Player de áudio inline
+
+### FASE 3: Visualização Meta a Meta (1-2h)
+- [ ] Carregar metas do backend com paginação
+- [ ] Ordenação por múltiplos critérios
+- [ ] Filtros persistentes
+- [ ] Ações em lote
+- [ ] Cards expandidos com preview
+- [ ] Sincronização calendário ↔ lista
+
+### FASE 4: Funcionalidades Principais dos Alunos (4-5h)
+- [ ] Backend: CRUD de progresso de aulas
+- [ ] Marcar aula como assistida
+- [ ] Salvar ponto de parada do vídeo
+- [ ] Anotações por aula com timestamps
+- [ ] Player de vídeo com controles avançados
+- [ ] Backend: Salvar respostas de questões
+- [ ] Histórico completo de respostas
+- [ ] Estatísticas por disciplina/assunto
+- [ ] Modo simulado de questões
+- [ ] Relatório de desempenho detalhado
+- [ ] Dashboard com dados reais do backend
+- [ ] Gráficos de horas estudadas
+- [ ] Gráficos de metas concluídas
+- [ ] Perfil do aluno editável
+- [ ] Upload de foto de perfil para S3
+- [ ] Sistema de notificações
+
+### FASE 5: Integração e Refinamentos (2-3h)
+- [ ] Vincular metas → aulas (backend + frontend)
+- [ ] Vincular metas → questões (backend + frontend)
+- [ ] Lazy loading de componentes
+- [ ] Otimização de queries
+- [ ] Validação com Zod
+- [ ] Seed do banco com dados completos
+- [ ] Testes de fluxos principais
+
+### FASE 6: Funcionalidades Avançadas (3-4h)
+- [ ] Sistema de pontos e conquistas
+- [ ] Níveis de progresso
+- [ ] Sequência de dias (streak)
+- [ ] Relatórios semanais e mensais
+- [ ] Exportar relatórios em PDF
+- [ ] Service Worker para modo offline
+- [ ] Melhorias de acessibilidade
+- [ ] Documentação completa

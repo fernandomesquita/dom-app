@@ -167,31 +167,11 @@ export async function getMetaById(id: number) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function createMeta(meta: InsertMeta) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(metas).values(meta);
-  return result;
-}
-
 // ===== PROGRESSO METAS =====
 export async function getProgressoMetasByUserId(userId: number) {
   const db = await getDb();
   if (!db) return [];
   const result = await db.select().from(progressoMetas).where(eq(progressoMetas.userId, userId));
-  return result;
-}
-
-export async function marcarMetaConcluida(userId: number, metaId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const { and } = await import("drizzle-orm");
-  const result = await db.update(progressoMetas)
-    .set({ concluida: 1, dataConclusao: new Date() })
-    .where(and(
-      eq(progressoMetas.userId, userId),
-      eq(progressoMetas.metaId, metaId)
-    ));
   return result;
 }
 
@@ -331,4 +311,104 @@ export async function dispensarAviso(userId: number, avisoId: number) {
   if (!db) throw new Error("Database not available");
   const result = await db.insert(avisosDispensados).values({ userId, avisoId });
   return result;
+}
+
+
+// ========== METAS - CRUD COMPLETO ==========
+
+export async function createMeta(meta: Partial<InsertMeta>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(metas).values(meta as InsertMeta);
+  return { success: true, ...meta };
+}
+
+export async function updateMeta(id: number, updates: Partial<InsertMeta>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(metas).set(updates).where(eq(metas.id, id));
+  return { id, ...updates };
+}
+
+export async function deleteMeta(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(metas).where(eq(metas.id, id));
+  return { success: true };
+}
+
+export async function marcarMetaConcluida(
+  userId: number,
+  metaId: number,
+  concluida: boolean,
+  tempoDedicado?: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and } = await import("drizzle-orm");
+  
+  // Buscar progresso existente
+  const progressoExistente = await db
+    .select()
+    .from(progressoMetas)
+    .where(and(
+      eq(progressoMetas.metaId, metaId),
+      eq(progressoMetas.userId, userId)
+    ))
+    .limit(1);
+  
+  if (progressoExistente.length > 0) {
+    // Atualizar existente
+    await db
+      .update(progressoMetas)
+      .set({
+        concluida: concluida ? 1 : 0,
+        dataConclusao: concluida ? new Date() : null,
+        tempoGasto: tempoDedicado || progressoExistente[0].tempoGasto,
+      })
+      .where(eq(progressoMetas.id, progressoExistente[0].id));
+    
+    return { ...progressoExistente[0], concluida: concluida ? 1 : 0 };
+  } else {
+    // Criar novo progresso
+    const result = await db.insert(progressoMetas).values({
+      userId,
+      metaId,
+      dataAgendada: new Date(),
+      concluida: concluida ? 1 : 0,
+      dataConclusao: concluida ? new Date() : null,
+      tempoGasto: tempoDedicado || 0,
+    });
+    
+    return { userId, metaId, concluida: concluida ? 1 : 0 };
+  }
+}
+
+export async function adicionarAnotacaoMeta(
+  userId: number,
+  metaId: number,
+  anotacao: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and } = await import("drizzle-orm");
+  
+  // Por enquanto, vamos armazenar anotações na tabela metas mesmo
+  // Em produção, seria melhor ter uma tabela separada de anotações
+  await db.update(metas)
+    .set({ orientacaoEstudos: anotacao })
+    .where(eq(metas.id, metaId));
+  
+  return { success: true, metaId, anotacao };
+}
+
+export async function vincularAulaAMeta(metaId: number, aulaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(metas).set({ aulaId }).where(eq(metas.id, metaId));
+  return { success: true, metaId, aulaId };
 }

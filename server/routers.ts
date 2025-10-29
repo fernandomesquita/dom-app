@@ -44,10 +44,77 @@ export const appRouter = router({
       const { getMetasByPlanoId } = await import("./db");
       return await getMetasByPlanoId(input.planoId);
     }),
+    
     meusProgressos: publicProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Not authenticated");
       const { getProgressoMetasByUserId } = await import("./db");
       return await getProgressoMetasByUserId(ctx.user.id);
+    }),
+
+    create: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "planoId" in val && "disciplina" in val && "assunto" in val) {
+        return val as any;
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { createMeta } = await import("./db");
+      return await createMeta(input);
+    }),
+
+    update: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "id" in val) {
+        return val as any;
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { updateMeta } = await import("./db");
+      return await updateMeta(input.id, input);
+    }),
+
+    delete: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "id" in val && typeof val.id === "number") {
+        return val as { id: number };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { deleteMeta } = await import("./db");
+      return await deleteMeta(input.id);
+    }),
+
+    marcarConcluida: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && "concluida" in val) {
+        return val as { metaId: number; concluida: boolean; tempoDedicado?: number };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { marcarMetaConcluida } = await import("./db");
+      return await marcarMetaConcluida(ctx.user.id, input.metaId, input.concluida, input.tempoDedicado);
+    }),
+
+    adicionarAnotacao: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && "anotacao" in val) {
+        return val as { metaId: number; anotacao: string };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { adicionarAnotacaoMeta } = await import("./db");
+      return await adicionarAnotacaoMeta(ctx.user.id, input.metaId, input.anotacao);
+    }),
+
+    vincularAula: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && "aulaId" in val) {
+        return val as { metaId: number; aulaId: number };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { vincularAulaAMeta } = await import("./db");
+      return await vincularAulaAMeta(input.metaId, input.aulaId);
     }),
   }),
 

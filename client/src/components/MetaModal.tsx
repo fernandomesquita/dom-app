@@ -10,6 +10,7 @@ import { Clock, BookOpen, HelpCircle, CheckCircle, Play, Pause, RotateCcw, Edit,
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 
 interface Meta {
   id: number;
@@ -36,6 +37,10 @@ interface MetaModalProps {
 export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreTime, onSaveAnotacao }: MetaModalProps) {
   const { user } = useAuth();
   const isMaster = user?.role === "master";
+  
+  // Mutations tRPC
+  const marcarConcluida = trpc.metas.marcarConcluida.useMutation();
+  const adicionarAnotacao = trpc.metas.adicionarAnotacao.useMutation();
   
   const [tempoRestante, setTempoRestante] = useState(0);
   const [tempoDecorrido, setTempoDecorrido] = useState(0);
@@ -159,11 +164,23 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
     setRodando(false);
   };
 
-  const handleEstudoFinalizado = () => {
-    setShowFinalizarModal(false);
-    onConcluir?.();
-    toast.success("Parabéns! Meta concluída! 🎉");
-    onClose();
+  const handleEstudoFinalizado = async () => {
+    if (!meta || !user) return;
+    
+    try {
+      await marcarConcluida.mutateAsync({
+        metaId: meta.id,
+        concluida: true,
+        tempoDedicado: Math.floor(tempoDecorrido / 60),
+      });
+      
+      setShowFinalizarModal(false);
+      onConcluir?.();
+      toast.success("Parabéns! Meta concluída! 🎉");
+      onClose();
+    } catch (error) {
+      toast.error("Erro ao marcar meta como concluída");
+    }
   };
 
   const handlePrecisoMaisTempo = () => {

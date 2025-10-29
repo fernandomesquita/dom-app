@@ -15,6 +15,13 @@
       "when": 1761696562323,
       "tag": "0001_mute_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1761703489356,
+      "tag": "0002_exotic_sabretooth",
+      "breakpoints": true
     }
   ]
 }

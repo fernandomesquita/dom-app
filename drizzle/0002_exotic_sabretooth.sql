@@ -1,0 +1,1 @@
+ALTER TABLE `metas` ADD `orientacao_estudos` text;
