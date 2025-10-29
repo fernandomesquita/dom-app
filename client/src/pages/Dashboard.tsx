@@ -126,14 +126,14 @@ export default function Dashboard() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.metasConcluidas} / {stats.metasTotais}</div>
+            <div className="text-2xl font-bold">{stats.metasConcluidas} / {stats.totalMetas}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((stats.metasConcluidas / stats.metasTotais) * 100)}% concluído
+              {Math.round((stats.metasConcluidas / stats.totalMetas) * 100)}% concluído
             </p>
             <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-green-500 transition-all" 
-                style={{ width: `${(stats.metasConcluidas / stats.metasTotais) * 100}%` }}
+                style={{ width: `${(stats.metasConcluidas / stats.totalMetas) * 100}%` }}
               />
             </div>
           </CardContent>
@@ -299,12 +299,12 @@ export default function Dashboard() {
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Média diária de estudo</span>
-                <span className="font-medium">{stats.mediaDiaria}h / dia</span>
+                <span className="font-medium">{(stats.horasEstudadas / 7).toFixed(1)}h / dia</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-primary transition-all" 
-                  style={{ width: `${(stats.mediaDiaria / 6) * 100}%` }}
+                  style={{ width: `${((stats.horasEstudadas / 7) / 6) * 100}%` }}
                 />
               </div>
             </div>

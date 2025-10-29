@@ -121,24 +121,17 @@ export default function Aulas() {
                   <span>{aula.duracao} min</span>
                 </div>
 
-                {aula.assuntoNivel1 && (
-                  <div className="text-xs text-muted-foreground">
-                    {aula.assuntoNivel1}
-                    {aula.assuntoNivel2 && ` > ${aula.assuntoNivel2}`}
-                  </div>
-                )}
-
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${getTipoColor(aula.tipoConteudo)}`}
+                    className={`text-xs px-2 py-1 rounded-full ${getTipoColor(aula.tipo)}`}
                   >
-                    {aula.tipoConteudo}
+                    {aula.tipo}
                   </span>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      aula.nivelDificuldade === "basico"
+                      aula.nivelDificuldade === "Básico"
                         ? "bg-green-100 text-green-800"
-                        : aula.nivelDificuldade === "intermediario"
+                        : aula.nivelDificuldade === "Intermediário"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
                     }`}

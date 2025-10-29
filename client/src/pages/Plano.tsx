@@ -1,80 +1,117 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
-import { Calendar, ChevronLeft, ChevronRight, Clock, Filter, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
 import { useState } from "react";
-import { mockMetas, mockMatricula, mockPlanos } from "@/lib/mockData";
 import { useLocation } from "wouter";
+import { mockMetas } from "@/lib/mockData";
 import { toast } from "sonner";
 
 export default function Plano() {
   const [, setLocation] = useLocation();
-  const [currentWeek, setCurrentWeek] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
   const [selectedMeta, setSelectedMeta] = useState<typeof mockMetas[0] | null>(null);
-  const [metasConcluidas, setMetasConcluidas] = useState<Set<number>>(new Set());
-  const [filtroTipo, setFiltroTipo] = useState<string | null>(null);
-  const [filtroDisciplina, setFiltroDisciplina] = useState<string | null>(null);
+  const [metas, setMetas] = useState(mockMetas);
+  const [filtroTipo, setFiltroTipo] = useState<string>("todos");
+  const [filtroDisciplina, setFiltroDisciplina] = useState<string>("todas");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
+  const [visualizacao, setVisualizacao] = useState<"calendario" | "lista">("calendario");
+  
+  // Estado para controle de tempo por dia (em minutos)
+  const [temposPorDia, setTemposPorDia] = useState<Record<string, number>>({
+    "2025-01-27": 240, // 4h
+    "2025-01-28": 270, // 4h30
+    "2025-01-29": 210, // 3h30
+    "2025-01-30": 300, // 5h
+    "2025-01-31": 240, // 4h
+    "2025-02-01": 180, // 3h
+    "2025-02-02": 120, // 2h
+  });
 
-  const matricula = mockMatricula;
-  const metas = mockMetas;
-  const plano = mockPlanos.find(p => p.id === matricula.planoId);
-
-  // Gera os dias da semana atual
-  const getWeekDays = (weekOffset: number) => {
+  const getStartOfWeek = (offset: number) => {
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = domingo, 1 = segunda, ...
+    const dayOfWeek = today.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
-    monday.setDate(today.getDate() - currentDay + 1 + weekOffset * 7);
+    monday.setDate(today.getDate() + diff + offset * 7);
+    return monday;
+  };
 
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  };
+
+  const formatDateKey = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const getDaysOfWeek = () => {
+    const startDate = getStartOfWeek(weekOffset);
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const day = new Date(monday);
-      day.setDate(monday.getDate() + i);
-      days.push(day);
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + i);
+      days.push(date);
     }
     return days;
   };
 
-  const weekDays = getWeekDays(currentWeek);
-  const dayNames = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-
-  // Distribui metas pelos dias da semana (simulação)
-  const distribuirMetasPorDia = () => {
-    const metasPorDia: { [key: number]: typeof mockMetas } = {};
-    
-    metas.forEach((meta, index) => {
-      const diaIndex = index % 5; // Distribui de segunda a sexta
-      if (!metasPorDia[diaIndex]) {
-        metasPorDia[diaIndex] = [];
-      }
-      metasPorDia[diaIndex].push(meta);
+  const getMetasForDay = (date: Date) => {
+    const dateStr = formatDateKey(date);
+    return metas.filter((meta) => {
+      const metaDate = new Date(meta.data);
+      const metaDateStr = formatDateKey(metaDate);
+      
+      const tipoMatch = filtroTipo === "todos" || meta.tipo === filtroTipo;
+      const disciplinaMatch = filtroDisciplina === "todas" || meta.disciplina === filtroDisciplina;
+      
+      return metaDateStr === dateStr && tipoMatch && disciplinaMatch;
     });
-    
-    return metasPorDia;
   };
 
-  const metasPorDia = distribuirMetasPorDia();
-
-  const getTipoColor = (tipo: string, concluida: boolean = false) => {
-    if (concluida) {
-      return "bg-gray-100 text-gray-500 border-gray-300 opacity-50";
-    }
-    switch (tipo) {
-      case "estudo":
-        return "bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100";
-      case "revisao":
-        return "bg-purple-50 text-purple-900 border-purple-200 hover:bg-purple-100";
-      case "questoes":
-        return "bg-green-50 text-green-900 border-green-200 hover:bg-green-100";
-      default:
-        return "bg-gray-50 text-gray-900 border-gray-200 hover:bg-gray-100";
-    }
+  const getTotalTimeForDay = (date: Date): number => {
+    const metasDay = getMetasForDay(date);
+    return metasDay.reduce((total, meta) => total + meta.duracao, 0);
   };
 
-  const getIncidenciaIcon = (incidencia?: string) => {
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (mins === 0) return `${hours}h`;
+    return `${hours}h${mins.toString().padStart(2, "0")}`;
+  };
+
+  const handleTimeAdjust = (dateKey: string, newMinutes: number) => {
+    setTemposPorDia(prev => ({ ...prev, [dateKey]: newMinutes }));
+    toast.info(`Tempo ajustado para ${formatTime(newMinutes)}. Metas serão realocadas automaticamente.`);
+  };
+
+  const handleConcluirMeta = (id: number) => {
+    setMetas(metas.map(meta => 
+      meta.id === id ? { ...meta, concluida: !meta.concluida } : meta
+    ));
+    setSelectedMeta(null);
+    toast.success("Meta atualizada!");
+  };
+
+  const handleNeedMoreTime = (id: number) => {
+    toast.info("Meta será redistribuída de acordo com o plano");
+    setSelectedMeta(null);
+  };
+
+  const handleSaveAnnotation = (id: number, annotation: string) => {
+    setMetas(metas.map(meta => 
+      meta.id === id ? { ...meta, anotacao: annotation } : meta
+    ));
+    toast.success("Anotação salva!");
+  };
+
+  const getIncidenciaIcon = (incidencia: string) => {
     switch (incidencia) {
       case "alta":
         return "🔥";
@@ -84,6 +121,19 @@ export default function Plano() {
         return "💧";
       default:
         return "";
+    }
+  };
+
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case "estudo":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "revisao":
+        return "bg-purple-100 text-purple-800 border-purple-300";
+      case "questoes":
+        return "bg-green-100 text-green-800 border-green-300";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
   };
 
@@ -100,303 +150,291 @@ export default function Plano() {
     }
   };
 
-  const handleConcluirMeta = () => {
-    if (selectedMeta) {
-      setMetasConcluidas(prev => {
-        const newSet = new Set(prev);
-        newSet.add(selectedMeta.id);
-        return newSet;
-      });
-      toast.success("Meta concluída com sucesso! 🎉");
-    }
-  };
-
-  const handleNeedMoreTime = () => {
-    if (selectedMeta) {
-      toast.info("Meta reagendada para redistribuição automática");
-      // TODO: Implementar lógica de redistribuição
-    }
-  };
-
-  const handleSaveAnotacao = (metaId: number, anotacao: string) => {
-    // TODO: Implementar salvamento no backend
-    console.log(`Salvando anotação para meta ${metaId}:`, anotacao);
-  };
-
-  // Filtragem
-  const metasFiltradas = metas.filter(meta => {
-    if (filtroTipo && meta.tipo !== filtroTipo) return false;
-    if (filtroDisciplina && meta.disciplina !== filtroDisciplina) return false;
-    return true;
-  });
-
   const disciplinasUnicas = Array.from(new Set(metas.map(m => m.disciplina)));
-  const tiposUnicos = Array.from(new Set(metas.map(m => m.tipo)));
-
-  // Calcula progresso
-  const metasConcluidasSemana = metasFiltradas.filter(m => metasConcluidas.has(m.id)).length;
-  const totalMetasSemana = metasFiltradas.length;
-  const progressoSemana = totalMetasSemana > 0 ? (metasConcluidasSemana / totalMetasSemana) * 100 : 0;
+  const metasOrdenadas = [...metas].sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
 
   return (
     <div className="container py-8 space-y-6">
-      {/* Breadcrumb e Botão Voltar */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setLocation("/")}
-        >
+        <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Breadcrumb items={[{ label: "Plano de Estudos" }]} />
+        <Breadcrumb items={[{ label: "Meu Plano de Estudos" }]} />
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
-          {plano && (
-            <p className="text-lg font-semibold text-primary mt-1">
-              {plano.nome}
-            </p>
-          )}
-          <p className="text-muted-foreground mt-2">
-            Visualize e acompanhe suas metas semanais
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentWeek(currentWeek - 1)}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" onClick={() => setCurrentWeek(0)}>
-            Semana Atual
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setCurrentWeek(currentWeek + 1)}
-            disabled={currentWeek >= 4}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
+        <p className="text-muted-foreground mt-2">
+          Plano: <span className="font-semibold text-foreground">TJ-SP 2025 - Tribunal de Justiça de São Paulo</span>
+        </p>
       </div>
 
-      {/* Informações da Semana e Progresso */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            <div className="flex-1">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Semana de {weekDays[0].toLocaleDateString("pt-BR")} a{" "}
-                {weekDays[6].toLocaleDateString("pt-BR")}
-              </CardTitle>
-              <CardDescription className="mt-2">
-                Horas previstas: {matricula.horasDiarias * 5}h | 
-                Metas concluídas: {metasConcluidasSemana} de {totalMetasSemana}
-              </CardDescription>
-            </div>
-            <div className="w-full lg:w-64">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Progresso</span>
-                <span className="font-semibold">{Math.round(progressoSemana)}%</span>
-              </div>
-              <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500" 
-                  style={{ width: `${progressoSemana}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Filtros */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filtros</span>
-            </div>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filtros
+            </CardTitle>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setFiltrosVisiveis(!filtrosVisiveis)}
             >
-              {filtrosVisiveis ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Ocultar
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Mostrar
-                </>
-              )}
+              {filtrosVisiveis ? "Ocultar" : "Mostrar"}
             </Button>
           </div>
-          {filtrosVisiveis && (
-          <div className="flex items-center gap-2 flex-wrap">
-            
-            <Button
-              variant={filtroTipo === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setFiltroTipo(null)}
-            >
-              Todos
-            </Button>
-            
-            {tiposUnicos.map(tipo => (
-              <Button
-                key={tipo}
-                variant={filtroTipo === tipo ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFiltroTipo(tipo)}
-              >
-                {getTipoLabel(tipo)}
-              </Button>
-            ))}
-
-            <div className="w-px h-6 bg-border mx-2" />
-
-            {disciplinasUnicas.map(disciplina => (
-              <Button
-                key={disciplina}
-                variant={filtroDisciplina === disciplina ? "default" : "outline"}
-                size="sm"
-                onClick={() => setFiltroDisciplina(filtroDisciplina === disciplina ? null : disciplina)}
-              >
-                {disciplina}
-              </Button>
-            ))}
-          </div>
-          )}
-        </CardContent>
+        </CardHeader>
+        {filtrosVisiveis && (
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Tipo de Atividade</label>
+                <Select value={filtroTipo} onValueChange={setFiltroTipo}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todas as Atividades</SelectItem>
+                    <SelectItem value="estudo">Estudo</SelectItem>
+                    <SelectItem value="revisao">Revisão</SelectItem>
+                    <SelectItem value="questoes">Questões</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Disciplina</label>
+                <Select value={filtroDisciplina} onValueChange={setFiltroDisciplina}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as Disciplinas</SelectItem>
+                    {disciplinasUnicas.map((disc) => (
+                      <SelectItem key={disc} value={disc}>
+                        {disc}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
-      {/* Calendário Semanal */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-        {weekDays.map((day, index) => {
-          const isToday = day.toDateString() === new Date().toDateString();
-          const isPast = day < new Date() && !isToday;
-          const metasDoDia = metasPorDia[index] || [];
-          const metasFiltradasDia = metasDoDia.filter(meta => {
-            if (filtroTipo && meta.tipo !== filtroTipo) return false;
-            if (filtroDisciplina && meta.disciplina !== filtroDisciplina) return false;
-            return true;
-          });
+      <Tabs value={visualizacao} onValueChange={(v) => setVisualizacao(v as typeof visualizacao)}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="calendario" className="flex items-center gap-2">
+            <CalendarIcon className="h-4 w-4" />
+            Calendário Semanal
+          </TabsTrigger>
+          <TabsTrigger value="lista" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            Lista de Metas
+          </TabsTrigger>
+        </TabsList>
 
-          return (
-            <div key={index} className="space-y-2">
-              {/* Cabeçalho do Dia */}
-              <div
-                className={`text-center p-3 rounded-lg transition-all ${
-                  isToday
-                    ? "bg-primary text-primary-foreground shadow-lg scale-105"
-                    : isPast
-                      ? "bg-muted text-muted-foreground"
-                      : "bg-card border border-border"
-                }`}
-              >
-                <div className="font-semibold">{dayNames[index]}</div>
-                <div className="text-sm">{day.getDate()}/{day.getMonth() + 1}</div>
+        <TabsContent value="calendario" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={() => setWeekOffset(weekOffset - 1)}>
+              <ChevronLeft className="h-4 w-4 mr-2" />
+              Semana Anterior
+            </Button>
+            <div className="text-center">
+              <div className="font-semibold">
+                {weekOffset === 0 ? "Semana Atual" : `Semana ${weekOffset > 0 ? "+" + weekOffset : weekOffset}`}
               </div>
+              <div className="text-sm text-muted-foreground">
+                {formatDate(getDaysOfWeek()[0])} - {formatDate(getDaysOfWeek()[6])}
+              </div>
+            </div>
+            <Button variant="outline" onClick={() => setWeekOffset(weekOffset + 1)} disabled={weekOffset >= 3}>
+              Próxima Semana
+              <ChevronRight className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
 
-              {/* Metas do Dia */}
-              <div className="space-y-2 min-h-[200px]">
-                {metasFiltradasDia.map((meta) => {
-                  const concluida = metasConcluidas.has(meta.id);
-                  return (
-                    <Card
+          <div className="grid grid-cols-7 gap-3">
+            {getDaysOfWeek().map((day, index) => {
+              const dayMetas = getMetasForDay(day);
+              const dateKey = formatDateKey(day);
+              const tempoTotal = getTotalTimeForDay(day);
+              const tempoAlocado = temposPorDia[dateKey] || 240;
+              const isToday = formatDateKey(new Date()) === dateKey;
+
+              return (
+                <div key={index} className="space-y-2">
+                  <div className={`text-center p-2 rounded-lg ${isToday ? "bg-primary text-primary-foreground" : "bg-accent"}`}>
+                    <div className="font-semibold text-sm">
+                      {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"][index]}
+                    </div>
+                    <div className="text-xs">{formatDate(day)}</div>
+                  </div>
+
+                  <div className="space-y-2 min-h-[200px]">
+                    {dayMetas.length === 0 ? (
+                      <div className="text-center text-sm text-muted-foreground p-4 border-2 border-dashed rounded-lg">
+                        Sem metas
+                      </div>
+                    ) : (
+                      dayMetas.map((meta) => (
+                        <div
+                          key={meta.id}
+                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                            meta.concluida ? "opacity-50 grayscale" : ""
+                          }`}
+                          style={{
+                            backgroundColor: meta.cor + "20",
+                            borderColor: meta.cor,
+                          }}
+                          onClick={() => setSelectedMeta(meta)}
+                          title={meta.dicaEstudo}
+                        >
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <div className="font-semibold text-xs line-clamp-2">{meta.assunto}</div>
+                            <span className="text-sm">{getIncidenciaIcon(meta.incidencia)}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground mb-2">{meta.disciplina}</div>
+                          <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
+                            {getTipoLabel(meta.tipo)}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTime(meta.duracao)}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="border-t pt-3 space-y-3">
+                    <div className="text-center">
+                      <div className="text-xs text-muted-foreground">Tempo alocado</div>
+                      <div className="text-lg font-bold text-primary">{formatTime(tempoAlocado)}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Usado: {formatTime(tempoTotal)}
+                      </div>
+                    </div>
+                    
+                    <div className="px-2">
+                      <Slider
+                        value={[tempoAlocado]}
+                        onValueChange={([value]) => handleTimeAdjust(dateKey, value)}
+                        min={0}
+                        max={720}
+                        step={15}
+                        className="cursor-pointer"
+                      />
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>0h</span>
+                        <span>12h</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Progresso da Semana</CardTitle>
+              <CardDescription>
+                {metas.filter(m => m.concluida).length} de {metas.length} metas concluídas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="h-4 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-primary/60 transition-all"
+                  style={{
+                    width: `${(metas.filter(m => m.concluida).length / metas.length) * 100}%`,
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="lista" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todas as Metas</CardTitle>
+              <CardDescription>
+                Visualização completa em ordem cronológica
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {metasOrdenadas
+                  .filter(meta => {
+                    const tipoMatch = filtroTipo === "todos" || meta.tipo === filtroTipo;
+                    const disciplinaMatch = filtroDisciplina === "todas" || meta.disciplina === filtroDisciplina;
+                    return tipoMatch && disciplinaMatch;
+                  })
+                  .map((meta) => (
+                    <div
                       key={meta.id}
-                      className={`cursor-pointer transition-all border-2 ${getTipoColor(meta.tipo, concluida)} ${
-                        concluida ? "scale-95" : "hover:scale-105 hover:shadow-lg"
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                        meta.concluida ? "opacity-50 grayscale" : ""
                       }`}
+                      style={{
+                        backgroundColor: meta.cor + "20",
+                        borderColor: meta.cor,
+                      }}
                       onClick={() => setSelectedMeta(meta)}
                     >
-                      <CardContent className="p-3 space-y-2">
-                        {concluida && (
-                          <div className="flex items-center gap-1 text-green-600 text-xs font-semibold">
-                            ✓ Concluída
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-lg">{meta.assunto}</h4>
+                            <span className="text-lg">{getIncidenciaIcon(meta.incidencia)}</span>
                           </div>
-                        )}
-                        <div className="font-semibold text-sm line-clamp-1">{meta.disciplina}</div>
-                        <div className="text-xs line-clamp-2 opacity-90">{meta.assunto}</div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="flex items-center gap-1 opacity-75">
-                            <Clock className="h-3 w-3" />
-                            {meta.duracao}min
-                          </span>
-                          {meta.incidencia && (
-                            <span className="text-base">{getIncidenciaIcon(meta.incidencia)}</span>
+                          <div className="text-sm text-muted-foreground mb-2">{meta.disciplina}</div>
+                          <div className="flex items-center gap-3 flex-wrap">
+                            <Badge className={getTipoColor(meta.tipo)}>
+                              {getTipoLabel(meta.tipo)}
+                            </Badge>
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <CalendarIcon className="h-4 w-4" />
+                              {new Date(meta.data).toLocaleDateString("pt-BR")}
+                            </span>
+                            <span className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              {formatTime(meta.duracao)}
+                            </span>
+                          </div>
+                          {meta.dicaEstudo && (
+                            <div className="mt-2 text-sm text-muted-foreground italic">
+                              💡 {meta.dicaEstudo}
+                            </div>
                           )}
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          {getTipoLabel(meta.tipo)}
-                        </Badge>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        {meta.concluida && (
+                          <Badge className="bg-green-100 text-green-800">
+                            ✓ Concluída
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {/* Legenda */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Legenda</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-blue-50 border-2 border-blue-200"></div>
-              <span className="text-sm">Estudo</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-purple-50 border-2 border-purple-200"></div>
-              <span className="text-sm">Revisão</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-50 border-2 border-green-200"></div>
-              <span className="text-sm">Questões</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🔥</span>
-              <span className="text-sm">Alta Incidência</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">⚡</span>
-              <span className="text-sm">Média Incidência</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">💧</span>
-              <span className="text-sm">Baixa Incidência</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Modal de Detalhes da Meta */}
-      <MetaModal
-        meta={selectedMeta}
-        open={!!selectedMeta}
-        onClose={() => setSelectedMeta(null)}
-        onConcluir={handleConcluirMeta}
-        onNeedMoreTime={handleNeedMoreTime}
-        onSaveAnotacao={handleSaveAnotacao}
-      />
+      {selectedMeta && (
+        <MetaModal
+          meta={selectedMeta}
+          open={!!selectedMeta}
+          onClose={() => setSelectedMeta(null)}
+          onConcluir={() => handleConcluirMeta(selectedMeta.id)}
+          onNeedMoreTime={() => handleNeedMoreTime(selectedMeta.id)}
+          onSaveAnotacao={(metaId, anotacao) => handleSaveAnnotation(metaId, anotacao)}
+        />
+      )}
     </div>
   );
 }

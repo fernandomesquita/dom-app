@@ -1115,3 +1115,28 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Implementar controle de expiração de tokens
 
 ---
+
+
+## 🎯 MELHORIAS NO PAINEL DE METAS
+
+### Somatório de Tempo Diário
+- [x] Exibir tempo total em horas abaixo de cada dia (ex: 1h45)
+- [x] Calcular somatório automático das durações das metas do dia
+- [x] Implementar dial/controle deslizante para ajustar tempo do dia
+- [ ] Implementar realocação dinâmica de metas ao ajustar tempo (backend)
+- [ ] Alocar novas metas quando tempo aumenta (backend)
+- [ ] Prorrogar metas para próximos dias quando tempo diminui (backend)
+- [x] Atualizar calendário automaticamente após ajuste
+- [x] Mostrar feedback visual durante ajuste de tempo
+
+### Visualização Meta a Meta
+- [x] Criar aba alternativa de visualização (Calendário / Lista)
+- [x] Implementar visualização em lista/cards de metas
+- [x] Exibir todas as metas em ordem cronológica
+- [x] Mostrar informações completas de cada meta na lista
+- [x] Implementar filtros na visualização de lista
+- [x] Permitir ordenação (data, disciplina, tipo, status)
+- [x] Manter funcionalidades de edição e conclusão na lista
+- [x] Sincronizar estado entre visualização calendário e lista
+
+---
