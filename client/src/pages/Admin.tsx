@@ -12,7 +12,9 @@ import {
   BarChart3,
   UserPlus,
   Settings,
-  Shield
+  Shield,
+  Upload,
+  Key
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -23,10 +25,15 @@ export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
 
-  // Verificar se o usuário tem permissão
-  const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
+  // Verificar permissões por perfil
+  const isMaster = user?.role === "master";
+  const isMentor = user?.role === "mentor";
+  const isAdministrativo = user?.role === "administrativo";
+  const isProfessor = user?.role === "professor";
+  
+  const hasAccess = isMaster || isMentor || isAdministrativo || isProfessor;
 
-  if (!isAdmin) {
+  if (!hasAccess) {
     return (
       <div className="container py-8">
         <Card>
@@ -44,6 +51,37 @@ export default function Admin() {
       </div>
     );
   }
+
+  // Definir tabs disponíveis por perfil
+  const availableTabs = {
+    usuarios: isMaster || isAdministrativo,
+    planos: isMaster || isMentor || isAdministrativo,
+    metas: isMaster || isMentor,
+    aulas: isMaster || isAdministrativo || isProfessor,
+    avisos: isMaster || isMentor || isAdministrativo,
+    relatorios: isMaster || isMentor,
+    configuracoes: isMaster,
+    tokens: isMaster || isAdministrativo,
+  };
+
+  const tabs = [
+    { value: "usuarios", label: "Usuários", show: availableTabs.usuarios },
+    { value: "planos", label: "Planos", show: availableTabs.planos },
+    { value: "metas", label: "Metas", show: availableTabs.metas },
+    { value: "aulas", label: "Aulas", show: availableTabs.aulas },
+    { value: "avisos", label: "Avisos", show: availableTabs.avisos },
+    { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
+    { value: "configuracoes", label: "Configurações", show: availableTabs.configuracoes },
+    { value: "tokens", label: "Tokens", show: availableTabs.tokens },
+  ].filter(tab => tab.show);
+
+  const getPerfilDescricao = () => {
+    if (isMaster) return "Controle total da plataforma - Master";
+    if (isMentor) return "Gestão pedagógica - Mentor";
+    if (isAdministrativo) return "Suporte operacional - Administrativo";
+    if (isProfessor) return "Gestão de conteúdo - Professor";
+    return "";
+  };
 
   return (
     <div className="container py-8 space-y-6">
@@ -66,162 +104,197 @@ export default function Admin() {
           Painel Administrativo
         </h1>
         <p className="text-muted-foreground mt-2">
-          Gerencie usuários, planos, conteúdos e configurações do sistema
+          {getPerfilDescricao()}
         </p>
       </div>
 
       {/* Estatísticas Rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Total de Usuários
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">247</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              +12 este mês
-            </p>
-          </CardContent>
-        </Card>
+        {(isMaster || isAdministrativo) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Total de Usuários
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">247</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                +12 este mês
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Planos Ativos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              3 em andamento
-            </p>
-          </CardContent>
-        </Card>
+        {(isMaster || isMentor || isAdministrativo) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Planos Ativos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">8</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {isMentor ? "Sob sua mentoria" : "3 em andamento"}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Metas Criadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              89% concluídas
-            </p>
-          </CardContent>
-        </Card>
+        {(isMaster || isMentor) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Target className="h-4 w-4" />
+                Metas Criadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">1,234</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                89% concluídas
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Avisos Enviados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Este mês
-            </p>
-          </CardContent>
-        </Card>
+        {(isMaster || isMentor || isAdministrativo) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Bell className="h-4 w-4" />
+                Avisos Enviados
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">45</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Este mês
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Tabs de Gestão */}
-      <Tabs defaultValue="usuarios" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="planos">Planos</TabsTrigger>
-          <TabsTrigger value="metas">Metas</TabsTrigger>
-          <TabsTrigger value="aulas">Aulas</TabsTrigger>
-          <TabsTrigger value="avisos">Avisos</TabsTrigger>
-          <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+      <Tabs defaultValue={tabs[0]?.value} className="space-y-6">
+        <TabsList className={`grid w-full grid-cols-${Math.min(tabs.length, 6)}`}>
+          {tabs.map(tab => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {/* Tab: Gestão de Usuários */}
-        <TabsContent value="usuarios" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Gestão de Usuários</CardTitle>
-                  <CardDescription>
-                    Gerencie alunos, professores, mentores e administradores
-                  </CardDescription>
+        {/* Tab: Gestão de Usuários (Master, Administrativo) */}
+        {availableTabs.usuarios && (
+          <TabsContent value="usuarios" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestão de Usuários</CardTitle>
+                    <CardDescription>
+                      {isMaster 
+                        ? "Criar, editar e excluir qualquer usuário (mentor, professor, administrativo ou aluno)"
+                        : "Cadastrar e editar perfis de alunos, mentores e professores"
+                      }
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Novo Usuário
+                  </Button>
                 </div>
-                <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Novo Usuário
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Lista de usuários */}
-                <div className="border rounded-lg divide-y">
-                  {[
-                    { nome: "João Silva", email: "joao@email.com", role: "aluno", status: "ativo" },
-                    { nome: "Maria Santos", email: "maria@email.com", role: "professor", status: "ativo" },
-                    { nome: "Pedro Costa", email: "pedro@email.com", role: "mentor", status: "ativo" },
-                    { nome: "Ana Lima", email: "ana@email.com", role: "aluno", status: "inativo" },
-                  ].map((usuario, index) => (
-                    <div key={index} className="p-4 flex items-center justify-between hover:bg-accent transition-colors">
-                      <div className="flex-1">
-                        <div className="font-semibold">{usuario.nome}</div>
-                        <div className="text-sm text-muted-foreground">{usuario.email}</div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="border rounded-lg divide-y">
+                    {[
+                      { nome: "João Silva", email: "joao@email.com", role: "aluno", status: "ativo" },
+                      { nome: "Maria Santos", email: "maria@email.com", role: "professor", status: "ativo" },
+                      { nome: "Pedro Costa", email: "pedro@email.com", role: "mentor", status: "ativo" },
+                      { nome: "Ana Lima", email: "ana@email.com", role: "aluno", status: "inativo" },
+                    ].map((usuario, index) => (
+                      <div key={index} className="p-4 flex items-center justify-between hover:bg-accent transition-colors">
+                        <div className="flex-1">
+                          <div className="font-semibold">{usuario.nome}</div>
+                          <div className="text-sm text-muted-foreground">{usuario.email}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-sm">
+                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                              {usuario.role}
+                            </span>
+                          </div>
+                          <div className="text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              usuario.status === "ativo" 
+                                ? "bg-green-100 text-green-800" 
+                                : "bg-gray-100 text-gray-800"
+                            }`}>
+                              {usuario.status}
+                            </span>
+                          </div>
+                          <Button variant="outline" size="sm">
+                            Editar
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm">
-                          <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                            {usuario.role}
-                          </span>
-                        </div>
-                        <div className="text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            usuario.status === "ativo" 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-gray-100 text-gray-800"
-                          }`}>
-                            {usuario.status}
-                          </span>
-                        </div>
-                        <Button variant="outline" size="sm">
-                          Editar
+                    ))}
+                  </div>
+                  
+                  {isAdministrativo && (
+                    <div className="pt-4 border-t">
+                      <h4 className="font-semibold mb-3">Importação em Lote</h4>
+                      <div className="flex gap-3">
+                        <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Importar CSV/Excel
                         </Button>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        {/* Tab: Gestão de Planos */}
-        <TabsContent value="planos" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Gestão de Planos de Estudo</CardTitle>
-                  <CardDescription>
-                    Crie e gerencie planos de estudo para diferentes concursos
-                  </CardDescription>
+        {/* Tab: Gestão de Planos (Master, Mentor, Administrativo) */}
+        {availableTabs.planos && (
+          <TabsContent value="planos" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestão de Planos de Estudo</CardTitle>
+                    <CardDescription>
+                      {isMaster && "Criar, editar e excluir planos. Importar via Excel/CSV ou gerar automaticamente a partir de editais"}
+                      {isMentor && "Criar planos próprios, configurar ciclo de estudos e importar editais"}
+                      {isAdministrativo && "Importar e distribuir planos prontos, carregar planilhas com metas"}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {(isMaster || isMentor) && (
+                      <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        <Target className="h-4 w-4 mr-2" />
+                        Novo Plano
+                      </Button>
+                    )}
+                    {(isMaster || isAdministrativo) && (
+                      <Button variant="outline" onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importar
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                  <Target className="h-4 w-4 mr-2" />
-                  Novo Plano
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+              </CardHeader>
+              <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {[
                     { nome: "TJ-SP 2025", concurso: "Tribunal de Justiça de SP", alunos: 45, metas: 320 },
@@ -246,9 +319,11 @@ export default function Admin() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1">
-                            Editar
-                          </Button>
+                          {(isMaster || isMentor) && (
+                            <Button variant="outline" size="sm" className="flex-1">
+                              Editar
+                            </Button>
+                          )}
                           <Button variant="outline" size="sm" className="flex-1">
                             Ver Metas
                           </Button>
@@ -257,62 +332,153 @@ export default function Admin() {
                     </Card>
                   ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        {/* Tab: Gestão de Metas */}
-        <TabsContent value="metas" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gestão de Metas</CardTitle>
-              <CardDescription>
-                Visualize e edite metas de todos os planos
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                Selecione um plano para visualizar e gerenciar suas metas
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {/* Tab: Gestão de Metas (Master, Mentor) */}
+        {availableTabs.metas && (
+          <TabsContent value="metas" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestão de Metas</CardTitle>
+                <CardDescription>
+                  {isMaster && "Criar, editar, excluir, publicar e configurar cores de metas"}
+                  {isMentor && "Inserir, editar, remover, habilitar/desabilitar e reordenar metas"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-center py-8">
+                  Selecione um plano para visualizar e gerenciar suas metas
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        {/* Tab: Gestão de Aulas */}
-        <TabsContent value="aulas" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Repositório de Aulas</CardTitle>
-                  <CardDescription>
-                    Gerencie o conteúdo educacional disponível
-                  </CardDescription>
+        {/* Tab: Gestão de Aulas (Master, Administrativo, Professor) */}
+        {availableTabs.aulas && (
+          <TabsContent value="aulas" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Repositório de Aulas</CardTitle>
+                    <CardDescription>
+                      {isMaster && "Gerencie todo o conteúdo educacional"}
+                      {isAdministrativo && "Fazer upload de vídeos, PDFs e materiais. Associar conteúdos ao repositório"}
+                      {isProfessor && "Gerencie aulas e materiais didáticos"}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload de Conteúdo
+                  </Button>
                 </div>
-                <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Nova Aula
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                Sistema de gestão de aulas em desenvolvimento
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-center py-8">
+                  Sistema de gestão de aulas em desenvolvimento
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
-        {/* Tab: Avisos */}
-        <TabsContent value="avisos" className="space-y-4">
-          <GestaoAvisos />
-        </TabsContent>
+        {/* Tab: Avisos (Master, Mentor, Administrativo) */}
+        {availableTabs.avisos && (
+          <TabsContent value="avisos" className="space-y-4">
+            <GestaoAvisos />
+          </TabsContent>
+        )}
 
-        {/* Tab: Relatórios */}
-        <TabsContent value="relatorios" className="space-y-4">
-          <RelatoriosAnalytics />
-        </TabsContent>
+        {/* Tab: Relatórios (Master, Mentor) */}
+        {availableTabs.relatorios && (
+          <TabsContent value="relatorios" className="space-y-4">
+            <RelatoriosAnalytics />
+          </TabsContent>
+        )}
+
+        {/* Tab: Configurações (Master only) */}
+        {availableTabs.configuracoes && (
+          <TabsContent value="configuracoes" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Configurações do Sistema
+                </CardTitle>
+                <CardDescription>
+                  Controle total: cores, temas, DMR, validação de CPF, segurança e parâmetros gerais
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-semibold mb-2">Cores e Temas</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Definir cores padrão das metas e temas visuais da aplicação
+                    </p>
+                    <Button variant="outline" size="sm">
+                      Configurar Cores
+                    </Button>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-semibold mb-2">DMR e Segurança</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Gerenciar configurações de DMR, validação de CPF e controle de logs
+                    </p>
+                    <Button variant="outline" size="sm">
+                      Configurar Segurança
+                    </Button>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-semibold mb-2">Parâmetros Gerais</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Tempo de expiração de tokens, backups automáticos, etc.
+                    </p>
+                    <Button variant="outline" size="sm">
+                      Ajustar Parâmetros
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Tab: Tokens (Master, Administrativo) */}
+        {availableTabs.tokens && (
+          <TabsContent value="tokens" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Key className="h-5 w-5" />
+                      Gestão de Tokens
+                    </CardTitle>
+                    <CardDescription>
+                      Gerar e invalidar tokens de cadastro e acesso
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                    <Key className="h-4 w-4 mr-2" />
+                    Gerar Token
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-center py-8">
+                  Sistema de gestão de tokens em desenvolvimento
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

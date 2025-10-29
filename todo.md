@@ -1043,3 +1043,75 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] Implementar exclusão de anotações
 
 ---
+
+
+## 🔐 AJUSTE DE PERFIS E PERMISSÕES
+
+### Perfil Master
+- [ ] Implementar gerenciamento completo de usuários (criar, editar, excluir)
+- [ ] Implementar definição de permissões por perfil
+- [ ] Implementar geração e invalidação de tokens de cadastro
+- [ ] Implementar visualização de logs de acesso (IPs, horários, ações)
+- [ ] Implementar importação de planos via Excel/CSV
+- [ ] Implementar criação automática de planos a partir de editais
+- [ ] Implementar configuração de cores dos boxes de metas (global e por plano)
+- [ ] Implementar publicação/habilitação/desabilitação de metas
+- [ ] Implementar definição de cores padrão e temas visuais
+- [ ] Implementar gerenciamento de configurações DMR
+- [ ] Implementar validação automática de CPF
+- [ ] Implementar controle de segurança, logs e auditorias
+- [ ] Implementar ajuste de parâmetros gerais do sistema
+- [ ] Implementar avisos globais ou por plano
+- [ ] Implementar notificações em massa
+- [ ] Implementar monitoramento de métricas de engajamento
+- [ ] Implementar exportação de relatórios (CSV, PDF)
+- [ ] Implementar modo "ver como aluno"
+
+### Perfil Mentor
+- [ ] Implementar cadastro de alunos (manual e via planilha)
+- [ ] Implementar acompanhamento de progresso individual e global
+- [ ] Implementar ajuste de carga horária e dias de estudo
+- [ ] Implementar alteração de plano ativo do aluno
+- [ ] Implementar envio de avisos individuais
+- [ ] Implementar definição de duração de acesso
+- [ ] Implementar criação de planos próprios
+- [ ] Implementar configuração de ciclo de estudos
+- [ ] Implementar edição e reordenação de metas (drag & drop)
+- [ ] Implementar adição de metas fixas/recorrentes
+- [ ] Implementar sinalização de incidência de conteúdo
+- [ ] Implementar importação de editais para geração automática
+- [ ] Implementar inserção, edição e remoção de metas
+- [ ] Implementar habilitação/desabilitação de metas específicas
+- [ ] Implementar modo "ver como aluno" para metas
+- [ ] Implementar reordenação e duplicação de metas
+- [ ] Implementar revisão de metas concluídas (feedback)
+- [ ] Implementar publicação de avisos em planos específicos
+- [ ] Implementar avisos em massa para grupos
+- [ ] Implementar interação via fórum (responder e moderar)
+- [ ] Implementar gráficos e estatísticas por aluno/turma
+- [ ] Implementar exportação de dados em planilhas
+
+### Perfil Administrativo
+- [ ] Implementar cadastro e edição de perfis
+- [ ] Implementar geração de tokens de acesso
+- [ ] Implementar validação de CPFs e monitoramento de logs
+- [ ] Implementar inclusão de alunos em lote (CSV/Excel)
+- [ ] Implementar definição/alteração de senhas iniciais
+- [ ] Implementar gerenciamento de duração de acesso
+- [ ] Implementar consulta de logs de login e atividades
+- [ ] Implementar importação e distribuição de planos prontos
+- [ ] Implementar carregamento de planilhas com metas
+- [ ] Implementar ajustes pontuais em planos ativos
+- [ ] Implementar gerenciamento de status de metas
+- [ ] Implementar workflow de aprovação de metas (se houver)
+- [ ] Implementar upload de vídeos, PDFs e materiais
+- [ ] Implementar associação de conteúdos ao repositório
+- [ ] Implementar publicação/desativação de conteúdos
+- [ ] Implementar mensagens técnicas e informativos
+- [ ] Implementar gerenciamento de avisos de suporte técnico
+- [ ] Implementar atendimento de recuperação de acesso
+- [ ] Implementar aplicação de regras DMR em PDFs
+- [ ] Implementar monitoramento de logs de ações críticas
+- [ ] Implementar controle de expiração de tokens
+
+---

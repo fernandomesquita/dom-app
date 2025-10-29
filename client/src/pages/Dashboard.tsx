@@ -207,8 +207,7 @@ export default function Dashboard() {
             </Card>
           </Link>
           <Link href="/plano">
-            <a>
-              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -221,12 +220,10 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
               </Card>
-            </a>
           </Link>
 
           <Link href="/aulas">
-            <a>
-              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-purple-100 rounded-lg">
@@ -239,12 +236,10 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
               </Card>
-            </a>
           </Link>
 
           <Link href="/questoes">
-            <a>
-              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-green-100 rounded-lg">
@@ -257,12 +252,10 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
               </Card>
-            </a>
           </Link>
 
           <Link href="/forum">
-            <a>
-              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-orange-100 rounded-lg">
@@ -275,12 +268,10 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
               </Card>
-            </a>
           </Link>
 
           <Link href="/revisao">
-            <a>
-              <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
                 <CardHeader>
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-red-100 rounded-lg">
@@ -293,7 +284,6 @@ export default function Dashboard() {
                   </div>
                 </CardHeader>
               </Card>
-            </a>
           </Link>
         </div>
       </div>
