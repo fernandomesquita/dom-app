@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
+import GestaoMetas from "./GestaoMetas";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -59,10 +60,13 @@ export default function GestaoPlanos() {
   const [modalImportacao, setModalImportacao] = useState(false);
   const [planoEditando, setPlanoEditando] = useState<Plano | null>(null);
   const [arquivo, setArquivo] = useState<File | null>(null);
+  const [modalMetas, setModalMetas] = useState(false);
+  const [planoSelecionado, setPlanoSelecionado] = useState<Plano | null>(null);
 
   const [formData, setFormData] = useState({
     nome: "",
-    concurso: "",
+    orgao: "",
+    cargo: "",
     tipo: "pago" as "pago" | "gratuito",
     duracao: 180,
     horasDiarias: 4,
@@ -72,7 +76,8 @@ export default function GestaoPlanos() {
     setPlanoEditando(null);
     setFormData({
       nome: "",
-      concurso: "",
+      orgao: "",
+      cargo: "",
       tipo: "pago",
       duracao: 180,
       horasDiarias: 4,
@@ -84,7 +89,8 @@ export default function GestaoPlanos() {
     setPlanoEditando(plano);
     setFormData({
       nome: plano.nome,
-      concurso: plano.concurso,
+      orgao: plano.concurso.split(" - ")[0] || "",
+      cargo: plano.concurso.split(" - ")[1] || "",
       tipo: plano.tipo,
       duracao: plano.duracao,
       horasDiarias: plano.horasDiarias,
@@ -115,8 +121,8 @@ export default function GestaoPlanos() {
   });
 
   const handleSalvarPlano = () => {
-    if (!formData.nome || !formData.concurso) {
-      toast.error("Preencha todos os campos obrigatórios");
+    if (!formData.nome) {
+      toast.error("Preencha o nome do plano");
       return;
     }
 
@@ -124,7 +130,8 @@ export default function GestaoPlanos() {
       atualizarPlanoMutation.mutate({
         id: planoEditando.id,
         nome: formData.nome,
-        concursoArea: formData.concurso,
+        orgao: formData.orgao,
+        cargo: formData.cargo,
         tipo: formData.tipo,
         duracaoTotal: formData.duracao,
         horasDiariasPadrao: formData.horasDiarias,
@@ -133,9 +140,10 @@ export default function GestaoPlanos() {
       criarPlanoMutation.mutate({
         nome: formData.nome,
         descricao: "",
+        orgao: formData.orgao,
+        cargo: formData.cargo,
         tipo: formData.tipo,
         duracaoTotal: formData.duracao,
-        concursoArea: formData.concurso,
         horasDiariasPadrao: formData.horasDiarias,
       });
     }
@@ -287,7 +295,10 @@ export default function GestaoPlanos() {
                         variant="outline" 
                         size="sm" 
                         className="flex-1"
-                        onClick={() => toast.info("Visualização de metas em desenvolvimento")}
+                        onClick={() => {
+                          setPlanoSelecionado(plano);
+                          setModalMetas(true);
+                        }}
                       >
                         <Eye className="h-3 w-3 mr-1" />
                         Metas
@@ -349,14 +360,26 @@ export default function GestaoPlanos() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="concurso">Concurso/Área *</Label>
-              <Input
-                id="concurso"
-                placeholder="Ex: Tribunal de Justiça de São Paulo"
-                value={formData.concurso}
-                onChange={(e) => setFormData({ ...formData, concurso: e.target.value })}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="orgao">Órgão</Label>
+                <Input
+                  id="orgao"
+                  placeholder="Ex: Câmara dos Deputados"
+                  value={formData.orgao}
+                  onChange={(e) => setFormData({ ...formData, orgao: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cargo">Cargo</Label>
+                <Input
+                  id="cargo"
+                  placeholder="Ex: Analista de Registro e Redação"
+                  value={formData.cargo}
+                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -448,6 +471,20 @@ export default function GestaoPlanos() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Gestão de Metas */}
+      {planoSelecionado && (
+        <GestaoMetas
+          planoId={planoSelecionado.id}
+          planoNome={planoSelecionado.nome}
+          aberto={modalMetas}
+          onFechar={() => {
+            setModalMetas(false);
+            setPlanoSelecionado(null);
+            refetch(); // Atualizar contadores de metas
+          }}
+        />
+      )}
     </div>
   );
 }

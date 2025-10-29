@@ -63,6 +63,8 @@ export const appRouter = router({
           descricao: z.string().optional(),
           tipo: z.enum(["pago", "gratuito"]),
           duracaoTotal: z.number(),
+          orgao: z.string().optional(),
+          cargo: z.string().optional(),
           concursoArea: z.string().optional(),
           horasDiariasPadrao: z.number().optional(),
         }))
@@ -81,6 +83,8 @@ export const appRouter = router({
           descricao: z.string().optional(),
           tipo: z.enum(["pago", "gratuito"]).optional(),
           duracaoTotal: z.number().optional(),
+          orgao: z.string().optional(),
+          cargo: z.string().optional(),
           concursoArea: z.string().optional(),
           horasDiariasPadrao: z.number().optional(),
         }))

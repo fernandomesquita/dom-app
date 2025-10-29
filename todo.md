@@ -1573,3 +1573,38 @@ Sistema de notificações implementado na página Plano. Dados de teste criados.
 - Integração frontend-backend via tRPC
 - Importação via planilha implementada
 - Permissões e segurança configuradas
+
+
+## 🎯 MELHORIAS NO CADASTRO DE PLANOS E GESTÃO DE METAS
+
+### Separar Campos de Órgão e Cargo
+- [x] Adicionar campos "orgao" e "cargo" no schema da tabela planos
+- [x] Executar migração do banco de dados (pnpm db:push)
+- [x] Atualizar formulário de criação/edição de planos no frontend
+- [x] Substituir campo único "Concurso/Área" por dois campos: "Órgão" e "Cargo"
+- [x] Atualizar APIs backend para aceitar orgao e cargo
+- [x] Atualizar validações Zod nas rotas create e update
+- [x] Manter campo concursoArea para compatibilidade
+
+### Sistema de Cadastramento de Metas
+- [x] Criar componente GestaoMetas
+- [x] Modal para gerenciar metas de um plano
+- [x] Formulário de criação de meta: disciplina, assunto, tipo, duração, prioridade
+- [x] Campos opcionais: dica de estudo, orientação de estudos
+- [x] Listagem de metas em cards com ícones por tipo
+- [x] Botões de ação: adicionar, editar, excluir meta
+- [x] Validações de formulário
+- [x] Integração com APIs tRPC existentes (create, update, delete, listByPlano)
+- [x] Modal aninhado: GestaoPlanos > GestaoMetas
+- [x] Botão "Metas" nos cards de planos
+- [x] Badges coloridos por tipo: Estudo (azul), Revisão (verde), Questões (roxo)
+- [x] Indicadores visuais: ícones, duração, prioridade
+- [x] Estado vazio com call-to-action
+- [ ] Drag-and-drop para reordenar metas (próxima fase)
+- [ ] Atualizar contador de metas nos cards de planos (próxima fase)
+
+### Status: ✅ FUNCIONALIDADES COMPLETAS
+- Campos Órgão e Cargo separados no formulário de planos
+- Sistema completo de cadastramento de metas
+- Modal aninhado funcionando perfeitamente
+- CRUD completo de metas integrado

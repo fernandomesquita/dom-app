@@ -35,7 +35,9 @@ export const planos = mysqlTable("planos", {
   descricao: text("descricao"),
   tipo: mysqlEnum("tipo", ["pago", "gratuito"]).default("pago").notNull(),
   duracaoTotal: int("duracao_total").notNull(), // em dias
-  concursoArea: varchar("concurso_area", { length: 255 }),
+  orgao: varchar("orgao", { length: 255 }),
+  cargo: varchar("cargo", { length: 255 }),
+  concursoArea: varchar("concurso_area", { length: 255 }), // Mantido para compatibilidade
   ativo: int("ativo").default(1).notNull(), // 1 = ativo, 0 = inativo
   horasDiariasPadrao: int("horas_diarias_padrao").default(4).notNull(),
   diasEstudoPadrao: varchar("dias_estudo_padrao", { length: 50 }).default("1,2,3,4,5").notNull(), // dias da semana (0=dom, 6=sab)
