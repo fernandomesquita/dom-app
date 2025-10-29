@@ -2153,3 +2153,28 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - Substituído conteúdo estático por componente GestaoPlanos
   - Agora mostra lista de planos com botão "Gerenciar Metas" para cada um
 - **Status:** ✅ Corrigido
+
+
+### Problema: Alocação de metas ineficiente (EM IMPLEMENTAÇÃO 🛠️)
+- **Data:** 29/10/2025
+- **Descrição:** Metas não estão preenchendo as 4h diárias disponíveis. Exemplo: Quarta tem 4h disponíveis mas apenas 45min usados (desperdício de 3h15)
+- **Impacto:** Aluno não aproveita todo o tempo disponível para estudos
+- **Solução implementada:**
+  - ✅ Função distribuirMetasPlano - algoritmo inteligente que preenche 4h diárias
+  - ✅ Função redistribuirMetasAluno - reorganiza metas existentes
+  - ✅ Modificada atribuirPlano para distribuir automaticamente
+  - ✅ Modificada getMetasAluno para incluir dataAgendada
+  - ✅ Rota tRPC metas.redistribuir
+  - ⏳ Pendente: Botão na UI + testes
+- **Status:** 🛠️ 80% implementado
+
+### Problema: Visualização em telas menores confusa
+- **Data:** 29/10/2025
+- **Descrição:** Em telas menores, títulos das metas ficam truncados ("Pr f...", "Cr c..."), cards muito pequenos e difíceis de ler
+- **Impacto:** UX ruim em dispositivos móveis
+- **Solução proposta:**
+  - Cards maiores e mais espaçados
+  - Scroll horizontal suave
+  - Títulos completos ou com tooltip
+  - Layout responsivo otimizado
+- **Status:** ⏳ A implementar

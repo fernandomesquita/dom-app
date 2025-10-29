@@ -305,6 +305,13 @@ export const appRouter = router({
         const { concluirMeta } = await import("./db");
         return await concluirMeta(ctx.user.id, input.metaId, input.tempoGasto);
       }),
+
+    // Redistribuir metas do aluno
+    redistribuir: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const { redistribuirMetasAluno } = await import("./db");
+        return await redistribuirMetasAluno(ctx.user.id);
+      }),
   }),
 
   aulas: router({

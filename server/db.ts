@@ -1866,6 +1866,9 @@ export async function atribuirPlano(userId: number, planoId: number, dataInicio:
       ativo: 1,
     });
 
+    // Distribuir metas automaticamente ao longo dos dias disponíveis
+    await distribuirMetasPlano(userId, planoId, dataInicioDate, 4, [1, 2, 3, 4, 5]);
+
     return {
       success: true,
       matriculaId: Number((result as any).insertId || 0),
@@ -2003,6 +2006,7 @@ export async function getMetasAluno(userId: number) {
           concluida: progresso.length > 0 && progresso[0].concluida === 1,
           dataConclusao: progresso.length > 0 ? progresso[0].dataConclusao : null,
           tempoGasto: progresso.length > 0 ? progresso[0].tempoGasto : null,
+          dataAgendada: progresso.length > 0 ? progresso[0].dataAgendada : null,
         };
       })
     );
@@ -2236,5 +2240,119 @@ export async function getDadosAluno(alunoId: number) {
   } catch (error) {
     console.error("Erro ao buscar dados do aluno:", error);
     throw new Error(`Erro ao buscar dados do aluno: ${error}`);
+  }
+}
+
+
+/**
+ * Distribuir metas do plano ao longo dos dias disponíveis
+ * Algoritmo inteligente que preenche as horas diárias disponíveis
+ */
+export async function distribuirMetasPlano(
+  userId: number,
+  planoId: number,
+  dataInicio: Date,
+  horasDiarias: number = 4,
+  diasSemana: number[] = [1, 2, 3, 4, 5] // Segunda a Sexta por padrão
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar todas as metas do plano ordenadas por prioridade e incidência
+    const metasDoPlano = await db
+      .select()
+      .from(metas)
+      .where(eq(metas.planoId, planoId))
+      .orderBy(asc(metas.ordem));
+
+    // Ordenar metas por prioridade: incidência alta > média > baixa
+    const metasOrdenadas = metasDoPlano.sort((a, b) => {
+      const incidenciaValor = { alta: 3, media: 2, baixa: 1 };
+      const valorA = incidenciaValor[a.incidencia as keyof typeof incidenciaValor] || 0;
+      const valorB = incidenciaValor[b.incidencia as keyof typeof incidenciaValor] || 0;
+      return valorB - valorA; // Decrescente (alta primeiro)
+    });
+
+    // Distribuir metas ao longo dos dias
+    let dataAtual = new Date(dataInicio);
+    let horasUsadasHoje = 0;
+    const minutosDisponiveis = horasDiarias * 60;
+
+    for (const meta of metasOrdenadas) {
+      const duracaoMeta = meta.duracao; // em minutos
+
+      // Se a meta não cabe no dia atual, avançar para o próximo dia disponível
+      if (horasUsadasHoje + duracaoMeta > minutosDisponiveis) {
+        // Avançar para o próximo dia disponível
+        do {
+          dataAtual.setDate(dataAtual.getDate() + 1);
+        } while (!diasSemana.includes(dataAtual.getDay()));
+        
+        horasUsadasHoje = 0;
+      }
+
+      // Criar registro de progresso com data agendada
+      await db.insert(progressoMetas).values({
+        userId,
+        metaId: meta.id,
+        dataAgendada: new Date(dataAtual),
+        concluida: 0,
+        dataConclusao: null,
+        tempoGasto: 0,
+      });
+
+      horasUsadasHoje += duracaoMeta;
+
+      console.log(`[distribuirMetasPlano] Meta ${meta.id} agendada para ${dataAtual.toISOString().split('T')[0]} - ${duracaoMeta}min`);
+    }
+
+    return { success: true, metasDistribuidas: metasOrdenadas.length };
+  } catch (error) {
+    console.error("Erro ao distribuir metas:", error);
+    throw new Error(`Erro ao distribuir metas: ${error}`);
+  }
+}
+
+
+/**
+ * Redistribuir metas de um aluno que já tem plano atribuído
+ * Útil para corrigir distribuição ou quando aluno altera configurações
+ */
+export async function redistribuirMetasAluno(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar matrícula ativa
+    const matriculaAtiva = await db
+      .select()
+      .from(matriculas)
+      .where(and(eq(matriculas.userId, userId), eq(matriculas.ativo, 1)));
+
+    if (matriculaAtiva.length === 0) {
+      throw new Error("Usuário não possui plano atribuído");
+    }
+
+    const planoId = matriculaAtiva[0].planoId;
+    const dataInicio = matriculaAtiva[0].dataInicio;
+
+    // Deletar registros de progresso não concluídos
+    await db
+      .delete(progressoMetas)
+      .where(
+        and(
+          eq(progressoMetas.userId, userId),
+          eq(progressoMetas.concluida, 0)
+        )
+      );
+
+    // Redistribuir metas
+    await distribuirMetasPlano(userId, planoId, dataInicio, 4, [1, 2, 3, 4, 5]);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao redistribuir metas:", error);
+    throw new Error(`Erro ao redistribuir metas: ${error}`);
   }
 }
