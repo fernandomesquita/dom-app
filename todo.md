@@ -1608,3 +1608,52 @@ Sistema de notificações implementado na página Plano. Dados de teste criados.
 - Sistema completo de cadastramento de metas
 - Modal aninhado funcionando perfeitamente
 - CRUD completo de metas integrado
+
+
+## 📊 MELHORIAS NOS CARDS DE PLANOS E ANALYTICS
+
+### Enriquecer Cards de Planos
+- [x] Adicionar campo createdBy (userId) no schema da tabela planos
+- [x] Migrar banco de dados (pnpm db:push)
+- [x] Atualizar getPlanoComEstatisticas para incluir criador
+- [x] Buscar nome do criador via join com tabela users
+- [x] Criar componente PlanoCard com todas as informações
+- [x] Exibir data de criação do plano no card
+- [x] Exibir nome do criador do plano no card
+- [x] Buscar e exibir quantidade real de metas cadastradas
+- [x] Formatar data de criação com date-fns (dd/MM/yyyy)
+- [ ] Integrar PlanoCard no GestaoPlanos (próxima etapa)
+
+### Sistema de Filtros
+- [x] Criar estado de filtros no GestaoPlanos
+- [x] Implementar lógica de filtragem no frontend
+- [x] Filtro por órgão (input text)
+- [x] Filtro por cargo (input text)
+- [x] Filtro por tipo (select: pago/gratuito)
+- [x] Filtro por status (select: ativo/inativo)
+- [x] Filtro por data de criação (dataInicio e dataFim)
+- [x] Função limparFiltros
+- [x] Contador de resultados filtrados
+- [ ] Integrar barra de filtros na UI (próxima etapa)
+- [ ] Adicionar date pickers para filtro de data
+
+### Índice de Engajamento
+- [ ] Criar tabela de logs de acesso às metas
+- [ ] Registrar quando aluno visualiza uma meta
+- [ ] Registrar quando aluno marca meta como concluída
+- [ ] Calcular taxa de retorno por dia previsto
+- [ ] Identificar ponto de abandono (última meta acessada)
+- [ ] Criar dashboard de engajamento por plano
+- [ ] Gráfico de funil: quantos alunos chegam em cada meta
+- [ ] Métrica: % de alunos que abandonam por semana
+- [ ] Heatmap de dias da semana com mais abandono
+- [ ] API para buscar métricas de engajamento
+
+### Template de Planilha
+- [ ] Criar arquivo Excel template com colunas corretas
+- [ ] Incluir abas: Plano, Metas, Instruções
+- [ ] Adicionar exemplos de preenchimento
+- [ ] Validações de células (dropdowns, formatos)
+- [ ] Implementar download do template
+- [ ] Documentar formato esperado
+- [ ] Adicionar validação de planilha no backend

@@ -1029,10 +1029,21 @@ export async function getPlanoComEstatisticas(id: number) {
     .from(metas)
     .where(eq(metas.planoId, id));
   
+  // Buscar informações do criador
+  let criador = null;
+  if (plano.createdBy) {
+    const criadorResult = await db.select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, plano.createdBy))
+      .limit(1);
+    criador = criadorResult[0]?.name || null;
+  }
+  
   return {
     ...plano,
     totalAlunos: Number(matriculasResult[0]?.count) || 0,
     totalMetas: Number(metasResult[0]?.count) || 0,
+    criadorNome: criador,
   };
 }
 

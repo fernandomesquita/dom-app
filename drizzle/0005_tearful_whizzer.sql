@@ -1,0 +1,1 @@
+ALTER TABLE `planos` ADD `created_by` int;
