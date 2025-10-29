@@ -1678,3 +1678,4 @@ export async function moverMetaParaBaixo(metaId: number) {
 
   return { success: true, message: "Meta movida para baixo" };
 }
+

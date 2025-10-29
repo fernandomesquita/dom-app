@@ -47,6 +47,26 @@ export const appRouter = router({
     }),
     
     // Rotas administrativas
+    create: protectedProcedure
+      .input(z.object({
+        nome: z.string(),
+        descricao: z.string(),
+        duracaoTotal: z.number(),
+        tipo: z.enum(["pago", "gratuito"]).optional(),
+        orgao: z.string().optional(),
+        cargo: z.string().optional(),
+        ativo: z.number().optional(),
+        horasDiariasPadrao: z.number().optional(),
+        diasEstudoPadrao: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        const { createPlano } = await import("./db");
+        return await createPlano(input as any);
+      }),
+    
     admin: router({
       listAll: protectedProcedure.query(async ({ ctx }) => {
         // Verificar permissões

@@ -1958,3 +1958,70 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [x] Desabilitar botões quando meta está no topo/final
 - [x] Toast de feedback ao mover metas
 - [ ] Garantir que visualizações respeitem a ordem personalizada (verificar)
+
+
+## 🚀 PLANO DE TRABALHO 10H - Sistema de Planos, Dashboard e Metas
+
+### FASE 1: Gestão de Planos (2h)
+- [x] Criar formulário completo de criação de planos no Admin
+- [x] Adicionar campos: nome, descrição, duração, órgão, cargo, tipo
+- [x] Validação de campos obrigatórios
+- [x] Integrar com API planos.create existente
+- [x] Adicionar preview do plano antes de salvar
+- [x] Toast de sucesso/erro
+- [x] Componente GestaoPlanos já implementado com modal de criação
+- [x] Rota planos.admin.create já funcional
+- [ ] Criar componente de upload de arquivo (drag & drop)
+- [ ] Parser de planilha Excel (.xlsx)
+- [ ] Validar estrutura da planilha
+- [ ] Preview dos dados antes de importar
+- [ ] Criar plano + metas em lote via API
+- [ ] Relatório de importação (sucessos/erros)
+
+### FASE 2: Dashboard dos Alunos (3h)
+- [ ] Implementar query dashboard.estatisticas no backend
+- [ ] Calcular horas estudadas (soma tempoGasto)
+- [ ] Calcular metas concluídas
+- [ ] Calcular aulas assistidas
+- [ ] Calcular questões resolvidas e taxa de acerto
+- [ ] Atualizar cards do Dashboard com dados reais
+- [ ] Adicionar animação de loading nos cards
+- [ ] Criar query para progresso dos últimos 7 dias
+- [ ] Implementar gráfico de linhas (Recharts)
+- [ ] Adicionar no card "Seu Progresso Esta Semana"
+- [ ] Criar query dashboard.ranking (top 10)
+- [ ] Implementar sistema de pontos
+- [ ] Criar conquistas automáticas
+- [ ] Exibir conquistas no card "Minhas Conquistas"
+- [ ] Notificação toast ao desbloquear conquista
+
+### FASE 3: Funcionamento das Metas (3h)
+- [ ] Criar modal "Atribuir Plano" na tab Usuários
+- [ ] Seletor de plano + seletor de aluno(s)
+- [ ] Criar registros em matriculas
+- [ ] Criar registros em progressoMetas
+- [ ] Calcular dataAgendada baseado na ordem
+- [ ] Notificar aluno sobre novo plano
+- [ ] Página /plano exibir metas do plano ativo
+- [ ] Buscar plano ativo via matriculas
+- [ ] Cores por tipo e status visual
+- [ ] Botão "Concluir Meta" funcional
+- [ ] Atualizar progressoMetas ao concluir
+- [ ] Registrar tempoGasto
+- [ ] Modal de detalhes da meta
+- [ ] Criar query metas.metasDoDia
+- [ ] Exibir "Metas do Dia" no Dashboard
+- [ ] Badge de contador no menu "Plano"
+- [ ] Notificação sobre metas atrasadas
+
+### FASE 4: Integração e Testes (2h)
+- [ ] Teste 1: Criar Plano Manual completo
+- [ ] Teste 2: Importar Plano via Planilha
+- [ ] Teste 3: Reordenar Metas
+- [ ] Teste 4: Gamificação
+- [ ] Corrigir bugs encontrados
+- [ ] Adicionar estados de loading
+- [ ] Adicionar empty states
+- [ ] Melhorar mensagens de erro
+- [ ] Validar responsividade mobile
+- [ ] Testar performance com 100+ metas
