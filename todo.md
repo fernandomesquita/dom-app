@@ -1467,23 +1467,42 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 Sistema de gamificação totalmente funcional com atribuição automática de pontos e conquistas em tempo real. Dashboard integrado com dados reais do backend.
 
 
-## 🔔 NOTIFICAÇÕES DE CONQUISTAS (Próxima Implementação)
+## 🔔 NOTIFICAÇÕES DE CONQUISTAS
 
 ### Frontend - Sistema de Notificações
-- [ ] Criar componente Toast para notificações de conquistas
-- [ ] Adicionar animação de entrada/saída para toasts
-- [ ] Exibir ícone, nome e descrição da conquista desbloqueada
-- [ ] Adicionar som de notificação (opcional)
-- [ ] Implementar fila de notificações (múltiplas conquistas)
-- [ ] Adicionar botão "Ver todas as conquistas" no toast
+- [x] Criar componente ConquistaToast para notificações de conquistas
+- [x] Adicionar animação de entrada/saída para toasts (translate-x + opacity)
+- [x] Exibir ícone, nome e descrição da conquista desbloqueada
+- [x] Implementar fila de notificações (múltiplas conquistas com indicadores)
+- [x] Auto-fechar após 5 segundos
+- [x] Botão de fechar manual
+- [x] Design com gradiente amarelo/dourado e animação bounce
 
 ### Backend - Retorno de Conquistas
-- [ ] Modificar APIs para retornar conquistas desbloqueadas
-- [ ] Incluir detalhes completos da conquista (nome, descrição, ícone)
-- [ ] Retornar array de conquistas em cada resposta de ação pontuada
+- [x] Modificar APIs para retornar conquistas desbloqueadas
+- [x] Incluir detalhes completos da conquista (nome, descrição, ícone)
+- [x] Retornar array de conquistas em cada resposta de ação pontuada
+
+### Hook Customizado
+- [x] Criar useConquistaNotification hook
+- [x] Gerenciar estado de conquistas
+- [x] Funções mostrarConquistas e limparConquistas
 
 ### Integração Frontend-Backend
-- [ ] Capturar conquistas desbloqueadas nas respostas das APIs
-- [ ] Exibir toast automaticamente ao receber conquista
+- [x] Integrar ConquistaToast na página Plano
+- [x] Modificar handleConcluirMeta para usar API tRPC real
+- [x] Capturar conquistas desbloqueadas nas respostas das APIs
+- [x] Exibir toast automaticamente ao receber conquista
+- [ ] Integrar em página de Aulas
+- [ ] Integrar em página de Questões
 - [ ] Atualizar componente ConquistasCard após desbloquear
 - [ ] Invalidar cache de conquistas após nova conquista
+
+### Dados de Teste Criados
+- [x] 5 metas de diferentes disciplinas inseridas
+- [x] 5 aulas com vídeos e descrições inseridas
+- [x] 5 questões de múltipla escolha com gabaritos inseridas
+- [x] Dados prontos para testar sistema completo de gamificação
+
+### Status: ✅ EM PROGRESSO
+Sistema de notificações implementado na página Plano. Dados de teste criados. Próximo: integrar em Aulas e Questões.

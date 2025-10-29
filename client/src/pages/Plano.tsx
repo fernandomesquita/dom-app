@@ -11,8 +11,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { mockMetas } from "@/lib/mockData";
 import { toast } from "sonner";
+import { ConquistaToast } from "@/components/ConquistaToast";
+import { useConquistaNotification } from "@/hooks/useConquistaNotification";
+import { trpc } from "@/lib/trpc";
 
 export default function Plano() {
+  const { conquistas, mostrarConquistas, limparConquistas } = useConquistaNotification();
   const [, setLocation] = useLocation();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedMeta, setSelectedMeta] = useState<typeof mockMetas[0] | null>(null);
@@ -91,12 +95,33 @@ export default function Plano() {
     toast.info(`Tempo ajustado para ${formatTime(newMinutes)}. Metas serão realocadas automaticamente.`);
   };
 
+  const marcarMetaMutation = trpc.metas.marcarConcluida.useMutation({
+    onSuccess: (data: any) => {
+      // Atualizar estado local
+      setMetas(metas.map(meta => 
+        meta.id === selectedMeta?.id ? { ...meta, concluida: !meta.concluida } : meta
+      ));
+      setSelectedMeta(null);
+      toast.success("Meta atualizada!");
+      
+      // Mostrar conquistas desbloqueadas
+      if (data.conquistasDesbloqueadas && data.conquistasDesbloqueadas.length > 0) {
+        mostrarConquistas(data.conquistasDesbloqueadas);
+      }
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar meta");
+    },
+  });
+
   const handleConcluirMeta = (id: number) => {
-    setMetas(metas.map(meta => 
-      meta.id === id ? { ...meta, concluida: !meta.concluida } : meta
-    ));
-    setSelectedMeta(null);
-    toast.success("Meta atualizada!");
+    const meta = metas.find(m => m.id === id);
+    if (!meta) return;
+    
+    marcarMetaMutation.mutate({
+      metaId: id,
+      concluida: !meta.concluida,
+    });
   };
 
   const handleNeedMoreTime = (id: number) => {
@@ -435,6 +460,8 @@ export default function Plano() {
           onSaveAnotacao={(metaId, anotacao) => handleSaveAnnotation(metaId, anotacao)}
         />
       )}
+
+      <ConquistaToast conquistas={conquistas} onClose={limparConquistas} />
     </div>
   );
 }
