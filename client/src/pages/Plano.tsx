@@ -375,6 +375,72 @@ export default function Plano() {
             </Button>
           </div>
 
+          {/* Barra de Progresso Semanal */}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-semibold">Progresso da Semana</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {metas.filter((m: any) => {
+                        const metaDate = new Date(m.data);
+                        const weekStart = getDaysOfWeek()[0];
+                        const weekEnd = getDaysOfWeek()[6];
+                        return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
+                      }).length} de {metas.filter((m: any) => {
+                        const metaDate = new Date(m.data);
+                        const weekStart = getDaysOfWeek()[0];
+                        const weekEnd = getDaysOfWeek()[6];
+                        return metaDate >= weekStart && metaDate <= weekEnd;
+                      }).length} metas concluídas
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-primary">
+                      {Math.round(
+                        (metas.filter((m: any) => {
+                          const metaDate = new Date(m.data);
+                          const weekStart = getDaysOfWeek()[0];
+                          const weekEnd = getDaysOfWeek()[6];
+                          return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
+                        }).length / 
+                        Math.max(1, metas.filter((m: any) => {
+                          const metaDate = new Date(m.data);
+                          const weekStart = getDaysOfWeek()[0];
+                          const weekEnd = getDaysOfWeek()[6];
+                          return metaDate >= weekStart && metaDate <= weekEnd;
+                        }).length)) * 100
+                      )}%
+                    </div>
+                    <div className="text-xs text-muted-foreground">Completo</div>
+                  </div>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-500 ease-out rounded-full"
+                    style={{
+                      width: `${Math.round(
+                        (metas.filter((m: any) => {
+                          const metaDate = new Date(m.data);
+                          const weekStart = getDaysOfWeek()[0];
+                          const weekEnd = getDaysOfWeek()[6];
+                          return metaDate >= weekStart && metaDate <= weekEnd && m.concluida;
+                        }).length / 
+                        Math.max(1, metas.filter((m: any) => {
+                          const metaDate = new Date(m.data);
+                          const weekStart = getDaysOfWeek()[0];
+                          const weekEnd = getDaysOfWeek()[6];
+                          return metaDate >= weekStart && metaDate <= weekEnd;
+                        }).length)) * 100
+                      )}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="grid grid-cols-7 gap-3">
             {getDaysOfWeek().map((day, index) => {
               const dayMetas = getMetasForDay(day);
@@ -401,28 +467,55 @@ export default function Plano() {
                       dayMetas.map((meta) => (
                         <div
                           key={meta.id}
-                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
-                            meta.concluida ? "opacity-50 grayscale" : ""
+                          className={`relative p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] group ${
+                            meta.concluida ? "opacity-60" : ""
                           }`}
                           style={{
-                            backgroundColor: meta.cor + "20",
-                            borderColor: meta.cor,
+                            backgroundColor: meta.cor ? meta.cor + "15" : "#f0f0f015",
+                            borderColor: meta.cor || "#e0e0e0",
                           }}
                           onClick={() => setSelectedMeta(meta)}
-                          title={meta.dicaEstudo}
                         >
-                          <div className="flex items-start justify-between gap-1 mb-1">
-                            <div className="font-semibold text-xs line-clamp-2">{meta.assunto}</div>
+                          {/* Checkbox de Conclusão */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            {meta.concluida ? (
+                              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-primary transition-colors" />
+                            )}
                             <span className="text-sm">{getIncidenciaIcon(meta.incidencia)}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground mb-2">{meta.disciplina}</div>
-                          <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
-                            {getTipoLabel(meta.tipo)}
-                          </Badge>
-                          <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatTime(meta.duracao)}
+
+                          {/* Conteúdo do Box */}
+                          <div className="pr-12">
+                            <div className="font-bold text-sm line-clamp-2 mb-1" style={{ fontSize: '0.875rem' }}>
+                              {meta.assunto}
+                            </div>
+                            <div className="text-xs text-muted-foreground mb-2 font-medium">
+                              {meta.disciplina}
+                            </div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
+                                {getTipoLabel(meta.tipo)}
+                              </Badge>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatTime(meta.duracao)}
+                              </div>
+                            </div>
                           </div>
+
+                          {/* Tooltip de Dica de Estudo (aparece no hover) */}
+                          {meta.dicaEstudo && (
+                            <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                              <div className="font-semibold mb-1">💡 Dica de Estudo:</div>
+                              <div>{meta.dicaEstudo}</div>
+                            </div>
+                          )}
                         </div>
                       ))
                     )}

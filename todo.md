@@ -201,19 +201,19 @@
 - [x] Implementar visualização de até 4 semanas à frente
 - [x] Implementar indicador da semana atual
 - [x] Implementar exibição de horas previstas da semana
-- [ ] Implementar barra de progresso semanal
+- [x] Implementar barra de progresso semanal
 - [ ] Implementar filtros rápidos por disciplina/tipo
 
 ### 5.2 Boxes de Metas
-- [ ] Criar componente visual de box de meta
-- [ ] Implementar exibição de disciplina (negrito, fonte maior)
-- [ ] Implementar exibição de assunto (fonte menor)
-- [ ] Implementar badge colorido de tipo de meta
-- [ ] Implementar exibição de duração
-- [ ] Implementar indicador visual de conclusão
-- [ ] Implementar cores pastel personalizáveis
-- [ ] Implementar hover com dica de estudo
-- [ ] Implementar clique para expandir detalhes
+- [x] Criar componente visual de box de meta
+- [x] Implementar exibição de disciplina (negrito, fonte maior)
+- [x] Implementar exibição de assunto (fonte menor)
+- [x] Implementar badge colorido de tipo de meta
+- [x] Implementar exibição de duração
+- [x] Implementar indicador visual de conclusão
+- [x] Implementar cores pastel personalizáveis
+- [x] Implementar hover com dica de estudo
+- [x] Implementar clique para expandir detalhes
 
 ### 5.3 Modal de Detalhes da Meta
 - [ ] Criar modal de detalhes
