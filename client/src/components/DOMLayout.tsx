@@ -152,7 +152,7 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Sidebar Desktop */}
-      <aside className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-card border-r border-border transition-all duration-300 ${
+      <aside className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:flex-col bg-green-50 border-r border-border transition-all duration-300 ${
         sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'
       }`}>
         <NavContent />
@@ -184,7 +184,7 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
             className="lg:hidden fixed inset-0 z-40 bg-black/50"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <aside className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border flex flex-col">
+          <aside className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-green-50 border-r border-border flex flex-col">
             <NavContent />
           </aside>
         </>

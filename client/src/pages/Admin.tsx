@@ -14,7 +14,8 @@ import {
   Settings,
   Shield,
   Upload,
-  Key
+  Key,
+  Palette
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -22,6 +23,7 @@ import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 import GestaoPlanos from "@/components/admin/GestaoPlanos";
+import CentroComando from "@/components/admin/CentroComando";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -62,6 +64,7 @@ export default function Admin() {
     aulas: isMaster || isAdministrativo || isProfessor,
     avisos: isMaster || isMentor || isAdministrativo,
     relatorios: isMaster || isMentor,
+    personalizacao: isMaster,
     configuracoes: isMaster,
     tokens: isMaster || isAdministrativo,
   };
@@ -73,6 +76,7 @@ export default function Admin() {
     { value: "aulas", label: "Aulas", show: availableTabs.aulas },
     { value: "avisos", label: "Avisos", show: availableTabs.avisos },
     { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
+    { value: "personalizacao", label: "Personalização", show: availableTabs.personalizacao },
     { value: "configuracoes", label: "Configurações", show: availableTabs.configuracoes },
     { value: "tokens", label: "Tokens", show: availableTabs.tokens },
   ].filter(tab => tab.show);
@@ -265,6 +269,13 @@ export default function Admin() {
         {availableTabs.relatorios && (
           <TabsContent value="relatorios" className="space-y-4">
             <RelatoriosAnalytics />
+          </TabsContent>
+        )}
+
+        {/* Tab: Personalização (Master only) */}
+        {availableTabs.personalizacao && (
+          <TabsContent value="personalizacao" className="space-y-4">
+            <CentroComando />
           </TabsContent>
         )}
 

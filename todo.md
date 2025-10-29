@@ -80,11 +80,14 @@
 - [ ] Implementar visualização de métricas gerais
 
 ### 3.2 Personalização Visual
-- [ ] Implementar editor de cores para boxes de metas
-- [ ] Implementar color picker
-- [ ] Implementar preview em tempo real
-- [ ] Criar templates de cores pré-definidos
-- [ ] Implementar salvamento de configurações visuais
+- [x] Implementar editor de cores para boxes de metas
+- [x] Implementar color picker
+- [x] Implementar preview em tempo real
+- [x] Criar templates de cores pré-definidos
+- [x] Implementar salvamento de configurações visuais
+- [x] Criar tab "Personalização" no painel administrativo
+- [x] Implementar seletores de cores para sidebar, cores principais e metas
+- [x] Aplicar cores dinamicamente via CSS variables
 
 ### 3.3 Sistema de Avisos
 - [ ] Implementar criação de avisos normais (verde)
@@ -1802,3 +1805,26 @@ Botões agora têm largura automática baseada no conteúdo, melhor distribuiç�
 
 ### Status: ✅ FUNCIONALIDADE COMPLETA
 Backend, formulário administrativo e exibição para alunos implementados. Administradores configuram mensagem HTML e link. Alunos veem modal automático após concluir última meta de planos gratuitos. TODO: Integrar busca real do plano do usuário (atualmente usando mock).
+
+
+## 🎨 PERSONALIZAÇÃO VISUAL E CENTRO DE COMANDO
+
+### Fundo Verde Claro na Barra Lateral
+- [ ] Alterar cor de fundo da sidebar para verde claro
+- [ ] Ajustar contraste dos textos e ícones
+- [ ] Garantir acessibilidade e legibilidade
+
+### Centro de Comando - Dashboard Administrativo
+- [ ] Criar nova tab "Personalização" no Admin
+- [ ] Implementar seletores de cores (color pickers)
+- [ ] Permitir customização de:
+  - Cor primária (botões, links, destaques)
+  - Cor secundária
+  - Cor da sidebar
+  - Cor de fundo
+  - Cor de texto
+- [ ] Salvar preferências no banco de dados
+- [ ] Aplicar cores dinamicamente via CSS variables
+- [ ] Preview em tempo real das mudanças
+- [ ] Botão "Resetar para padrão"
+- [ ] Persistir configurações entre sessões
