@@ -2327,6 +2327,11 @@ export async function redistribuirMetasAluno(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  console.log("[redistribuirMetasAluno] Iniciando redistribuição...");
+  console.log("[redistribuirMetasAluno] userId:", userId);
+  console.log("[redistribuirMetasAluno] horasDiarias:", horasDiarias);
+  console.log("[redistribuirMetasAluno] diasSemana:", diasSemana);
+
   try {
     // Buscar matrícula ativa
     const matriculaAtiva = await db
@@ -2340,9 +2345,13 @@ export async function redistribuirMetasAluno(
 
     const planoId = matriculaAtiva[0].planoId;
     const dataInicio = matriculaAtiva[0].dataInicio;
+    
+    console.log("[redistribuirMetasAluno] planoId:", planoId);
+    console.log("[redistribuirMetasAluno] dataInicio:", dataInicio);
 
     // Deletar registros de progresso não concluídos
-    await db
+    console.log("[redistribuirMetasAluno] Deletando progressoMetas não concluídos...");
+    const deleteResult = await db
       .delete(progressoMetas)
       .where(
         and(
@@ -2350,13 +2359,16 @@ export async function redistribuirMetasAluno(
           eq(progressoMetas.concluida, 0)
         )
       );
+    console.log("[redistribuirMetasAluno] Registros deletados:", deleteResult);
 
     // Redistribuir metas com configurações personalizadas
+    console.log("[redistribuirMetasAluno] Chamando distribuirMetasPlano...");
     await distribuirMetasPlano(userId, planoId, dataInicio, horasDiarias, diasSemana);
+    console.log("[redistribuirMetasAluno] Redistribuição concluída com sucesso!");
 
     return { success: true };
   } catch (error) {
-    console.error("Erro ao redistribuir metas:", error);
+    console.error("[redistribuirMetasAluno] ERRO:", error);
     throw new Error(`Erro ao redistribuir metas: ${error}`);
   }
 }

@@ -37,35 +37,48 @@ export default function Plano() {
   
   // Mutation para redistribuir metas
   const redistribuirMetas = trpc.metas.redistribuir.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("[Plano] Redistribuição bem-sucedida! Resposta:", data);
       toast.success("Metas redistribuídas com sucesso!");
+      console.log("[Plano] Chamando refetchMetas...");
       refetchMetas();
     },
     onError: (error) => {
+      console.error("[Plano] Erro ao redistribuir metas:", error);
       toast.error(error.message || "Erro ao redistribuir metas");
     },
   });
   
   useEffect(() => {
     if (minhasMetasData) {
+      console.log("[Plano] Dados recebidos do backend:", minhasMetasData);
       setPlanoInfo(minhasMetasData.plano);
       // Transformar metas para formato esperado pelo componente
-      const metasFormatadas = minhasMetasData.metas.map((meta: any, index: number) => ({
-        id: meta.id,
-        disciplina: meta.disciplina,
-        assunto: meta.assunto,
-        tipo: meta.tipo,
-        duracao: meta.duracao,
-        incidencia: meta.incidencia,
-        concluida: meta.concluida || false,
-        dataConclusao: meta.dataConclusao,
-        tempoGasto: meta.tempoGasto,
-        dicaEstudo: meta.dicaEstudo,
-        orientacaoEstudos: meta.orientacaoEstudos,
-        // Distribuir metas ao longo da semana (por enquanto)
-        data: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        anotacao: "",
-      }));
+      const metasFormatadas = minhasMetasData.metas.map((meta: any, index: number) => {
+        // USAR dataAgendada do backend se existir, senão calcular baseado na data atual + índice
+        const dataAgendada = meta.dataAgendada 
+          ? new Date(meta.dataAgendada).toISOString().split('T')[0]
+          : new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        console.log(`[Plano] Meta ${meta.id} (${meta.assunto}): dataAgendada=${dataAgendada}`);
+        
+        return {
+          id: meta.id,
+          disciplina: meta.disciplina,
+          assunto: meta.assunto,
+          tipo: meta.tipo,
+          duracao: meta.duracao,
+          incidencia: meta.incidencia,
+          concluida: meta.concluida || false,
+          dataConclusao: meta.dataConclusao,
+          tempoGasto: meta.tempoGasto,
+          dicaEstudo: meta.dicaEstudo,
+          orientacaoEstudos: meta.orientacaoEstudos,
+          data: dataAgendada,
+          anotacao: "",
+        };
+      });
+      console.log("[Plano] Metas formatadas:", metasFormatadas);
       setMetas(metasFormatadas);
     }
   }, [minhasMetasData]);
@@ -705,7 +718,7 @@ export default function Plano() {
         open={modalConfigurarCronograma}
         onClose={() => setModalConfigurarCronograma(false)}
         onSave={(config) => {
-          console.log("Nova configuração:", config);
+          console.log("[ConfigurarCronograma] Nova configuração:", config);
           
           // Converter dias da semana para array de números (0=domingo, 6=sábado)
           const diasSemana: number[] = [];
@@ -716,6 +729,10 @@ export default function Plano() {
           if (config.diasSemana.quinta) diasSemana.push(4);
           if (config.diasSemana.sexta) diasSemana.push(5);
           if (config.diasSemana.sabado) diasSemana.push(6);
+          
+          console.log("[ConfigurarCronograma] Dias da semana convertidos:", diasSemana);
+          console.log("[ConfigurarCronograma] Horas diárias:", config.horasDiarias);
+          console.log("[ConfigurarCronograma] Chamando redistribuirMetas.mutate...");
           
           // Redistribuir metas com configurações personalizadas
           redistribuirMetas.mutate({
