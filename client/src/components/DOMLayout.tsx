@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Menu,
   X,
+  Shield,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -38,6 +39,12 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
     { icon: <MessageSquare size={20} />, label: "Fórum", path: "/forum" },
     { icon: <RotateCcw size={20} />, label: "Revisão", path: "/revisao" },
   ];
+
+  // Adicionar item de Admin para usuários administrativos
+  const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
+  if (isAdmin) {
+    navItems.push({ icon: <Shield size={20} />, label: "Administração", path: "/admin" });
+  }
 
   const handleLogout = async () => {
     await logout();

@@ -13,6 +13,7 @@ import Questoes from "./pages/Questoes";
 import Forum from "./pages/Forum";
 import Revisao from "./pages/Revisao";
 import AnotacoesMeta from "./pages/AnotacoesMeta";
+import Admin from "./pages/Admin";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
         <Route path={"/forum"} component={Forum} />
         <Route path={"/revisao"} component={Revisao} />
         <Route path={"/anotacoes"} component={AnotacoesMeta} />
+        <Route path={"/admin"} component={Admin} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
