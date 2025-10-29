@@ -20,7 +20,7 @@ import { useEffect } from "react";
 
 export default function Plano() {
   const { conquistas, mostrarConquistas, limparConquistas } = useConquistaNotification();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedMeta, setSelectedMeta] = useState<any | null>(null);
   const [metas, setMetas] = useState<any[]>([]);
@@ -49,6 +49,22 @@ export default function Plano() {
     },
   });
   
+  // Detectar metaId na URL e abrir modal automaticamente
+  useEffect(() => {
+    if (metas.length > 0) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const metaId = urlParams.get('metaId');
+      if (metaId) {
+        const meta = metas.find(m => m.id === parseInt(metaId));
+        if (meta) {
+          setSelectedMeta(meta);
+          // Limpar URL sem recarregar página
+          window.history.replaceState({}, '', '/plano');
+        }
+      }
+    }
+  }, [metas]);
+
   useEffect(() => {
     if (minhasMetasData) {
       console.log("[Plano] Dados recebidos do backend:", minhasMetasData);

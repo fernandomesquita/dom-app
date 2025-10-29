@@ -2255,3 +2255,14 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - ✅ Mensagem de estado vazio quando não há anotações
   - ✅ Integrar MetaModal com mutation salvarAnotacao
 - **Status:** ✅ 100% Concluído
+
+### Melhorias na Página de Anotações (CONCLUÍDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Ajustes visuais e funcionais na página de anotações
+- **Tarefas:**
+  - ✅ Remover box de "Dica de Estudo"
+  - ✅ Remover fundo amarelo da anotação (integrar ao fundo)
+  - ✅ Adicionar data e horário da anotação (updatedAt) - formato DD/MM/AAAA às HH:MM
+  - ✅ Corrigir botão "Ver Meta no Plano" para navegar com ?metaId=X
+  - ✅ Plano.tsx detecta metaId na URL e abre modal automaticamente
+- **Status:** ✅ 100% Concluído

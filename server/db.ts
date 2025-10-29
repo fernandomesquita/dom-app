@@ -2391,6 +2391,7 @@ export async function getMetasComAnotacoes(userId: number) {
         dataConclusao: progressoMetas.dataConclusao,
         tempoGasto: progressoMetas.tempoGasto,
         anotacao: progressoMetas.anotacao,
+        updatedAt: progressoMetas.updatedAt,
         // Dados da meta
         disciplina: metas.disciplina,
         assunto: metas.assunto,

@@ -226,26 +226,28 @@ export default function Anotacoes() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Dica de Estudo */}
-                {anotacao.dicaEstudo && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="text-sm font-semibold text-blue-900 mb-1">💡 Dica de Estudo:</div>
-                    <div className="text-sm text-blue-800">{anotacao.dicaEstudo}</div>
-                  </div>
-                )}
-
                 {/* Anotação */}
-                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                  <div className="text-sm font-semibold text-yellow-900 mb-2">📝 Minha Anotação:</div>
-                  <div className="text-sm text-yellow-900 whitespace-pre-wrap">{anotacao.anotacao}</div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-muted-foreground">📝 Minha Anotação:</div>
+                    {anotacao.updatedAt && (
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(anotacao.updatedAt).toLocaleDateString("pt-BR")} às {new Date(anotacao.updatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-sm whitespace-pre-wrap">{anotacao.anotacao}</div>
                 </div>
 
                 {/* Botão para ir para a meta */}
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setLocation("/plano")}
+                    onClick={() => {
+                      // Navegar para o plano e abrir a meta específica
+                      setLocation(`/plano?metaId=${anotacao.metaId}`);
+                    }}
                   >
                     Ver Meta no Plano
                   </Button>
