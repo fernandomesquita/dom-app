@@ -1,4 +1,4 @@
-import { eq, sql, desc, asc, and, count, inArray, lt, gt } from "drizzle-orm";
+import { eq, sql, desc, asc, and, count, inArray, lt, gt, isNotNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -2370,5 +2370,96 @@ export async function redistribuirMetasAluno(
   } catch (error) {
     console.error("[redistribuirMetasAluno] ERRO:", error);
     throw new Error(`Erro ao redistribuir metas: ${error}`);
+  }
+}
+
+/**
+ * Buscar metas com anotações do aluno
+ */
+export async function getMetasComAnotacoes(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar progresso de metas com anotações não vazias
+    const progressoComAnotacoes = await db
+      .select({
+        progressoId: progressoMetas.id,
+        metaId: progressoMetas.metaId,
+        dataAgendada: progressoMetas.dataAgendada,
+        concluida: progressoMetas.concluida,
+        dataConclusao: progressoMetas.dataConclusao,
+        tempoGasto: progressoMetas.tempoGasto,
+        anotacao: progressoMetas.anotacao,
+        // Dados da meta
+        disciplina: metas.disciplina,
+        assunto: metas.assunto,
+        tipo: metas.tipo,
+        duracao: metas.duracao,
+        incidencia: metas.incidencia,
+        dicaEstudo: metas.dicaEstudo,
+      })
+      .from(progressoMetas)
+      .innerJoin(metas, eq(progressoMetas.metaId, metas.id))
+      .where(
+        and(
+          eq(progressoMetas.userId, userId),
+          isNotNull(progressoMetas.anotacao),
+          sql`${progressoMetas.anotacao} != ''`
+        )
+      )
+      .orderBy(desc(progressoMetas.updatedAt));
+
+    return progressoComAnotacoes;
+  } catch (error) {
+    console.error("Erro ao buscar metas com anotações:", error);
+    throw new Error(`Erro ao buscar metas com anotações: ${error}`);
+  }
+}
+
+/**
+ * Salvar anotação de uma meta
+ */
+export async function salvarAnotacaoMeta(userId: number, metaId: number, anotacao: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar progresso existente
+    const progressoExistente = await db
+      .select()
+      .from(progressoMetas)
+      .where(
+        and(
+          eq(progressoMetas.userId, userId),
+          eq(progressoMetas.metaId, metaId)
+        )
+      );
+
+    if (progressoExistente.length > 0) {
+      // Atualizar anotação
+      await db
+        .update(progressoMetas)
+        .set({ anotacao, updatedAt: new Date() })
+        .where(eq(progressoMetas.id, progressoExistente[0].id));
+    } else {
+      // Criar novo registro de progresso com anotação
+      // Buscar data agendada da meta (se existir em outro progresso ou usar data atual)
+      const dataAgendada = new Date();
+      
+      await db.insert(progressoMetas).values({
+        userId,
+        metaId,
+        dataAgendada,
+        concluida: 0,
+        tempoGasto: 0,
+        anotacao,
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao salvar anotação:", error);
+    throw new Error(`Erro ao salvar anotação: ${error}`);
   }
 }

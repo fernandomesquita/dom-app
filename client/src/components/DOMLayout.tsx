@@ -17,6 +17,7 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  StickyNote,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -56,6 +57,7 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
     { icon: <HelpCircle size={20} />, label: "Questões", path: "/questoes" },
     { icon: <MessageSquare size={20} />, label: "Fórum", path: "/forum" },
     { icon: <RotateCcw size={20} />, label: "Revisão", path: "/revisao" },
+    { icon: <StickyNote size={20} />, label: "Anotações", path: "/anotacoes" },
   ];
 
   // Adicionar item de Admin para usuários administrativos

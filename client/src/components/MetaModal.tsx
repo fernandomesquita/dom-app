@@ -230,10 +230,24 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
     });
   };
 
-  const handleSaveAnotacao = () => {
-    if (onSaveAnotacao && meta) {
-      onSaveAnotacao(meta.id, editAnotacoes);
+  const salvarAnotacaoMutation = trpc.metas.salvarAnotacao.useMutation({
+    onSuccess: () => {
       toast.success("Anotação salva com sucesso!");
+      if (onSaveAnotacao && meta) {
+        onSaveAnotacao(meta.id, editAnotacoes);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Erro ao salvar anotação: ${error.message}`);
+    },
+  });
+
+  const handleSaveAnotacao = () => {
+    if (meta) {
+      salvarAnotacaoMutation.mutate({
+        metaId: meta.id,
+        anotacao: editAnotacoes,
+      });
     }
   };
 

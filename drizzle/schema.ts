@@ -105,6 +105,7 @@ export const progressoMetas = mysqlTable("progresso_metas", {
   concluida: int("concluida").default(0).notNull(), // 0 = não, 1 = sim
   dataConclusao: timestamp("data_conclusao"),
   tempoGasto: int("tempo_gasto").default(0).notNull(), // em minutos
+  anotacao: text("anotacao"), // Anotações pessoais do aluno sobre a meta
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });

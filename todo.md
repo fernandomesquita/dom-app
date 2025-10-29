@@ -2234,3 +2234,24 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - Conversão automática de minutos → horas
   - Redistribuição automática ao ajustar dial
 - **Status:** ✅ Corrigido
+
+### Implementar Página de Anotações de Meta (CONCLUÍDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Criar página dedicada para visualizar todas as anotações salvas pelo aluno
+- **Tarefas:**
+  - ✅ Verificar schema - campo anotacao em progressoMetas
+  - ✅ Adicionar campo anotacao (text) ao schema progressoMetas
+  - ✅ Aplicar migration (drizzle/0009_fat_metal_master.sql)
+  - ✅ Criar API backend getMetasComAnotacoes()
+  - ✅ Criar API backend salvarAnotacaoMeta()
+  - ✅ Criar rota tRPC metas.minhasAnotacoes
+  - ✅ Criar rota tRPC metas.salvarAnotacao
+  - ✅ Criar página /anotacoes no frontend
+  - ✅ Listar metas com anotações (disciplina, assunto, data, anotação)
+  - ✅ Botão para navegar para a meta original
+  - ✅ Busca por texto (assunto, disciplina, conteúdo)
+  - ✅ Filtro por disciplina
+  - ✅ Adicionar link no menu lateral (StickyNote icon)
+  - ✅ Mensagem de estado vazio quando não há anotações
+  - ✅ Integrar MetaModal com mutation salvarAnotacao
+- **Status:** ✅ 100% Concluído

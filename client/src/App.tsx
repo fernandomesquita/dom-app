@@ -15,6 +15,7 @@ import EstatisticasQuestoes from "./pages/EstatisticasQuestoes";
 import Forum from "./pages/Forum";
 import Revisao from "./pages/Revisao";
 import AnotacoesMeta from "./pages/AnotacoesMeta";
+import Anotacoes from "./pages/Anotacoes";
 import Admin from "./pages/Admin";
 
 function Router() {
@@ -30,7 +31,8 @@ function Router() {
       <Route path={"/questoes/estatisticas"} component={EstatisticasQuestoes} />
         <Route path={"/forum"} component={Forum} />
         <Route path={"/revisao"} component={Revisao} />
-        <Route path={"/anotacoes"} component={AnotacoesMeta} />
+        <Route path={"/anotacoes-meta"} component={AnotacoesMeta} />
+        <Route path={"/anotacoes"} component={Anotacoes} />
         <Route path={"/admin"} component={Admin} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}

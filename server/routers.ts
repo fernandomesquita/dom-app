@@ -320,6 +320,23 @@ export const appRouter = router({
           input?.diasSemana
         );
       }),
+
+    // Buscar metas com anotações do aluno
+    minhasAnotacoes: protectedProcedure.query(async ({ ctx }) => {
+      const { getMetasComAnotacoes } = await import("./db");
+      return await getMetasComAnotacoes(ctx.user.id);
+    }),
+
+    // Salvar anotação de uma meta
+    salvarAnotacao: protectedProcedure
+      .input(z.object({
+        metaId: z.number(),
+        anotacao: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { salvarAnotacaoMeta } = await import("./db");
+        return await salvarAnotacaoMeta(ctx.user.id, input.metaId, input.anotacao);
+      }),
   }),
 
   aulas: router({

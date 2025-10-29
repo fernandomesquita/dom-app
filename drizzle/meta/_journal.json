@@ -64,6 +64,13 @@
       "when": 1761756519294,
       "tag": "0008_green_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1761776128206,
+      "tag": "0009_fat_metal_master",
+      "breakpoints": true
     }
   ]
 }
