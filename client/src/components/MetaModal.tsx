@@ -43,6 +43,17 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   // Mutations tRPC
   const marcarConcluida = trpc.metas.marcarConcluida.useMutation();
   const adicionarAnotacao = trpc.metas.adicionarAnotacao.useMutation();
+  const atualizarMeta = trpc.metas.update.useMutation({
+    onSuccess: () => {
+      toast.success("Meta atualizada com sucesso!");
+      setEditMode(false);
+      // Recarregar a página para atualizar os dados
+      window.location.reload();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao atualizar meta");
+    },
+  });
   
   const [tempoRestante, setTempoRestante] = useState(0);
   const [tempoDecorrido, setTempoDecorrido] = useState(0);
@@ -205,9 +216,18 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   };
 
   const handleSaveChanges = () => {
-    // TODO: Implementar salvamento no backend
-    toast.success("Meta atualizada com sucesso!");
-    setEditMode(false);
+    if (!meta) return;
+    
+    atualizarMeta.mutate({
+      id: meta.id,
+      disciplina: editDisciplina,
+      assunto: editAssunto,
+      tipo: editTipo,
+      duracao: editDuracao,
+      incidencia: editIncidencia || undefined,
+      dicaEstudo: editDicaEstudo,
+      orientacaoEstudos: editOrientacaoEstudos,
+    });
   };
 
   const handleSaveAnotacao = () => {

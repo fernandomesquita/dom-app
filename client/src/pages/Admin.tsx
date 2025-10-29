@@ -23,6 +23,7 @@ import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 import GestaoPlanos from "@/components/admin/GestaoPlanos";
+import GestaoMetas from "@/components/admin/GestaoMetas";
 import AtribuirPlano from "@/components/admin/AtribuirPlano";
 import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
@@ -223,20 +224,7 @@ export default function Admin() {
         {/* Tab: Gestão de Metas (Master, Mentor) */}
         {availableTabs.metas && (
           <TabsContent value="metas" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestão de Metas</CardTitle>
-                <CardDescription>
-                  {isMaster && "Criar, editar, excluir, publicar e configurar cores de metas"}
-                  {isMentor && "Inserir, editar, remover, habilitar/desabilitar e reordenar metas"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  Selecione um plano para visualizar e gerenciar suas metas
-                </p>
-              </CardContent>
-            </Card>
+            <GestaoPlanos />
           </TabsContent>
         )}
 

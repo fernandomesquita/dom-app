@@ -334,7 +334,15 @@ export async function updateMeta(id: number, updates: Partial<InsertMeta>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
+  console.log("[updateMeta] ID:", id);
+  console.log("[updateMeta] Updates recebidos:", JSON.stringify(updates, null, 2));
+  
   await db.update(metas).set(updates).where(eq(metas.id, id));
+  
+  // Buscar meta atualizada para confirmar
+  const metaAtualizada = await db.select().from(metas).where(eq(metas.id, id)).limit(1);
+  console.log("[updateMeta] Meta após update:", JSON.stringify(metaAtualizada[0], null, 2));
+  
   return { id, ...updates };
 }
 

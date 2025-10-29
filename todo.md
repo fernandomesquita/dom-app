@@ -2118,3 +2118,38 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
   - Criado campo visual de seleção de incidência no formulário (Baixa/Média/Alta)
   - Adicionado `incidencia` ao resetForm
 - **Status:** ✅ Corrigido
+
+
+### Bug: Edição de metas não persiste após salvar (INVESTIGANDO)
+- **Data:** 29/10/2025
+- **Descrição:** Usuário altera duração (120→45 min) e incidência (→Alta) no modal de edição, clica em salvar, mas ao reabrir a meta, os valores antigos permanecem
+- **Contexto:** Edição feita via modal de admin (GestaoMetas), visualização via MetaModal do aluno (Plano.tsx)
+- **Investigação em andamento:**
+  - ✅ Campo incidencia adicionado ao formData
+  - ✅ Rota trpc.metas.update existe e está correta
+  - ✅ Função updateMeta no db.ts está correta
+  - ✅ Schema da tabela metas tem campo incidencia
+  - ✅ Enum de tipo está correto (minúsculas)
+  - ✅ Refetch está sendo chamado após mutation
+  - ⏳ Logs adicionados para debugar
+  - ⏳ Verificar se MetaModal está usando dados em cache
+- **Status:** 🔍 Em investigação
+
+
+### Bug: Edição de metas não persistia (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Função handleSaveChanges no MetaModal apenas mostrava toast mas não salvava no backend (era um TODO)
+- **Solução:** 
+  - Adicionada mutation atualizarMeta usando trpc.metas.update.useMutation()
+  - Implementada função handleSaveChanges completa enviando todos os campos editados
+  - Adicionado reload da página após salvar para garantir dados atualizados
+- **Status:** ✅ Corrigido
+
+### Bug: Gestão de Metas no Admin não carrega planos (CORRIGIDO ✅)
+- **Data:** 29/10/2025
+- **Descrição:** Tab "Metas" no painel Admin mostrava apenas mensagem estática sem listar planos
+- **Solução:** 
+  - Adicionado import de GestaoMetas no Admin.tsx
+  - Substituído conteúdo estático por componente GestaoPlanos
+  - Agora mostra lista de planos com botão "Gerenciar Metas" para cada um
+- **Status:** ✅ Corrigido
