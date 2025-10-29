@@ -1915,3 +1915,16 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Notificar admin quando mensagem for retida
 - [ ] Exibir mensagem "Em análise" para o autor
 - [ ] Publicar mensagem após aprovação
+
+### Moderação de Links no Fórum
+- [x] Criar função para detectar URLs em mensagens (regex)
+- [x] Criar utilitário linkDetector.ts (contemLinks, extrairLinks, analisarLinks)
+- [x] Implementar retenção automática de mensagens com links
+- [x] Criar tabela forum_mensagens_retidas no banco de dados
+- [x] Criar funções no db.ts (verificarERetterMensagem, getMensagensRetidas)
+- [x] Implementar aprovação/rejeição de mensagens (aprovarMensagemRetida, rejeitarMensagemRetida)
+- [x] Criar APIs tRPC (getMensagensRetidas, aprovarMensagem, rejeitarMensagem)
+- [x] Controle de acesso (Master e Administrativo)
+- [ ] Criar painel de moderação no Admin (tab Moderação) - UI
+- [ ] Notificar usuário sobre mensagem retida
+- [ ] Integrar verificação ao criar tópicos/respostas no frontend

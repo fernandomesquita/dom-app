@@ -427,6 +427,35 @@ export const appRouter = router({
         const { atualizarConfigFuncionalidades } = await import("./db");
         return await atualizarConfigFuncionalidades(input);
       }),
+
+    // Moderação de Links
+    getMensagensRetidas: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+        throw new Error("Unauthorized");
+      }
+      const { getMensagensRetidas } = await import("./db");
+      return await getMensagensRetidas();
+    }),
+
+    aprovarMensagem: protectedProcedure
+      .input(z.object({ mensagemId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { aprovarMensagemRetida } = await import("./db");
+        return await aprovarMensagemRetida(input.mensagemId, ctx.user.id);
+      }),
+
+    rejeitarMensagem: protectedProcedure
+      .input(z.object({ mensagemId: z.number(), motivo: z.string().optional() }))
+      .mutation(async ({ ctx, input }) => {
+        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { rejeitarMensagemRetida } = await import("./db");
+        return await rejeitarMensagemRetida(input.mensagemId, ctx.user.id, input.motivo);
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

@@ -188,7 +188,7 @@ export default function Admin() {
 
       {/* Tabs de Gestão */}
       <Tabs defaultValue={tabs[0]?.value} className="space-y-6">
-        <TabsList className={`grid w-full grid-cols-${Math.min(tabs.length, 6)}`}>
+        <TabsList className="flex w-full overflow-x-auto">
           {tabs.map(tab => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}

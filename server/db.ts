@@ -17,7 +17,8 @@ import {
   avisosDispensados,
   conquistas,
   userConquistas,
-  configFuncionalidades
+  configFuncionalidades,
+  forumMensagensRetidas
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1443,4 +1444,144 @@ export async function atualizarConfigFuncionalidades(updates: {
   }
 
   return await getConfigFuncionalidades();
+}
+
+
+// ========== MODERAÇÃO DE LINKS NO FÓRUM ==========
+
+import { contemLinks, extrairLinks } from "./utils/linkDetector";
+
+/**
+ * Retém mensagem para moderação se contiver links
+ * Retorna true se a mensagem foi retida, false se foi publicada normalmente
+ */
+export async function verificarERetterMensagem(
+  tipo: "topico" | "resposta",
+  autorId: number,
+  conteudo: string,
+  topicoId?: number,
+  respostaId?: number
+): Promise<boolean> {
+  if (!contemLinks(conteudo)) {
+    return false; // Não contém links, pode ser publicada
+  }
+
+  const links = extrairLinks(conteudo);
+  
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(forumMensagensRetidas).values({
+    tipo,
+    topicoId: topicoId || null,
+    respostaId: respostaId || null,
+    autorId,
+    conteudo,
+    linksDetectados: JSON.stringify(links),
+    status: "pendente",
+  });
+
+  return true; // Mensagem retida para moderação
+}
+
+/**
+ * Buscar mensagens retidas pendentes de moderação
+ */
+export async function getMensagensRetidas() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const mensagens = await db
+    .select({
+      id: forumMensagensRetidas.id,
+      tipo: forumMensagensRetidas.tipo,
+      topicoId: forumMensagensRetidas.topicoId,
+      respostaId: forumMensagensRetidas.respostaId,
+      autorId: forumMensagensRetidas.autorId,
+      autorNome: users.name,
+      autorEmail: users.email,
+      conteudo: forumMensagensRetidas.conteudo,
+      linksDetectados: forumMensagensRetidas.linksDetectados,
+      status: forumMensagensRetidas.status,
+      createdAt: forumMensagensRetidas.createdAt,
+    })
+    .from(forumMensagensRetidas)
+    .leftJoin(users, eq(forumMensagensRetidas.autorId, users.id))
+    .where(eq(forumMensagensRetidas.status, "pendente"))
+    .orderBy(desc(forumMensagensRetidas.createdAt));
+
+  return mensagens.map(msg => ({
+    ...msg,
+    links: JSON.parse(msg.linksDetectados || "[]"),
+  }));
+}
+
+/**
+ * Aprovar mensagem retida e publicá-la no fórum
+ */
+export async function aprovarMensagemRetida(mensagemId: number, revisadoPor: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const mensagem = await db
+    .select()
+    .from(forumMensagensRetidas)
+    .where(eq(forumMensagensRetidas.id, mensagemId))
+    .limit(1);
+
+  if (!mensagem[0]) {
+    throw new Error("Mensagem não encontrada");
+  }
+
+  const msg = mensagem[0];
+
+  // Publicar mensagem no fórum
+  if (msg.tipo === "topico") {
+    // Criar tópico
+    await db.insert(forumTopicos).values({
+      userId: msg.autorId,
+      titulo: "Tópico Moderado", // Você pode adicionar título ao schema de mensagens retidas
+      conteudo: msg.conteudo,
+      categoria: "Discussão",
+    });
+  } else if (msg.tipo === "resposta" && msg.topicoId) {
+    // Criar resposta
+    await db.insert(forumRespostas).values({
+      topicoId: msg.topicoId,
+      userId: msg.autorId,
+      conteudo: msg.conteudo,
+    });
+  }
+
+  // Atualizar status da mensagem retida
+  await db
+    .update(forumMensagensRetidas)
+    .set({
+      status: "aprovado",
+      revisadoPor,
+      revisadoEm: new Date(),
+    })
+    .where(eq(forumMensagensRetidas.id, mensagemId));
+
+  return true;
+}
+
+/**
+ * Rejeitar mensagem retida
+ */
+export async function rejeitarMensagemRetida(
+  mensagemId: number,
+  revisadoPor: number,
+  motivoRejeicao?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db
+    .update(forumMensagensRetidas)
+    .set({
+      status: "rejeitado",
+      revisadoPor,
+      revisadoEm: new Date(),
+      motivoRejeicao: motivoRejeicao || "Conteúdo inadequado",
+    })
+    .where(eq(forumMensagensRetidas.id, mensagemId));
+
+  return true;
 }

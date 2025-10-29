@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Primeiro, vamos ver os tópicos existentes\nSELECT id, titulo, autorId FROM forum_topicos LIMIT 5;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute \n-- Primeiro, vamos ver os tópicos existentes\nSELECT id, titulo, autorId FROM forum_topicos LIMIT 5;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'autorid' in 'field list'"
+  ]
+}

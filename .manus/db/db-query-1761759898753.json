@@ -1,0 +1,16 @@
+{
+  "query": "\n-- Inserir um tópico de teste do usuário master\nINSERT INTO forum_topicos (user_id, titulo, conteudo, categoria, created_at, updated_at)\nVALUES (1, 'Teste de Notificação', 'Este é um tópico de teste para demonstrar o sistema de notificações do fórum.', 'Discussão', NOW(), NOW());\n\n-- Buscar o ID do tópico recém-criado\nSET @topico_id = LAST_INSERT_ID();\n\n-- Inserir uma resposta de teste (simulando que outro usuário respondeu)\nINSERT INTO forum_respostas (topico_id, user_id, conteudo, created_at, updated_at)\nVALUES (@topico_id, 2, 'Esta é uma resposta de teste para gerar uma notificação. O sistema deve alertar o autor do tópico sobre esta resposta.', NOW(), NOW());\n\n-- Mostrar resultado\nSELECT \n  ft.id as topico_id,\n  ft.titulo,\n  fr.id as resposta_id,\n  fr.conteudo as resposta_conteudo\nFROM forum_topicos ft\nLEFT JOIN forum_respostas fr ON fr.topico_id = ft.id\nWHERE ft.id = @topico_id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute \n-- Inserir um tópico de teste do usuário master\nINSERT INTO forum_topicos (user_id, titulo, conteudo, categoria, created_at, updated_at)\nVALUES (1, 'Teste de Notificação', 'Este é um tópico de teste para demonstrar o sistema de notificações do fórum.', 'Discussão', NOW(), NOW());\n\n-- Buscar o ID do tópico recém-criado\nSET @topico_id = LAST_INSERT_ID();\n\n-- Inserir uma resposta de teste (simulando que outro usuário respondeu)\nINSERT INTO forum_respostas (topico_id, user_id, conteudo, created_at, updated_at)\nVALUES (@topico_id, 2, 'Esta é uma resposta de teste para gerar uma notificação. O sistema deve alertar o autor do tópico sobre esta resposta.', NOW(), NOW());\n\n-- Mostrar resultado\nSELECT \n  ft.id as topico_id,\n  ft.titulo,\n  fr.id as resposta_id,\n  fr.conteudo as resposta_conteudo\nFROM forum_topicos ft\nLEFT JOIN forum_respostas fr ON fr.topico_id = ft.id\nWHERE ft.id = @topico_id;\n",
+  "rows": [
+    {
+      "topico_id": "1",
+      "titulo": "Teste de Notificação",
+      "resposta_id": "1",
+      "resposta_conteudo": "Esta é uma resposta de teste para gerar uma notificação. O sistema deve alertar o autor do tópico sobre esta resposta."
+    }
+  ],
+  "messages": [],
+  "stdout": "topico_id\ttitulo\tresposta_id\tresposta_conteudo\n1\tTeste de Notificação\t1\tEsta é uma resposta de teste para gerar uma notificação. O sistema deve alertar o autor do tópico sobre esta resposta.\n",
+  "stderr": "",
+  "execution_time_ms": 82
+}
