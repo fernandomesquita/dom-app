@@ -8,6 +8,7 @@ import DOMLayout from "./components/DOMLayout";
 import Dashboard from "./pages/Dashboard";
 import Plano from "./pages/Plano";
 import Aulas from "./pages/Aulas";
+import AulaView from "./pages/AulaView";
 import Materiais from "./pages/Materiais";
 import Questoes from "./pages/Questoes";
 import EstatisticasQuestoes from "./pages/EstatisticasQuestoes";
@@ -23,6 +24,7 @@ function Router() {
         <Route path={"/"} component={Dashboard} />
         <Route path={"/plano"} component={Plano} />
         <Route path={"/aulas"} component={Aulas} />
+      <Route path={"/aulas/:id"} component={AulaView} />
         <Route path={"/materiais"} component={Materiais} />
         <Route path={"/questoes"} component={Questoes} />
       <Route path={"/questoes/estatisticas"} component={EstatisticasQuestoes} />
