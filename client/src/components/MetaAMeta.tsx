@@ -246,9 +246,26 @@ export default function MetaAMeta({ metas, onMetaConcluida }: MetaAMetaProps) {
                       <span>{metaAtual.duracao} min</span>
                     </div>
                     {metaAtual.incidencia && (
-                      <Badge variant="secondary" className="capitalize">
-                        Incidência: {metaAtual.incidencia}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {metaAtual.incidencia === "alta" && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-full bg-red-500" title="Incidência Alta"></span>
+                            <span className="text-sm">Alta</span>
+                          </span>
+                        )}
+                        {metaAtual.incidencia === "media" && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-full bg-yellow-500" title="Incidência Média"></span>
+                            <span className="text-sm">Média</span>
+                          </span>
+                        )}
+                        {metaAtual.incidencia === "baixa" && (
+                          <span className="inline-flex items-center gap-1">
+                            <span className="w-3 h-3 rounded-full bg-green-500" title="Incidência Baixa"></span>
+                            <span className="text-sm">Baixa</span>
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

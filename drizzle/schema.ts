@@ -314,3 +314,40 @@ export type Conquista = typeof conquistas.$inferSelect;
 export type InsertConquista = typeof conquistas.$inferInsert;
 export type UserConquista = typeof userConquistas.$inferSelect;
 export type InsertUserConquista = typeof userConquistas.$inferInsert;
+
+// ========== CONFIGURAÇÕES DO SISTEMA ==========
+
+/**
+ * Configurações de funcionalidades - controle de módulos habilitados/desabilitados
+ */
+export const configFuncionalidades = mysqlTable("config_funcionalidades", {
+  id: int("id").autoincrement().primaryKey(),
+  questoesHabilitado: int("questoes_habilitado").default(1).notNull(),
+  forumHabilitado: int("forum_habilitado").default(1).notNull(),
+  materiaisHabilitado: int("materiais_habilitado").default(1).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ConfigFuncionalidades = typeof configFuncionalidades.$inferSelect;
+export type InsertConfigFuncionalidades = typeof configFuncionalidades.$inferInsert;
+
+/**
+ * Mensagens retidas do fórum - moderação de conteúdo com links
+ */
+export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
+  id: int("id").autoincrement().primaryKey(),
+  tipo: mysqlEnum("tipo", ["topico", "resposta"]).notNull(),
+  topicoId: int("topico_id"),
+  respostaId: int("resposta_id"),
+  autorId: int("autor_id").notNull(),
+  conteudo: text("conteudo").notNull(),
+  linksDetectados: text("links_detectados").notNull(), // JSON array de links
+  status: mysqlEnum("status", ["pendente", "aprovado", "rejeitado"]).default("pendente").notNull(),
+  revisadoPor: int("revisado_por"),
+  revisadoEm: timestamp("revisado_em"),
+  motivoRejeicao: text("motivo_rejeicao"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type ForumMensagemRetida = typeof forumMensagensRetidas.$inferSelect;
+export type InsertForumMensagemRetida = typeof forumMensagensRetidas.$inferInsert;

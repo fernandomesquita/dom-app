@@ -165,13 +165,25 @@ export default function Plano() {
   const getIncidenciaIcon = (incidencia: string) => {
     switch (incidencia) {
       case "alta":
-        return "🔥";
+        return (
+          <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-red-500" title="Incidência Alta">
+            <span className="sr-only">Alta</span>
+          </span>
+        );
       case "media":
-        return "⚡";
+        return (
+          <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-yellow-500" title="Incidência Média">
+            <span className="sr-only">Média</span>
+          </span>
+        );
       case "baixa":
-        return "💧";
+        return (
+          <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-green-500" title="Incidência Baixa">
+            <span className="sr-only">Baixa</span>
+          </span>
+        );
       default:
-        return "";
+        return null; // N/A - não exibe nada
     }
   };
 

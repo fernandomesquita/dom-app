@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getLoginUrl } from "@/const";
 import { PontosCard, RankingCard, ConquistasCard } from "@/components/GamificacaoCard";
-import NotificacoesForumCard from "@/components/NotificacoesForumCard";
+
 import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote, Bell } from "lucide-react";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -14,13 +14,21 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [visualizarComo, setVisualizarComo] = useState<string>("proprio");
   
+  const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
+  
   // Buscar estatísticas reais do backend
   const { data: stats, isLoading: statsLoading } = trpc.dashboard.estatisticas.useQuery(
     undefined,
     { enabled: isAuthenticated }
   );
   
-  const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
+  // Buscar notificações não lidas do fórum
+  const { data: notificacoes } = trpc.forum.notificacoesRespostas.useQuery(
+    undefined,
+    { enabled: isAuthenticated && !isAdmin }
+  );
+  
+  const notificacoesNaoLidas = notificacoes?.length || 0;
 
   if (loading || statsLoading) {
     return (
@@ -72,6 +80,21 @@ export default function Dashboard() {
             Bem-vindo de volta. Continue seus estudos de onde parou.
           </p>
         </div>
+        
+        {/* Sino de Notificações do Fórum */}
+        {!isAdmin && (
+          <Link href="/notificacoes">
+            <Button variant="outline" size="icon" className="relative">
+              <Bell className="h-5 w-5" />
+              {notificacoesNaoLidas > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                  {notificacoesNaoLidas > 9 ? '9+' : notificacoesNaoLidas}
+                </span>
+              )}
+              <span className="sr-only">Notificações ({notificacoesNaoLidas})</span>
+            </Button>
+          </Link>
+        )}
         
         {/* Visualizar Como (apenas para admins) */}
         {isAdmin && (
@@ -203,7 +226,7 @@ export default function Dashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4">Acesso Rápido</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <NotificacoesForumCard />
+
           <Link href="/anotacoes">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
               <CardContent className="pt-6">

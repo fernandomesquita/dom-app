@@ -1862,3 +1862,51 @@ Backend, formulário administrativo e exibição para alunos implementados. Admi
 - [ ] Implementar scroll contínuo (infinite scroll) - usar navegação por botões
 - [ ] Suporte a swipe (mobile) - requer biblioteca adicional
 - [ ] Modo responsivo otimizado (horizontal mobile / vertical desktop)
+
+### Controle de Funcionalidades (Master Admin)
+- [ ] Criar toggle switches no painel admin para habilitar/desabilitar funcionalidades
+- [ ] Implementar controle de Questões (habilitar/desabilitar)
+- [ ] Implementar controle de Fórum (habilitar/desabilitar)
+- [ ] Implementar controle de Materiais (habilitar/desabilitar)
+- [ ] Criar tabela no banco para armazenar configurações de funcionalidades
+- [ ] Aplicar estilo cinza para funcionalidades desabilitadas no admin
+- [ ] Ocultar funcionalidades desabilitadas no painel do aluno
+- [ ] Atualizar menu lateral do aluno dinamicamente
+
+### Melhorias na Página de Questões
+- [x] Tornar toda área da alternativa clicável (não só o radio button)
+- [x] Aplicar destaque verde claro (bg-green-50 border-green-400) ao selecionar
+- [x] Adicionar transição suave (transition-all) ao selecionar/desselecionar
+- [x] Melhorar feedback visual de hover (hover:shadow-md, hover:border-gray-400)
+
+### Sistema de Incidência com Bolas Coloridas
+- [x] Substituir emojis de incidência por bolas coloridas
+- [x] Implementar bola vermelha (🔴) para alta incidência
+- [x] Implementar bola amarela (🟡) para média incidência
+- [x] Implementar bola verde (🟢) para baixa incidência
+- [x] Implementar opção N/A (ocultar incidência - retorna null)
+- [x] Atualizar exibição na página Plano (calendário e lista)
+- [x] Atualizar exibição no componente MetaAMeta
+- [ ] Configurar campo vazio na planilha como N/A (backend)
+- [ ] Atualizar seletor de incidência no admin
+
+### Sistema de Notificações do Fórum (Sino)
+- [x] Remover card de notificações do Dashboard
+- [x] Criar ícone de sino no topo do Dashboard (apenas para alunos)
+- [x] Adicionar badge com contador de notificações não lidas (vermelho)
+- [x] Criar página dedicada de Notificações (/notificacoes)
+- [x] Implementar listagem de notificações na nova página
+- [x] Adicionar link do sino para página de notificações
+- [x] Marcar notificações como lidas ao clicar em "Ver Tópico"
+- [x] Botão de dispensar notificação (X)
+- [x] Badges coloridos por role (master, mentor, professor, admin)
+
+### Moderação de Links no Fórum
+- [ ] Implementar detecção de links em mensagens do fórum
+- [ ] Criar sistema de retenção de mensagens com links
+- [ ] Criar tabela de mensagens retidas no banco
+- [ ] Adicionar seção de moderação no painel admin
+- [ ] Implementar aprovação/rejeição de mensagens retidas
+- [ ] Notificar admin quando mensagem for retida
+- [ ] Exibir mensagem "Em análise" para o autor
+- [ ] Publicar mensagem após aprovação

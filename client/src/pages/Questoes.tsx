@@ -194,14 +194,15 @@ export default function Questoes() {
                 return (
                   <div
                     key={alt.letra}
-                    className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-                      bgColor || (isSelecionada ? "border-primary" : "border-border")
-                    }`}
+                    onClick={() => !respondida && setRespostaSelecionada(alt.letra)}
+                    className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer hover:shadow-md ${
+                      bgColor || (isSelecionada ? "bg-green-50 border-green-400" : "border-border hover:border-gray-400")
+                    } ${respondida ? "cursor-default" : ""}`}
                   >
-                    <RadioGroupItem value={alt.letra} id={alt.letra} />
+                    <RadioGroupItem value={alt.letra} id={alt.letra} className="pointer-events-none" />
                     <Label
                       htmlFor={alt.letra}
-                      className="flex-1 cursor-pointer font-normal"
+                      className="flex-1 cursor-pointer font-normal pointer-events-none"
                     >
                       <span className="font-semibold mr-2">{alt.letra})</span>
                       {alt.texto}
