@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { ConquistaToast } from "@/components/ConquistaToast";
 import { useConquistaNotification } from "@/hooks/useConquistaNotification";
 import { trpc } from "@/lib/trpc";
+import MensagemPosPlanoModal from "@/components/MensagemPosPlanoModal";
 
 export default function Plano() {
   const { conquistas, mostrarConquistas, limparConquistas } = useConquistaNotification();
@@ -25,6 +26,21 @@ export default function Plano() {
   const [filtroDisciplina, setFiltroDisciplina] = useState<string>("todas");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(true);
   const [visualizacao, setVisualizacao] = useState<"calendario" | "lista">("calendario");
+  const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
+  const [planoInfo, setPlanoInfo] = useState<any>(null);
+  
+  // TODO: Buscar plano real do usuário através da API
+  // Por enquanto, usando mock para demonstração
+  useState(() => {
+    setPlanoInfo({
+      id: 1,
+      nome: "Plano de Estudos - Concurso XYZ",
+      tipo: "gratuito",
+      exibirMensagemPosPlano: true,
+      mensagemPosPlano: "<h3>Parabéns por concluir o plano!</h3><p>Você demonstrou dedicação e comprometimento. Continue estudando e alcance seus objetivos!</p><p><strong>Próximo passo:</strong> Considere adquirir nosso plano premium para ter acesso a mais conteúdos exclusivos.</p>",
+      linkPosPlano: "https://exemplo.com/plano-premium",
+    });
+  });
   
   // Estado para controle de tempo por dia (em minutos)
   const [temposPorDia, setTemposPorDia] = useState<Record<string, number>>({
@@ -98,15 +114,24 @@ export default function Plano() {
   const marcarMetaMutation = trpc.metas.marcarConcluida.useMutation({
     onSuccess: (data: any) => {
       // Atualizar estado local
-      setMetas(metas.map(meta => 
+      const metasAtualizadas = metas.map(meta => 
         meta.id === selectedMeta?.id ? { ...meta, concluida: !meta.concluida } : meta
-      ));
+      );
+      setMetas(metasAtualizadas);
       setSelectedMeta(null);
       toast.success("Meta atualizada!");
       
       // Mostrar conquistas desbloqueadas
       if (data.conquistasDesbloqueadas && data.conquistasDesbloqueadas.length > 0) {
         mostrarConquistas(data.conquistasDesbloqueadas);
+      }
+      
+      // Verificar se foi a última meta e se o plano tem mensagem pós-conclusão
+      const todasConcluidas = metasAtualizadas.every(m => m.concluida);
+      if (todasConcluidas && planoInfo?.tipo === "gratuito" && planoInfo?.exibirMensagemPosPlano) {
+        setTimeout(() => {
+          setModalMensagemPosPlano(true);
+        }, 1500); // Aguardar 1.5s para exibir após o toast de conquistas
       }
     },
     onError: () => {
@@ -462,6 +487,16 @@ export default function Plano() {
       )}
 
       <ConquistaToast conquistas={conquistas} onClose={limparConquistas} />
+      
+      {planoInfo && (
+        <MensagemPosPlanoModal
+          open={modalMensagemPosPlano}
+          onClose={() => setModalMensagemPosPlano(false)}
+          mensagemHtml={planoInfo.mensagemPosPlano || ""}
+          link={planoInfo.linkPosPlano}
+          planoNome={planoInfo.nome}
+        />
+      )}
     </div>
   );
 }
