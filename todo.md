@@ -228,12 +228,12 @@
 - [x] Implementar sistema de timer completo com cronômetro
 
 ### 5.4 Personalização do Cronograma
-- [ ] Implementar configuração de horas diárias
-- [ ] Implementar configuração de dias da semana
-- [ ] Implementar ajuste de ritmo de aprendizagem
-- [ ] Implementar pausa/retomada de cronograma
-- [ ] Implementar recalculo automático de distribuição
-- [ ] Implementar visualização de impacto das mudanças
+- [x] Implementar configuração de horas diárias
+- [x] Implementar configuração de dias da semana
+- [x] Implementar ajuste de ritmo de aprendizagem (via horas diárias)
+- [x] Implementar pausa/retomada de cronograma (sistema de pausas/férias)
+- [ ] Implementar recalculo automático de distribuição (interface pronta, backend pendente)
+- [x] Implementar visualização de impacto das mudanças (total semanal exibido)
 
 ### 5.5 Funcionalidades Adicionais
 - [ ] Implementar sistema de arrastar e soltar metas

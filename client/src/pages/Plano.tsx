@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
 import MetaAMeta from "@/components/MetaAMeta";
-import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
+import ConfigurarCronograma from "@/components/ConfigurarCronograma";
+import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List, Settings } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ export default function Plano() {
   const [visualizacao, setVisualizacao] = useState<"calendario" | "lista" | "metaAMeta">("calendario");
   const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
   const [planoInfo, setPlanoInfo] = useState<any>(null);
+  const [modalConfigurarCronograma, setModalConfigurarCronograma] = useState(false);
   
   // Buscar metas do plano atribuído ao aluno
   const { data: minhasMetasData, isLoading: loadingMetas, refetch: refetchMetas } = trpc.metas.minhasMetas.useQuery();
@@ -273,16 +275,27 @@ export default function Plano() {
         <Breadcrumb items={[{ label: "Meu Plano de Estudos" }]} />
       </div>
 
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
-        <p className="text-muted-foreground mt-2">
-          Plano: <span className="font-semibold text-foreground">{planoInfo.nome || "Carregando..."}</span>
-        </p>
-        {planoInfo.orgao && planoInfo.cargo && (
-          <p className="text-sm text-muted-foreground mt-1">
-            {planoInfo.orgao} - {planoInfo.cargo}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
+          <p className="text-muted-foreground mt-2">
+            Plano: <span className="font-semibold text-foreground">{planoInfo.nome || "Carregando..."}</span>
           </p>
-        )}
+          {planoInfo.orgao && planoInfo.cargo && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {planoInfo.orgao} - {planoInfo.cargo}
+            </p>
+          )}
+        </div>
+        <Button 
+          variant="outline" 
+          size="lg"
+          onClick={() => setModalConfigurarCronograma(true)}
+          className="flex items-center gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          Configurar Cronograma
+        </Button>
       </div>
 
       <Card>
@@ -676,6 +689,15 @@ export default function Plano() {
           planoNome={planoInfo.nome}
         />
       )}
+
+      <ConfigurarCronograma
+        open={modalConfigurarCronograma}
+        onClose={() => setModalConfigurarCronograma(false)}
+        onSave={(config) => {
+          console.log("Nova configuração:", config);
+          // TODO: Implementar redistribuição de metas com base na nova configuração
+        }}
+      />
     </div>
   );
 }
