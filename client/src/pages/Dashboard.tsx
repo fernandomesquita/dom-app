@@ -9,6 +9,7 @@ import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award
 import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import GraficoProgressoSemanal from "@/components/GraficoProgressoSemanal";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -29,6 +30,12 @@ export default function Dashboard() {
   );
   
   const notificacoesNaoLidas = notificacoes?.length || 0;
+  
+  // Buscar progresso semanal
+  const { data: progressoSemanal } = trpc.dashboard.progressoSemanal.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
 
   if (loading || statsLoading) {
     return (
@@ -332,47 +339,8 @@ export default function Dashboard() {
         <ConquistasCard />
       </div>
 
-      {/* Progresso Semanal */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Seu Progresso Esta Semana</CardTitle>
-          <CardDescription>Acompanhe seu desempenho nos últimos 7 dias</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-muted-foreground">Média diária de estudo</span>
-                <span className="font-medium">{((stats?.horasEstudadas || 0) / 7).toFixed(1)}h / dia</span>
-              </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary transition-all" 
-                  style={{ width: `${(((stats?.horasEstudadas || 0) / 7) / 6) * 100}%` }}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{stats?.horasEstudadas || 0}h</div>
-                <div className="text-xs text-muted-foreground">Horas totais</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats?.metasConcluidas || 0}</div>
-                <div className="text-xs text-muted-foreground">Metas concluídas</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats?.aulasAssistidas || 0}</div>
-                <div className="text-xs text-muted-foreground">Aulas assistidas</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{stats?.questoesResolvidas || 0}</div>
-                <div className="text-xs text-muted-foreground">Questões resolvidas</div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Progresso Semanal com Gráfico */}
+      {progressoSemanal && <GraficoProgressoSemanal dados={progressoSemanal} />}
     </div>
   );
 }
