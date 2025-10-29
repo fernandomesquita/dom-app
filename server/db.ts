@@ -1,4 +1,4 @@
-import { eq, sql, desc, and, count } from "drizzle-orm";
+import { eq, sql, desc, and, count, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -1116,4 +1116,146 @@ export async function importarPlanosDeExcel(dados: any[]) {
     console.error("[Database] Erro ao importar planilha:", error);
     throw error;
   }
+}
+
+
+/**
+ * Calcula o índice de engajamento de um plano
+ * Mostra onde os alunos estão abandonando e taxa de retorno
+ */
+export async function calcularEngajamentoPlano(planoId: number) {
+  const db = await getDb();
+  if (!db) return {
+    totalAlunos: 0,
+    totalMetas: 0,
+    taxaConclusaoGeral: 0,
+    progressoMedio: 0,
+    metaMaiorAbandono: null,
+    taxaRetornoDiario: 0,
+    progressoPorMeta: [],
+  };
+
+  // Buscar todas as matrículas ativas do plano
+  const matriculasPlano = await db
+    .select()
+    .from(matriculas)
+    .where(eq(matriculas.planoId, planoId));
+
+  if (matriculasPlano.length === 0) {
+    return {
+      totalAlunos: 0,
+      taxaConclusaoGeral: 0,
+      progressoMedio: 0,
+      metaMaiorAbandono: null,
+      taxaRetornoDiario: 0,
+      progressoPorMeta: [],
+    };
+  }
+
+  // Buscar todas as metas do plano ordenadas por ID (ordem de criação)
+  const metasPlano = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.planoId, planoId))
+    .orderBy(metas.id);
+
+  if (metasPlano.length === 0) {
+    return {
+      totalAlunos: matriculasPlano.length,
+      taxaConclusaoGeral: 0,
+      progressoMedio: 0,
+      metaMaiorAbandono: null,
+      taxaRetornoDiario: 0,
+      progressoPorMeta: [],
+    };
+  }
+
+  // Buscar progresso de todos os alunos matriculados
+  const userIds = matriculasPlano.map((m: any) => m.userId);
+  const metaIds = metasPlano.map((m: any) => m.id);
+
+  const progressos = await db
+    .select()
+    .from(progressoMetas)
+    .where(
+      and(
+        inArray(progressoMetas.userId, userIds),
+        inArray(progressoMetas.metaId, metaIds)
+      )
+    );
+
+  // Calcular taxa de conclusão por meta
+  const progressoPorMeta = metasPlano.map((meta: any, index: number) => {
+    const progressosMeta = progressos.filter((p: any) => p.metaId === meta.id);
+    const concluidas = progressosMeta.filter((p: any) => p.concluida === 1).length;
+    const taxaConclusao = matriculasPlano.length > 0 
+      ? (concluidas / matriculasPlano.length) * 100 
+      : 0;
+
+    // Calcular taxa de retorno no dia previsto
+    const progressosComData = progressosMeta.filter((p: any) => p.dataAgendada && p.dataConclusao);
+    const retornosNoDia = progressosComData.filter((p: any) => {
+      const agendada = new Date(p.dataAgendada!);
+      const conclusao = new Date(p.dataConclusao!);
+      return (
+        agendada.getDate() === conclusao.getDate() &&
+        agendada.getMonth() === conclusao.getMonth() &&
+        agendada.getFullYear() === conclusao.getFullYear()
+      );
+    }).length;
+
+    const taxaRetorno = progressosComData.length > 0
+      ? (retornosNoDia / progressosComData.length) * 100
+      : 0;
+
+    return {
+      metaId: meta.id,
+      metaNome: `${meta.disciplina} - ${meta.assunto}`,
+      posicao: index + 1,
+      totalAlunos: matriculasPlano.length,
+      alunosConcluiram: concluidas,
+      taxaConclusao: Math.round(taxaConclusao * 10) / 10,
+      taxaRetorno: Math.round(taxaRetorno * 10) / 10,
+    };
+  });
+
+  // Identificar meta com maior abandono (maior queda na taxa de conclusão)
+  let metaMaiorAbandono = null;
+  let maiorQueda = 0;
+
+  for (let i = 1; i < progressoPorMeta.length; i++) {
+    const queda = progressoPorMeta[i - 1].taxaConclusao - progressoPorMeta[i].taxaConclusao;
+    if (queda > maiorQueda) {
+      maiorQueda = queda;
+      metaMaiorAbandono = {
+        ...progressoPorMeta[i],
+        quedaTaxa: Math.round(queda * 10) / 10,
+      };
+    }
+  }
+
+  // Calcular métricas gerais
+  const totalProgressos = progressos.length;
+  const totalConcluidos = progressos.filter((p: any) => p.concluida === 1).length;
+  const taxaConclusaoGeral = totalProgressos > 0
+    ? (totalConcluidos / totalProgressos) * 100
+    : 0;
+
+  const progressoMedio = progressoPorMeta.length > 0
+    ? progressoPorMeta.reduce((acc: number, p) => acc + p.taxaConclusao, 0) / progressoPorMeta.length
+    : 0;
+
+  const taxaRetornoDiario = progressoPorMeta.length > 0
+    ? progressoPorMeta.reduce((acc: number, p) => acc + p.taxaRetorno, 0) / progressoPorMeta.length
+    : 0;
+
+  return {
+    totalAlunos: matriculasPlano.length,
+    totalMetas: metasPlano.length,
+    taxaConclusaoGeral: Math.round(taxaConclusaoGeral * 10) / 10,
+    progressoMedio: Math.round(progressoMedio * 10) / 10,
+    metaMaiorAbandono,
+    taxaRetornoDiario: Math.round(taxaRetornoDiario * 10) / 10,
+    progressoPorMeta,
+  };
 }

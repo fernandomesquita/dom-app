@@ -1711,3 +1711,41 @@ Sistema completo de gestão de planos com:
 
 ### Status: ✅ COMPLETO
 Botão "Baixar Template" visível e funcional na página de gestão de planos. Download testado e funcionando perfeitamente.
+
+
+## 📊 ÍNDICE DE ENGAJAMENTO DOS PLANOS
+
+### Backend - Cálculo de Engajamento
+- [x] Criar função calcularEngajamentoPlano no db.ts
+- [x] Buscar progresso de todos os alunos matriculados no plano
+- [x] Calcular taxa de conclusão de metas por posição
+- [x] Identificar ponto de maior abandono (meta onde mais alunos param)
+- [x] Calcular queda na taxa de conclusão entre metas
+- [x] Calcular taxa de retorno nos dias previstos
+- [x] Criar API tRPC planos.admin.engajamento
+- [x] Adicionar import de inArray no drizzle-orm
+
+### Frontend - Visualização de Engajamento
+- [x] Instalar biblioteca recharts
+- [x] Criar componente EngajamentoModal
+- [x] Exibir taxa de conclusão por meta (gráfico de barras)
+- [x] Destacar ponto de maior abandono (barras vermelhas)
+- [x] Mostrar taxa de retorno nos dias previstos
+- [x] Adicionar botão "Engajamento" no PlanoCard
+- [x] Modal com gráfico responsivo usando recharts
+- [x] Tooltip customizado com detalhes da meta
+- [x] Tabela detalhada com todas as métricas
+
+### Métricas de Engajamento
+- [x] Taxa de conclusão geral do plano
+- [x] Progresso médio dos alunos (%)
+- [x] Meta com maior taxa de abandono (queda %)
+- [x] Taxa de retorno diário (alunos que voltam nos dias previstos)
+- [x] Total de alunos matriculados
+- [x] Total de metas do plano
+- [x] Alunos que concluíram cada meta
+- [x] Taxa de conclusão por meta individual
+- [ ] Tempo médio de conclusão do plano (próxima fase)
+
+### Status: ✅ COMPLETO
+Índice de engajamento totalmente funcional com gráfico de barras, alerta de maior abandono e tabela detalhada. Administradores podem ver onde os alunos estão abandonando cada plano.

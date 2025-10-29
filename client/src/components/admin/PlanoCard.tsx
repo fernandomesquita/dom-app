@@ -3,7 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Target, Calendar, Clock, Edit, Eye, Trash2, ToggleLeft, ToggleRight, User } from "lucide-react";
+import { Users, Target, Calendar, Clock, Edit, Eye, Trash2, ToggleLeft, ToggleRight, User, BarChart3 } from "lucide-react";
+import EngajamentoModal from "./EngajamentoModal";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -26,6 +27,7 @@ interface PlanoCardProps {
 }
 
 export default function PlanoCard({ plano, onEditar, onMetas, onExcluir, onToggleAtivo }: PlanoCardProps) {
+  const [showEngajamento, setShowEngajamento] = useState(false);
   const [stats, setStats] = useState<{
     totalAlunos: number;
     totalMetas: number;
@@ -148,10 +150,21 @@ export default function PlanoCard({ plano, onEditar, onMetas, onExcluir, onToggl
             <Eye className="h-3 w-3 mr-1" />
             Metas
           </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowEngajamento(true)}>
+            <BarChart3 className="h-3 w-3 mr-1" />
+            Engajamento
+          </Button>
           <Button variant="outline" size="sm" onClick={onExcluir}>
             <Trash2 className="h-3 w-3 text-destructive" />
           </Button>
         </div>
+
+        <EngajamentoModal
+          planoId={plano.id}
+          planoNome={plano.nome}
+          open={showEngajamento}
+          onClose={() => setShowEngajamento(false)}
+        />
       </CardContent>
     </Card>
   );

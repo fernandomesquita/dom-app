@@ -128,19 +128,26 @@ export const appRouter = router({
         }),
       
       importarPlanilha: protectedProcedure
-        .input(z.object({
-          dados: z.array(z.any()),
-        }))
+        .input(z.object({ dados: z.array(z.any()) }))
         .mutation(async ({ ctx, input }) => {
-          if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
-            throw new Error("Acesso negado");
+          if (!ctx.user || !['master', 'mentor', 'administrativo'].includes(ctx.user.role)) {
+            throw new Error("Permissão negada");
           }
           const { importarPlanosDeExcel } = await import("./db");
           return await importarPlanosDeExcel(input.dados);
         }),
+      
+      engajamento: protectedProcedure
+        .input(z.object({ planoId: z.number() }))
+        .query(async ({ ctx, input }) => {
+          if (!ctx.user || !['master', 'mentor', 'administrativo'].includes(ctx.user.role)) {
+            throw new Error("Permissão negada");
+          }
+          const { calcularEngajamentoPlano } = await import("./db");
+          return await calcularEngajamentoPlano(input.planoId);
+        }),
     }),
   }),
-
   metas: router({
     listByPlano: publicProcedure.input((val: unknown) => {
       if (typeof val === "object" && val !== null && "planoId" in val && typeof val.planoId === "number") {
