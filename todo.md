@@ -1418,3 +1418,40 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [ ] "Dedicado" - Estudar 7 dias consecutivos
 - [ ] "Mestre" - Acertar 100 questões
 - [ ] "Perfeito" - 100% de acerto em 10 questões seguidas
+
+
+## ✅ ATUALIZAÇÃO - INTEGRAÇÃO AUTOMÁTICA DE PONTOS (Concluída)
+
+### Backend - Atribuição Automática de Pontos
+- [x] Integrar `adicionarPontos()` em `marcarMetaConcluida` (+10 pontos)
+- [x] Integrar `adicionarPontos()` em `marcarAulaConcluida` (+5 pontos)
+- [x] Integrar `adicionarPontos()` em `salvarRespostaQuestao` (+2 pontos para respostas corretas)
+- [x] Chamar `verificarEAtribuirConquistas()` após cada ação pontuada
+- [x] Implementar função completa `verificarEAtribuirConquistas()` com todas as conquistas
+
+### Conquistas Criadas no Banco
+- [x] Primeira Meta (🎯) - Complete sua primeira meta de estudos
+- [x] Estudante Dedicado (📚) - Complete 10 metas de estudos
+- [x] Mestre das Metas (🏆) - Complete 50 metas de estudos
+- [x] Primeira Aula (🎬) - Assista sua primeira aula completa
+- [x] Cinéfilo dos Estudos (🎥) - Assista 20 aulas completas
+- [x] Maratonista (🌟) - Assista 100 aulas completas
+- [x] Primeira Questão (✅) - Responda sua primeira questão corretamente
+- [x] Acertador (💯) - Acerte 50 questões
+- [x] Expert (🎓) - Acerte 200 questões
+- [x] Sequência de Fogo (🔥) - Acerte 10 questões seguidas
+- [x] Pontuador (⭐) - Alcance 100 pontos
+- [x] Campeão (👑) - Alcance 500 pontos
+- [x] Lenda (💎) - Alcance 1000 pontos
+
+### Lógica Implementada
+- [x] Verificação de conquistas por metas concluídas (1, 10, 50)
+- [x] Verificação de conquistas por aulas assistidas (1, 20, 100)
+- [x] Verificação de conquistas por questões corretas (1, 50, 200)
+- [x] Verificação de sequência de 10 acertos consecutivos
+- [x] Verificação de conquistas por pontos totais (100, 500, 1000)
+- [x] Prevenção de conquistas duplicadas
+- [x] Retorno de IDs de conquistas desbloqueadas
+
+### Status: ✅ COMPLETO
+Sistema de gamificação totalmente funcional com atribuição automática de pontos e conquistas em tempo real.

@@ -13,7 +13,9 @@ import {
   forumTopicos, InsertForumTopico,
   forumRespostas, InsertForumResposta,
   avisos, InsertAviso,
-  avisosDispensados
+  avisosDispensados,
+  conquistas,
+  userConquistas
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -677,8 +679,6 @@ export async function getQuestoesMaisErradas(userId: number, limit: number = 10)
 
 // ========== GAMIFICAÇÃO ==========
 
-import { conquistas, userConquistas } from "../drizzle/schema";
-
 export async function adicionarPontos(userId: number, pontos: number) {
   const db = await getDb();
   if (!db) return false;
@@ -743,71 +743,79 @@ export async function getConquistasUsuario(userId: number) {
 export async function verificarEAtribuirConquistas(userId: number) {
   const db = await getDb();
   if (!db) return [];
+  const { and } = await import("drizzle-orm");
   
   // Buscar estatísticas do usuário
   const metasConcluidas = await db
     .select()
     .from(progressoMetas)
-    .where(eq(progressoMetas.userId, userId));
+    .where(and(
+      eq(progressoMetas.userId, userId),
+      eq(progressoMetas.concluida, 1)
+    ));
+  
+  const aulasConcluidas = await db
+    .select()
+    .from(progressoAulas)
+    .where(and(
+      eq(progressoAulas.userId, userId),
+      eq(progressoAulas.concluida, 1)
+    ));
   
   const questoesRespondidas = await db
     .select()
     .from(respostasQuestoes)
     .where(eq(respostasQuestoes.userId, userId));
   
+  const questoesCorretas = questoesRespondidas.filter(q => q.acertou === 1);
+  const pontosUsuario = await getPontosUsuario(userId);
   const conquistasDesbloqueadas: number[] = [];
   
-  // Verificar "Primeiro Passo" - 1 meta concluída
-  if (metasConcluidas.length >= 1) {
+  // Função auxiliar para verificar e atribuir conquista
+  const verificarConquista = async (conquistaId: number) => {
     const jaTemConquista = await db
       .select()
       .from(userConquistas)
-      .where(eq(userConquistas.userId, userId))
+      .where(and(
+        eq(userConquistas.userId, userId),
+        eq(userConquistas.conquistaId, conquistaId)
+      ))
       .limit(1);
     
     if (jaTemConquista.length === 0) {
-      // Desbloquear conquista (ID fictício 1)
-      await db.insert(userConquistas).values({
-        userId,
-        conquistaId: 1,
-      });
-      conquistasDesbloqueadas.push(1);
+      await db.insert(userConquistas).values({ userId, conquistaId });
+      conquistasDesbloqueadas.push(conquistaId);
+      return true;
     }
+    return false;
+  };
+  
+  // Conquistas de Metas
+  if (metasConcluidas.length >= 1) await verificarConquista(1);  // Primeira Meta
+  if (metasConcluidas.length >= 10) await verificarConquista(2); // Estudante Dedicado
+  if (metasConcluidas.length >= 50) await verificarConquista(3); // Mestre das Metas
+  
+  // Conquistas de Aulas
+  if (aulasConcluidas.length >= 1) await verificarConquista(4);   // Primeira Aula
+  if (aulasConcluidas.length >= 20) await verificarConquista(5);  // Cinéfilo dos Estudos
+  if (aulasConcluidas.length >= 100) await verificarConquista(6); // Maratonista
+  
+  // Conquistas de Questões
+  if (questoesCorretas.length >= 1) await verificarConquista(7);   // Primeira Questão
+  if (questoesCorretas.length >= 50) await verificarConquista(8);  // Acertador
+  if (questoesCorretas.length >= 200) await verificarConquista(9); // Expert
+  
+  // Conquista de Sequência (simplificada - verificar últimas 10 respostas)
+  if (questoesRespondidas.length >= 10) {
+    const ultimas10 = questoesRespondidas.slice(-10);
+    const todasCorretas = ultimas10.every(q => q.acertou === 1);
+    if (todasCorretas) await verificarConquista(10); // Sequência de Fogo
   }
   
-  // Verificar "Estudioso" - 10 metas concluídas
-  if (metasConcluidas.length >= 10) {
-    const jaTemConquista = await db
-      .select()
-      .from(userConquistas)
-      .where(eq(userConquistas.userId, userId))
-      .limit(1);
-    
-    if (jaTemConquista.length === 0) {
-      await db.insert(userConquistas).values({
-        userId,
-        conquistaId: 2,
-      });
-      conquistasDesbloqueadas.push(2);
-    }
-  }
-  
-  // Verificar "Mestre" - 100 questões respondidas
-  if (questoesRespondidas.length >= 100) {
-    const jaTemConquista = await db
-      .select()
-      .from(userConquistas)
-      .where(eq(userConquistas.userId, userId))
-      .limit(1);
-    
-    if (jaTemConquista.length === 0) {
-      await db.insert(userConquistas).values({
-        userId,
-        conquistaId: 4,
-      });
-      conquistasDesbloqueadas.push(4);
-    }
-  }
+  // Conquistas de Pontos
+  if (pontosUsuario >= 100) await verificarConquista(11);  // Pontuador
+  if (pontosUsuario >= 500) await verificarConquista(12);  // Campeão
+  if (pontosUsuario >= 1000) await verificarConquista(13); // Lenda
   
   return conquistasDesbloqueadas;
 }
