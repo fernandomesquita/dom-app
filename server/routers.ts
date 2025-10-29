@@ -445,6 +445,11 @@ export const appRouter = router({
       if (!ctx.user) throw new Error("Not authenticated");
       return await getEstatisticasDashboard(ctx.user.id);
     }),
+    progressoSemanal: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { getProgressoSemanal } = await import("./db");
+      return await getProgressoSemanal(ctx.user.id);
+    }),
   }),
 
   admin: router({

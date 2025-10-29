@@ -1753,3 +1753,64 @@ export async function importarPlanoPlanilha(
     throw new Error(`Erro ao importar plano: ${error}`);
   }
 }
+
+
+/**
+ * Obter progresso semanal do aluno (últimos 7 dias)
+ */
+export async function getProgressoSemanal(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const seteDiasAtras = new Date();
+    seteDiasAtras.setDate(seteDiasAtras.getDate() - 7);
+    seteDiasAtras.setHours(0, 0, 0, 0);
+
+    const metasConcluidas = await db
+      .select()
+      .from(progressoMetas)
+      .where(and(
+        eq(progressoMetas.userId, userId),
+        eq(progressoMetas.concluida, 1)
+      ));
+
+    // Agrupar por dia
+    const progressoPorDia: Record<string, { metas: number; horas: number }> = {};
+
+    for (let i = 0; i < 7; i++) {
+      const dia = new Date();
+      dia.setDate(dia.getDate() - i);
+      const diaStr = dia.toISOString().split('T')[0];
+      progressoPorDia[diaStr] = { metas: 0, horas: 0 };
+    }
+
+    metasConcluidas.forEach(meta => {
+      if (!meta.dataConclusao) return;
+      
+      const dataConclusao = new Date(meta.dataConclusao);
+      if (dataConclusao < seteDiasAtras) return;
+
+      const diaStr = dataConclusao.toISOString().split('T')[0];
+      
+      if (progressoPorDia[diaStr]) {
+        progressoPorDia[diaStr].metas++;
+        progressoPorDia[diaStr].horas += (meta.tempoGasto || 0) / 60;
+      }
+    });
+
+    // Converter para array ordenado
+    const progressoArray = Object.entries(progressoPorDia)
+      .map(([dia, dados]) => ({
+        dia,
+        metas: dados.metas,
+        horas: Math.round(dados.horas * 10) / 10, // arredondar para 1 casa decimal
+      }))
+      .sort((a, b) => a.dia.localeCompare(b.dia));
+
+    return progressoArray;
+  } catch (error) {
+    console.error("Erro ao calcular progresso semanal:", error);
+    throw new Error(`Erro ao calcular progresso semanal: ${error}`);
+  }
+}
