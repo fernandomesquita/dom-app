@@ -6,17 +6,22 @@ import { getLoginUrl } from "@/const";
 import { PontosCard, RankingCard, ConquistasCard } from "@/components/GamificacaoCard";
 import { Calendar, BookOpen, MessageSquare, HelpCircle, TrendingUp, Clock, Award, Target, Eye, StickyNote } from "lucide-react";
 import { Link } from "wouter";
-import { mockEstatisticas } from "@/lib/mockData";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const [visualizarComo, setVisualizarComo] = useState<string>("proprio");
-  const stats = mockEstatisticas;
+  
+  // Buscar estatísticas reais do backend
+  const { data: stats, isLoading: statsLoading } = trpc.dashboard.estatisticas.useQuery(
+    undefined,
+    { enabled: isAuthenticated }
+  );
   
   const isAdmin = user && ["master", "mentor", "administrativo", "professor"].includes(user.role || "");
 
-  if (loading) {
+  if (loading || statsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -103,6 +108,11 @@ export default function Dashboard() {
       </div>
 
       {/* Estatísticas Rápidas */}
+      {!stats ? (
+        <div className="col-span-full text-center py-8">
+          <p className="text-muted-foreground">Carregando estatísticas...</p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <PontosCard />
         <Card>
@@ -111,12 +121,12 @@ export default function Dashboard() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.horasEstudadas}h</div>
+            <div className="text-2xl font-bold">{stats?.horasEstudadas || 0}h</div>
             <p className="text-xs text-muted-foreground mt-1">Esta semana</p>
             <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-primary transition-all" 
-                style={{ width: `${(stats.horasEstudadas / 40) * 100}%` }}
+                style={{ width: `${((stats?.horasEstudadas || 0) / 40) * 100}%` }}
               />
             </div>
           </CardContent>
@@ -128,14 +138,14 @@ export default function Dashboard() {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.metasConcluidas} / {stats.totalMetas}</div>
+            <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {Math.round((stats.metasConcluidas / stats.totalMetas) * 100)}% concluído
+              {stats?.totalMetas ? Math.round(((stats?.metasConcluidas || 0) / stats.totalMetas) * 100) : 0}% concluído
             </p>
             <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
               <div 
                 className="h-full bg-green-500 transition-all" 
-                style={{ width: `${(stats.metasConcluidas / stats.totalMetas) * 100}%` }}
+                style={{ width: `${stats?.totalMetas ? ((stats?.metasConcluidas || 0) / stats.totalMetas) * 100 : 0}%` }}
               />
             </div>
           </CardContent>
@@ -147,7 +157,7 @@ export default function Dashboard() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.aulasAssistidas}</div>
+            <div className="text-2xl font-bold">{stats?.aulasAssistidas || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">Total</p>
           </CardContent>
         </Card>
@@ -158,13 +168,14 @@ export default function Dashboard() {
             <HelpCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.questoesResolvidas}</div>
+            <div className="text-2xl font-bold">{stats?.questoesResolvidas || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              Taxa de acerto: {stats.taxaAcerto}%
+              Taxa de acerto: {stats?.taxaAcerto || 0}%
             </p>
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Conquistas Recentes */}
       <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
@@ -176,11 +187,11 @@ export default function Dashboard() {
             <div className="flex-1">
               <h3 className="font-semibold text-lg">Parabéns! 🎉</h3>
               <p className="text-muted-foreground">
-                Você está em uma sequência de <span className="font-bold text-primary">{stats.sequenciaDias} dias</span> consecutivos de estudo!
+                Você está em uma sequência de <span className="font-bold text-primary">{stats?.sequenciaDias || 0} dias</span> consecutivos de estudo!
               </p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{stats.sequenciaDias}</div>
+              <div className="text-3xl font-bold text-primary">{stats?.sequenciaDias || 0}</div>
               <div className="text-xs text-muted-foreground">dias</div>
             </div>
           </div>
@@ -307,30 +318,30 @@ export default function Dashboard() {
             <div>
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-muted-foreground">Média diária de estudo</span>
-                <span className="font-medium">{(stats.horasEstudadas / 7).toFixed(1)}h / dia</span>
+                <span className="font-medium">{((stats?.horasEstudadas || 0) / 7).toFixed(1)}h / dia</span>
               </div>
               <div className="h-2 bg-secondary rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-primary transition-all" 
-                  style={{ width: `${((stats.horasEstudadas / 7) / 6) * 100}%` }}
+                  style={{ width: `${(((stats?.horasEstudadas || 0) / 7) / 6) * 100}%` }}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{stats.horasEstudadas}h</div>
+                <div className="text-2xl font-bold text-primary">{stats?.horasEstudadas || 0}h</div>
                 <div className="text-xs text-muted-foreground">Horas totais</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{stats.metasConcluidas}</div>
+                <div className="text-2xl font-bold text-green-600">{stats?.metasConcluidas || 0}</div>
                 <div className="text-xs text-muted-foreground">Metas concluídas</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{stats.aulasAssistidas}</div>
+                <div className="text-2xl font-bold text-purple-600">{stats?.aulasAssistidas || 0}</div>
                 <div className="text-xs text-muted-foreground">Aulas assistidas</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{stats.questoesResolvidas}</div>
+                <div className="text-2xl font-bold text-orange-600">{stats?.questoesResolvidas || 0}</div>
                 <div className="text-xs text-muted-foreground">Questões resolvidas</div>
               </div>
             </div>

@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
-import { getPontosUsuario, getRanking, getConquistasUsuario, createMeta, updateMeta, deleteMeta, marcarMetaConcluida, adicionarAnotacaoMeta, vincularAulaAMeta, getAulas, getAulaById, marcarAulaConcluida, salvarProgressoAula, getQuestoes, getQuestaoById, salvarRespostaQuestao, getEstatisticasQuestoes, getEstatisticasPorDisciplina, getEvolucaoTemporal, getQuestoesMaisErradas } from "./db";
+import { getPontosUsuario, getRanking, getConquistasUsuario, createMeta, updateMeta, deleteMeta, marcarMetaConcluida, adicionarAnotacaoMeta, vincularAulaAMeta, getAulas, getAulaById, marcarAulaConcluida, salvarProgressoAula, getQuestoes, getQuestaoById, salvarRespostaQuestao, getEstatisticasQuestoes, getEstatisticasPorDisciplina, getEvolucaoTemporal, getQuestoesMaisErradas, getEstatisticasDashboard } from "./db";
 
 export const appRouter = router({
   gamificacao: router({
@@ -263,6 +263,13 @@ export const appRouter = router({
         const { getQuestoesMaisErradas } = await import("./db");
         return await getQuestoesMaisErradas(ctx.user.id, input.limit);
       }),
+  }),
+
+  dashboard: router({
+    estatisticas: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      return await getEstatisticasDashboard(ctx.user.id);
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

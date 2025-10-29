@@ -1428,6 +1428,8 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [x] Integrar `adicionarPontos()` em `salvarRespostaQuestao` (+2 pontos para respostas corretas)
 - [x] Chamar `verificarEAtribuirConquistas()` após cada ação pontuada
 - [x] Implementar função completa `verificarEAtribuirConquistas()` com todas as conquistas
+- [x] Modificar funções para retornar conquistas desbloqueadas nos responses
+- [x] Incluir detalhes completos das conquistas (id, nome, descrição, ícone)
 
 ### Conquistas Criadas no Banco
 - [x] Primeira Meta (🎯) - Complete sua primeira meta de estudos
@@ -1453,5 +1455,35 @@ Este documento TODO foi gerado com base nos requisitos completos do aplicativo D
 - [x] Prevenção de conquistas duplicadas
 - [x] Retorno de IDs de conquistas desbloqueadas
 
+### Dashboard Integrado com Backend
+- [x] Criar API `dashboard.estatisticas` para buscar dados reais
+- [x] Implementar função `getEstatisticasDashboard` no backend
+- [x] Substituir mockData por dados reais do tRPC no Dashboard
+- [x] Adicionar verificações de segurança para stats nulos/undefined
+- [x] Calcular horas estudadas, metas concluídas, aulas assistidas, questões resolvidas
+- [x] Calcular taxa de acerto e sequência de dias
+
 ### Status: ✅ COMPLETO
-Sistema de gamificação totalmente funcional com atribuição automática de pontos e conquistas em tempo real.
+Sistema de gamificação totalmente funcional com atribuição automática de pontos e conquistas em tempo real. Dashboard integrado com dados reais do backend.
+
+
+## 🔔 NOTIFICAÇÕES DE CONQUISTAS (Próxima Implementação)
+
+### Frontend - Sistema de Notificações
+- [ ] Criar componente Toast para notificações de conquistas
+- [ ] Adicionar animação de entrada/saída para toasts
+- [ ] Exibir ícone, nome e descrição da conquista desbloqueada
+- [ ] Adicionar som de notificação (opcional)
+- [ ] Implementar fila de notificações (múltiplas conquistas)
+- [ ] Adicionar botão "Ver todas as conquistas" no toast
+
+### Backend - Retorno de Conquistas
+- [ ] Modificar APIs para retornar conquistas desbloqueadas
+- [ ] Incluir detalhes completos da conquista (nome, descrição, ícone)
+- [ ] Retornar array de conquistas em cada resposta de ação pontuada
+
+### Integração Frontend-Backend
+- [ ] Capturar conquistas desbloqueadas nas respostas das APIs
+- [ ] Exibir toast automaticamente ao receber conquista
+- [ ] Atualizar componente ConquistasCard após desbloquear
+- [ ] Invalidar cache de conquistas após nova conquista

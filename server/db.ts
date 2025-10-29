@@ -374,7 +374,18 @@ export async function marcarMetaConcluida(
       })
       .where(eq(progressoMetas.id, progressoExistente[0].id));
     
-    return { ...progressoExistente[0], concluida: concluida ? 1 : 0 };
+    // Adicionar pontos e verificar conquistas se marcou como concluída
+    let conquistasDesbloqueadas: any[] = [];
+    if (concluida && progressoExistente[0].concluida === 0) {
+      await adicionarPontos(userId, 10);
+      conquistasDesbloqueadas = await verificarEAtribuirConquistas(userId);
+    }
+    
+    return { 
+      ...progressoExistente[0], 
+      concluida: concluida ? 1 : 0,
+      conquistasDesbloqueadas 
+    };
   } else {
     // Criar novo progresso
     const result = await db.insert(progressoMetas).values({
@@ -386,7 +397,19 @@ export async function marcarMetaConcluida(
       tempoGasto: tempoDedicado || 0,
     });
     
-    return { userId, metaId, concluida: concluida ? 1 : 0 };
+    // Adicionar pontos e verificar conquistas se criou já concluída
+    let conquistasDesbloqueadas: any[] = [];
+    if (concluida) {
+      await adicionarPontos(userId, 10);
+      conquistasDesbloqueadas = await verificarEAtribuirConquistas(userId);
+    }
+    
+    return { 
+      userId, 
+      metaId, 
+      concluida: concluida ? 1 : 0,
+      conquistasDesbloqueadas 
+    };
   }
 }
 
@@ -450,7 +473,18 @@ export async function marcarAulaConcluida(
       })
       .where(eq(progressoAulas.id, progressoExistente[0].id));
     
-    return { ...progressoExistente[0], concluida: 1 };
+    // Adicionar pontos e verificar conquistas se marcou como concluída
+    let conquistasDesbloqueadas: any[] = [];
+    if (progressoExistente[0].concluida === 0) {
+      await adicionarPontos(userId, 5);
+      conquistasDesbloqueadas = await verificarEAtribuirConquistas(userId);
+    }
+    
+    return { 
+      ...progressoExistente[0], 
+      concluida: 1,
+      conquistasDesbloqueadas 
+    };
   } else {
     // Criar novo progresso
     await db.insert(progressoAulas).values({
@@ -463,7 +497,16 @@ export async function marcarAulaConcluida(
       favoritada: 0,
     });
     
-    return { userId, aulaId, concluida: 1 };
+    // Adicionar pontos ao criar já concluída
+    await adicionarPontos(userId, 5);
+    const conquistasDesbloqueadas = await verificarEAtribuirConquistas(userId);
+    
+    return { 
+      userId, 
+      aulaId, 
+      concluida: 1,
+      conquistasDesbloqueadas 
+    };
   }
 }
 
@@ -535,7 +578,17 @@ export async function salvarRespostaQuestao(
     tempoResposta: 0,
   });
   
-  return { success: true };
+  // Adicionar pontos e verificar conquistas se acertou a questão
+  let conquistasDesbloqueadas: any[] = [];
+  if (acertou) {
+    await adicionarPontos(userId, 2);
+    conquistasDesbloqueadas = await verificarEAtribuirConquistas(userId);
+  }
+  
+  return { 
+    success: true,
+    conquistasDesbloqueadas 
+  };
 }
 
 export async function getRespostasQuestoesByUserId(userId: number) {
@@ -769,7 +822,7 @@ export async function verificarEAtribuirConquistas(userId: number) {
   
   const questoesCorretas = questoesRespondidas.filter(q => q.acertou === 1);
   const pontosUsuario = await getPontosUsuario(userId);
-  const conquistasDesbloqueadas: number[] = [];
+  const conquistasDesbloqueadas: Array<{ id: number; nome: string; descricao: string | null; icone: string | null }> = [];
   
   // Função auxiliar para verificar e atribuir conquista
   const verificarConquista = async (conquistaId: number) => {
@@ -784,7 +837,22 @@ export async function verificarEAtribuirConquistas(userId: number) {
     
     if (jaTemConquista.length === 0) {
       await db.insert(userConquistas).values({ userId, conquistaId });
-      conquistasDesbloqueadas.push(conquistaId);
+      
+      // Buscar detalhes da conquista
+      const conquistaDetalhes = await db
+        .select({
+          id: conquistas.id,
+          nome: conquistas.nome,
+          descricao: conquistas.descricao,
+          icone: conquistas.icone,
+        })
+        .from(conquistas)
+        .where(eq(conquistas.id, conquistaId))
+        .limit(1);
+      
+      if (conquistaDetalhes.length > 0) {
+        conquistasDesbloqueadas.push(conquistaDetalhes[0]);
+      }
       return true;
     }
     return false;
@@ -818,4 +886,79 @@ export async function verificarEAtribuirConquistas(userId: number) {
   if (pontosUsuario >= 1000) await verificarConquista(13); // Lenda
   
   return conquistasDesbloqueadas;
+}
+
+
+// ========== ESTATÍSTICAS GERAIS DO DASHBOARD ==========
+
+export async function getEstatisticasDashboard(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { and } = await import("drizzle-orm");
+  
+  // Buscar metas concluídas
+  const metasConcluidasData = await db
+    .select()
+    .from(progressoMetas)
+    .where(and(
+      eq(progressoMetas.userId, userId),
+      eq(progressoMetas.concluida, 1)
+    ));
+  
+  // Buscar total de metas do usuário
+  const todasMetasData = await db
+    .select()
+    .from(progressoMetas)
+    .where(eq(progressoMetas.userId, userId));
+  
+  // Buscar aulas assistidas
+  const aulasAssistitasData = await db
+    .select()
+    .from(progressoAulas)
+    .where(and(
+      eq(progressoAulas.userId, userId),
+      eq(progressoAulas.concluida, 1)
+    ));
+  
+  // Buscar questões respondidas
+  const questoesData = await db
+    .select()
+    .from(respostasQuestoes)
+    .where(eq(respostasQuestoes.userId, userId));
+  
+  const questoesCorretas = questoesData.filter(q => q.acertou === 1);
+  const taxaAcerto = questoesData.length > 0 
+    ? Math.round((questoesCorretas.length / questoesData.length) * 100) 
+    : 0;
+  
+  // Calcular horas estudadas (soma do tempo gasto em metas)
+  const horasEstudadas = metasConcluidasData.reduce((acc, meta) => {
+    return acc + (meta.tempoGasto || 0);
+  }, 0);
+  
+  // Calcular sequência de dias (simplificado - últimos 7 dias com atividade)
+  const hoje = new Date();
+  const seteDiasAtras = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
+  
+  const atividadesRecentes = metasConcluidasData.filter(meta => {
+    const dataConclusao = meta.dataConclusao;
+    return dataConclusao && dataConclusao >= seteDiasAtras;
+  });
+  
+  // Contar dias únicos com atividade
+  const diasUnicos = new Set(
+    atividadesRecentes.map(meta => 
+      meta.dataConclusao?.toISOString().split('T')[0]
+    )
+  ).size;
+  
+  return {
+    horasEstudadas: Math.round(horasEstudadas / 60), // converter minutos para horas
+    metasConcluidas: metasConcluidasData.length,
+    totalMetas: todasMetasData.length,
+    aulasAssistidas: aulasAssistitasData.length,
+    questoesResolvidas: questoesData.length,
+    taxaAcerto,
+    sequenciaDias: diasUnicos,
+  };
 }
