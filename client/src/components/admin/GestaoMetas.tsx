@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import RichTextEditor from "@/components/RichTextEditor";
+import SeletorAula from "./SeletorAula";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     prioridade: 3,
     dicaEstudo: "",
     orientacaoEstudos: "",
+    aulaId: null as number | null,
   });
 
   // Buscar metas do plano
@@ -140,6 +142,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       prioridade: 3,
       dicaEstudo: "",
       orientacaoEstudos: "",
+      aulaId: null,
     });
     setMetaEditando(null);
   };
@@ -159,6 +162,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       prioridade: meta.prioridade,
       dicaEstudo: meta.dicaEstudo || "",
       orientacaoEstudos: meta.orientacaoEstudos || "",
+      aulaId: (meta as any).aulaId || null,
     });
     setModalMeta(true);
   };
@@ -426,6 +430,18 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
                 onChange={(e) => setFormData({ ...formData, dicaEstudo: e.target.value })}
                 rows={2}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="aulaId">Aula Vinculada (opcional)</Label>
+              <SeletorAula
+                value={formData.aulaId}
+                onChange={(aulaId) => setFormData({ ...formData, aulaId })}
+                disciplina={formData.disciplina}
+              />
+              <p className="text-xs text-gray-500">
+                Vincule uma aula para que o aluno possa acessá-la diretamente desta meta
+              </p>
             </div>
 
             <div className="space-y-2">
