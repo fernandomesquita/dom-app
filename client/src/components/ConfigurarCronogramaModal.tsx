@@ -78,24 +78,45 @@ export default function ConfigurarCronogramaModal({
   };
 
   const handleSalvar = async () => {
+    // Validações
+    if (horasDiarias < 1) {
+      toast.error("❌ Você precisa estudar pelo menos 1 hora por dia");
+      return;
+    }
+    
+    if (horasDiarias > 12) {
+      toast.error("❌ Máximo de 12 horas de estudo por dia");
+      return;
+    }
+    
     if (diasSelecionados.length === 0) {
-      toast.error("Selecione pelo menos 1 dia da semana");
+      toast.error("❌ Selecione pelo menos 1 dia da semana");
+      return;
+    }
+    
+    if (diasSelecionados.length > 7) {
+      toast.error("❌ Número inválido de dias selecionados");
       return;
     }
 
     const diasString = diasSelecionados.join(',');
 
-    // Salvar configurações
-    await atualizarMutation.mutateAsync({
-      horasDiarias,
-      diasSemana: diasString,
-    });
+    try {
+      // Salvar configurações
+      await atualizarMutation.mutateAsync({
+        horasDiarias,
+        diasSemana: diasString,
+      });
 
-    // Redistribuir metas automaticamente
-    await redistribuirMutation.mutateAsync({
-      horasDiarias,
-      diasSemana: diasString,
-    });
+      // Redistribuir metas automaticamente
+      await redistribuirMutation.mutateAsync({
+        horasDiarias,
+        diasSemana: diasString,
+      });
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      // Erro já tratado pelas mutations
+    }
   };
 
   return (

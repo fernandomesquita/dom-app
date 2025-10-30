@@ -204,8 +204,44 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   };
 
   const handleSaveChanges = () => {
+    // Validações
+    if (!editDisciplina.trim()) {
+      toast.error("❌ Disciplina é obrigatória");
+      return;
+    }
+    
+    if (editDisciplina.length < 3) {
+      toast.error("❌ Disciplina deve ter no mínimo 3 caracteres");
+      return;
+    }
+    
+    if (!editAssunto.trim()) {
+      toast.error("❌ Assunto é obrigatório");
+      return;
+    }
+    
+    if (editAssunto.length < 3) {
+      toast.error("❌ Assunto deve ter no mínimo 3 caracteres");
+      return;
+    }
+    
+    if (editDuracao < 15) {
+      toast.error("❌ Duração mínima: 15 minutos");
+      return;
+    }
+    
+    if (editDuracao > 240) {
+      toast.error("❌ Duração máxima: 4 horas (240 minutos)");
+      return;
+    }
+    
+    if (!editIncidencia) {
+      toast.error("❌ Incidência é obrigatória");
+      return;
+    }
+    
     // TODO: Implementar salvamento no backend
-    toast.success("Meta atualizada com sucesso!");
+    toast.success("✅ Meta atualizada com sucesso!");
     setEditMode(false);
   };
 

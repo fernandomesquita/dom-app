@@ -350,24 +350,88 @@ export async function createMeta(meta: Partial<InsertMeta>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.insert(metas).values(meta as InsertMeta);
-  return { success: true, ...meta };
+  try {
+    // Validar campos obrigatórios
+    if (!meta.planoId) {
+      throw new Error("Plano é obrigatório");
+    }
+    if (!meta.disciplina || meta.disciplina.trim().length < 3) {
+      throw new Error("Disciplina deve ter no mínimo 3 caracteres");
+    }
+    if (!meta.assunto || meta.assunto.trim().length < 3) {
+      throw new Error("Assunto deve ter no mínimo 3 caracteres");
+    }
+    if (!meta.duracao || meta.duracao < 15 || meta.duracao > 240) {
+      throw new Error("Duração deve estar entre 15 e 240 minutos");
+    }
+    
+    // Adicionar valores padrão para campos opcionais
+    const metaComPadroes = {
+      ...meta,
+      ordem: meta.ordem ?? 0,
+      incidencia: meta.incidencia ?? 'media',
+      prioridade: meta.prioridade ?? 0,
+    };
+    
+    const result = await db.insert(metas).values(metaComPadroes as InsertMeta);
+    return { success: true, id: Number(result.insertId), ...meta };
+  } catch (error) {
+    console.error("[createMeta] Erro:", error);
+    throw error;
+  }
 }
 
 export async function updateMeta(id: number, updates: Partial<InsertMeta>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.update(metas).set(updates).where(eq(metas.id, id));
-  return { id, ...updates };
+  try {
+    // Validar se meta existe
+    const existing = await db.select().from(metas).where(eq(metas.id, id)).limit(1);
+    if (existing.length === 0) {
+      throw new Error("Meta não encontrada");
+    }
+    
+    // Validar campos se fornecidos
+    if (updates.disciplina !== undefined && updates.disciplina.trim().length < 3) {
+      throw new Error("Disciplina deve ter no mínimo 3 caracteres");
+    }
+    if (updates.assunto !== undefined && updates.assunto.trim().length < 3) {
+      throw new Error("Assunto deve ter no mínimo 3 caracteres");
+    }
+    if (updates.duracao !== undefined && (updates.duracao < 15 || updates.duracao > 240)) {
+      throw new Error("Duração deve estar entre 15 e 240 minutos");
+    }
+    
+    await db.update(metas).set(updates).where(eq(metas.id, id));
+    return { success: true, id, ...updates };
+  } catch (error) {
+    console.error("[updateMeta] Erro:", error);
+    throw error;
+  }
 }
 
 export async function deleteMeta(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  await db.delete(metas).where(eq(metas.id, id));
-  return { success: true };
+  try {
+    // Validar se meta existe
+    const existing = await db.select().from(metas).where(eq(metas.id, id)).limit(1);
+    if (existing.length === 0) {
+      throw new Error("Meta não encontrada");
+    }
+    
+    // Deletar progresso relacionado primeiro (cascade manual)
+    await db.delete(progressoMetas).where(eq(progressoMetas.metaId, id));
+    
+    // Deletar meta
+    await db.delete(metas).where(eq(metas.id, id));
+    return { success: true };
+  } catch (error) {
+    console.error("[deleteMeta] Erro:", error);
+    throw error;
+  }
 }
 
 export async function marcarMetaConcluida(
@@ -379,6 +443,13 @@ export async function marcarMetaConcluida(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const { and } = await import("drizzle-orm");
+  
+  try {
+    // Validar se meta existe
+    const metaExiste = await db.select().from(metas).where(eq(metas.id, metaId)).limit(1);
+    if (metaExiste.length === 0) {
+      throw new Error("Meta não encontrada");
+    }
   
   // Buscar progresso existente
   const progressoExistente = await db
@@ -437,6 +508,10 @@ export async function marcarMetaConcluida(
       concluida: concluida ? 1 : 0,
       conquistasDesbloqueadas 
     };
+  }
+  } catch (error) {
+    console.error("[marcarMetaConcluida] Erro:", error);
+    throw error;
   }
 }
 

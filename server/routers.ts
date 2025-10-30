@@ -621,10 +621,22 @@ export const appRouter = router({
     // Atualizar configurações de cronograma
     atualizarConfiguracoes: protectedProcedure
       .input(z.object({
-        horasDiarias: z.number().min(1).max(12),
-        diasSemana: z.string(), // formato: "1,2,3,4,5"
+        horasDiarias: z.number().min(1, "Mínimo 1 hora por dia").max(12, "Máximo 12 horas por dia"),
+        diasSemana: z.string().regex(/^[0-6](,[0-6])*$/, "Formato inválido de dias da semana"),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Validar que diasSemana contém pelo menos 1 dia
+        const dias = input.diasSemana.split(',').map(Number);
+        if (dias.length === 0 || dias.length > 7) {
+          throw new Error("Selecione entre 1 e 7 dias da semana");
+        }
+        
+        // Validar que não há dias duplicados
+        const diasUnicos = new Set(dias);
+        if (diasUnicos.size !== dias.length) {
+          throw new Error("Dias duplicados detectados");
+        }
+        
         const { atualizarConfiguracoesCronograma } = await import("./db");
         return await atualizarConfiguracoesCronograma(
           ctx.user.id,
