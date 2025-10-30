@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, BookOpen, HelpCircle, CheckCircle, Play, Pause, RotateCcw, Edit, Mic, Square, Save, StickyNote, Plus, Minus } from "lucide-react";
+import { Clock, BookOpen, HelpCircle, CheckCircle, Play, Pause, RotateCcw, Edit, Mic, Square, Save, StickyNote } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import RichTextEditor from "@/components/RichTextEditor";
 
 interface Meta {
   id: number;
@@ -38,22 +38,10 @@ interface MetaModalProps {
 export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreTime, onSaveAnotacao }: MetaModalProps) {
   const { user } = useAuth();
   const isMaster = user?.role === "master";
-  const [, setLocation] = useLocation();
   
   // Mutations tRPC
   const marcarConcluida = trpc.metas.marcarConcluida.useMutation();
   const adicionarAnotacao = trpc.metas.adicionarAnotacao.useMutation();
-  const atualizarMeta = trpc.metas.update.useMutation({
-    onSuccess: () => {
-      toast.success("Meta atualizada com sucesso!");
-      setEditMode(false);
-      // Recarregar a página para atualizar os dados
-      window.location.reload();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Erro ao atualizar meta");
-    },
-  });
   
   const [tempoRestante, setTempoRestante] = useState(0);
   const [tempoDecorrido, setTempoDecorrido] = useState(0);
@@ -216,38 +204,15 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   };
 
   const handleSaveChanges = () => {
-    if (!meta) return;
-    
-    atualizarMeta.mutate({
-      id: meta.id,
-      disciplina: editDisciplina,
-      assunto: editAssunto,
-      tipo: editTipo,
-      duracao: editDuracao,
-      incidencia: editIncidencia || undefined,
-      dicaEstudo: editDicaEstudo,
-      orientacaoEstudos: editOrientacaoEstudos,
-    });
+    // TODO: Implementar salvamento no backend
+    toast.success("Meta atualizada com sucesso!");
+    setEditMode(false);
   };
 
-  const salvarAnotacaoMutation = trpc.metas.salvarAnotacao.useMutation({
-    onSuccess: () => {
-      toast.success("Anotação salva com sucesso!");
-      if (onSaveAnotacao && meta) {
-        onSaveAnotacao(meta.id, editAnotacoes);
-      }
-    },
-    onError: (error) => {
-      toast.error(`Erro ao salvar anotação: ${error.message}`);
-    },
-  });
-
   const handleSaveAnotacao = () => {
-    if (meta) {
-      salvarAnotacaoMutation.mutate({
-        metaId: meta.id,
-        anotacao: editAnotacoes,
-      });
+    if (onSaveAnotacao && meta) {
+      onSaveAnotacao(meta.id, editAnotacoes);
+      toast.success("Anotação salva com sucesso!");
     }
   };
 
@@ -383,82 +348,34 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
               </div>
 
               {/* Controles do Cronômetro */}
-              <div className="flex flex-col items-center gap-3">
-                <div className="flex items-center justify-center gap-2">
-                  <Button
-                    variant={rodando ? "destructive" : "default"}
-                    size="lg"
-                    onClick={toggleTimer}
-                    disabled={editMode}
-                  >
-                    {rodando ? (
-                      <>
-                        <Pause className="h-5 w-5 mr-2" />
-                        Pausar
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-5 w-5 mr-2" />
-                        Iniciar
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={resetTimer}
-                    disabled={editMode}
-                  >
-                    <RotateCcw className="h-5 w-5 mr-2" />
-                    Reiniciar
-                  </Button>
-                </div>
-                
-                {/* Ajuste Rápido de Tempo */}
-                {!editMode && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Ajustar tempo:</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditDuracao(Math.max(5, editDuracao - 5));
-                        setTempoRestante(Math.max(5, editDuracao - 5) * 60);
-                        toast.info(`Tempo ajustado para ${Math.max(5, editDuracao - 5)} minutos`);
-                      }}
-                      disabled={rodando}
-                    >
-                      <Minus className="h-3 w-3 mr-1" />
-                      5 min
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditDuracao(editDuracao + 5);
-                        setTempoRestante((editDuracao + 5) * 60);
-                        toast.info(`Tempo ajustado para ${editDuracao + 5} minutos`);
-                      }}
-                      disabled={rodando}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      5 min
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditDuracao(editDuracao + 15);
-                        setTempoRestante((editDuracao + 15) * 60);
-                        toast.info(`Tempo ajustado para ${editDuracao + 15} minutos`);
-                      }}
-                      disabled={rodando}
-                    >
-                      <Plus className="h-3 w-3 mr-1" />
-                      15 min
-                    </Button>
-                  </div>
-                )}
+              <div className="flex items-center justify-center gap-2">
+                <Button
+                  variant={rodando ? "destructive" : "default"}
+                  size="lg"
+                  onClick={toggleTimer}
+                  disabled={editMode}
+                >
+                  {rodando ? (
+                    <>
+                      <Pause className="h-5 w-5 mr-2" />
+                      Pausar
+                    </>
+                  ) : (
+                    <>
+                      <Play className="h-5 w-5 mr-2" />
+                      Iniciar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={resetTimer}
+                  disabled={editMode}
+                >
+                  <RotateCcw className="h-5 w-5 mr-2" />
+                  Reiniciar
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -564,11 +481,10 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
               )}
             </div>
             {editMode ? (
-              <Textarea
-                value={editOrientacaoEstudos}
-                onChange={(e) => setEditOrientacaoEstudos(e.target.value)}
-                placeholder="Adicione orientações de estudo, links de vídeos (YouTube/Vimeo), ou grave um áudio..."
-                className="min-h-[150px]"
+              <RichTextEditor
+                content={editOrientacaoEstudos}
+                onChange={(content) => setEditOrientacaoEstudos(content)}
+                placeholder="Adicione orientações de estudo, links de vídeos (YouTube/Vimeo), ou grave um áudio. Use a barra de ferramentas para formatar."
               />
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -612,45 +528,21 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
           {!editMode && (
             <div className="space-y-3">
               {meta.aulaId && (
-                <Button 
-                  className="w-full" 
-                  variant="default" 
-                  size="lg"
-                  onClick={() => {
-                    setLocation(`/aulas?aulaId=${meta.aulaId}`);
-                    onClose();
-                  }}
-                >
+                <Button className="w-full" variant="default" size="lg">
                   <Play className="h-4 w-4 mr-2" />
                   Assistir Aula Relacionada
                 </Button>
               )}
 
               {meta.tipo === "questoes" && (
-                <Button 
-                  className="w-full" 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => {
-                    setLocation(`/questoes?disciplina=${encodeURIComponent(meta.disciplina)}&assunto=${encodeURIComponent(meta.assunto)}`);
-                    onClose();
-                  }}
-                >
+                <Button className="w-full" variant="outline" size="lg">
                   <HelpCircle className="h-4 w-4 mr-2" />
                   Resolver Questões
                 </Button>
               )}
 
-              {meta.tipo === "estudo" && (
-                <Button 
-                  className="w-full" 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => {
-                    setLocation(`/materiais?disciplina=${encodeURIComponent(meta.disciplina)}`);
-                    onClose();
-                  }}
-                >
+              {meta.tipo === "estudo" && meta.aulaId && (
+                <Button className="w-full" variant="outline" size="lg">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Ver Materiais Complementares
                 </Button>

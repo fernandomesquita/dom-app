@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -18,6 +18,21 @@ export const users = mysqlTable("users", {
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["aluno", "professor", "administrativo", "mentor", "master"]).default("aluno").notNull(),
   pontos: int("pontos").default(0).notNull(),
+  
+  // Autenticação
+  emailVerified: int("email_verified").default(0).notNull(), // 0 = não verificado, 1 = verificado
+  passwordHash: varchar("password_hash", { length: 255 }), // Hash bcrypt (opcional, para login com senha)
+  
+  // Dados pessoais completos
+  cpf: varchar("cpf", { length: 14 }).unique(), // Formato: 000.000.000-00
+  telefone: varchar("telefone", { length: 20 }),
+  dataNascimento: varchar("data_nascimento", { length: 10 }), // Formato: DD/MM/YYYY
+  endereco: text("endereco"), // JSON: {rua, numero, complemento, bairro, cidade, estado, cep}
+  foto: varchar("foto", { length: 500 }), // URL S3
+  bio: text("bio"),
+  status: mysqlEnum("status", ["ativo", "inativo", "suspenso"]).default("ativo").notNull(),
+  observacoes: text("observacoes"), // Notas internas do admin
+  
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -45,6 +60,11 @@ export const planos = mysqlTable("planos", {
   mensagemPosPlano: text("mensagem_pos_plano"), // Mensagem HTML rich text após última meta
   linkPosPlano: varchar("link_pos_plano", { length: 500 }), // Link opcional após última meta
   exibirMensagemPosPlano: int("exibir_mensagem_pos_plano").default(0).notNull(), // 1 = exibir, 0 = não exibir
+  
+  // Ciclo EARA®
+  algoritmoEARA: int("algoritmo_eara").default(1).notNull(), // 1 = habilitado, 0 = desabilitado
+  configuracaoEARA: json("configuracao_eara"), // Configurações JSON do algoritmo
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -87,6 +107,12 @@ export const metas = mysqlTable("metas", {
   dicaEstudo: text("dica_estudo"),
   orientacaoEstudos: text("orientacao_estudos"),
   aulaId: int("aula_id"),
+  
+  // Ciclo EARA®
+  assuntoAgrupador: varchar("assunto_agrupador", { length: 255 }), // Para agrupar E-A-R-R-R do mesmo assunto
+  sequenciaEARA: int("sequencia_eara").default(1).notNull(), // 1=Estudo, 2=Aplicação, 3=Revisão1, etc
+  metaOrigemId: int("meta_origem_id"), // ID da meta de Estudo original (para revisões)
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -105,7 +131,17 @@ export const progressoMetas = mysqlTable("progresso_metas", {
   concluida: int("concluida").default(0).notNull(), // 0 = não, 1 = sim
   dataConclusao: timestamp("data_conclusao"),
   tempoGasto: int("tempo_gasto").default(0).notNull(), // em minutos
-  anotacao: text("anotacao"), // Anotações pessoais do aluno sobre a meta
+  pulada: int("pulada").default(0).notNull(), // 0 = não, 1 = sim
+  dataPulada: timestamp("data_pulada"),
+  adiada: int("adiada").default(0).notNull(), // 0 = não, 1 = sim
+  dataAdiamento: timestamp("data_adiamento"),
+  
+  // Ciclo EARA®
+  cicloEARA: varchar("ciclo_eara", { length: 50 }), // 'estudo', 'aplicacao', 'revisao1', 'revisao2', 'revisao3'
+  desempenhoQuestoes: int("desempenho_questoes"), // % de acerto (0-100) para adaptação
+  proximoCiclo: varchar("proximo_ciclo", { length: 50 }), // próximo ciclo agendado
+  dataProximoCiclo: timestamp("data_proximo_ciclo"), // data do próximo ciclo
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
@@ -353,25 +389,95 @@ export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
 export type ForumMensagemRetida = typeof forumMensagensRetidas.$inferSelect;
 export type InsertForumMensagemRetida = typeof forumMensagensRetidas.$inferInsert;
 
-// ========== MATERIAIS DE APOIO ==========
+// ========== AUTENTICAÇÃO E SEGURANÇA ==========
 
 /**
- * Materiais de apoio (PDFs, documentos) vinculados a metas específicas
+ * Tokens de verificação de email
  */
-export const materiais = mysqlTable("materiais", {
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
   id: int("id").autoincrement().primaryKey(),
-  titulo: varchar("titulo", { length: 255 }).notNull(),
-  descricao: text("descricao"),
-  urlArquivo: text("url_arquivo").notNull(), // URL do S3
-  tipoArquivo: varchar("tipo_arquivo", { length: 50 }).default("application/pdf").notNull(),
-  tamanhoBytes: int("tamanho_bytes"),
-  metaId: int("meta_id"), // FK para metas (opcional - material pode ser geral)
-  disciplina: varchar("disciplina", { length: 255 }),
-  uploadedBy: int("uploaded_by").notNull(), // userId do professor/admin
-  ativo: int("ativo").default(1).notNull(),
+  userId: int("user_id").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
-export type Material = typeof materiais.$inferSelect;
-export type InsertMaterial = typeof materiais.$inferInsert;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
+
+/**
+ * Tokens de reset de senha
+ */
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  token: varchar("token", { length: 64 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
+/**
+ * Sessões ativas dos usuários
+ */
+export const sessions = mysqlTable("sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  lastActivity: timestamp("last_activity").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Session = typeof sessions.$inferSelect;
+export type InsertSession = typeof sessions.$inferInsert;
+
+/**
+ * Logs de auditoria - rastreamento de ações críticas
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id"), // null se ação do sistema
+  action: varchar("action", { length: 100 }).notNull(), // create, update, delete, login, etc
+  entity: varchar("entity", { length: 100 }).notNull(), // users, planos, metas, etc
+  entityId: int("entity_id"),
+  oldData: text("old_data"), // JSON do estado anterior
+  newData: text("new_data"), // JSON do estado novo
+  ip: varchar("ip", { length: 45 }),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * Permissões do sistema - controle granular de acesso
+ */
+export const permissions = mysqlTable("permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(), // Ex: usuarios.criar, planos.editar
+  description: text("description"),
+  module: varchar("module", { length: 50 }).notNull(), // Ex: usuarios, planos, forum
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Permission = typeof permissions.$inferSelect;
+export type InsertPermission = typeof permissions.$inferInsert;
+
+/**
+ * Relação entre roles e permissões
+ */
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  role: mysqlEnum("role", ["aluno", "professor", "administrativo", "mentor", "master"]).notNull(),
+  permissionId: int("permission_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type InsertRolePermission = typeof rolePermissions.$inferInsert;

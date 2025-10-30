@@ -1,40 +1,32 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { UserPlus, Edit, Trash2, Search } from "lucide-react";
+import { UserPlus, Edit, Trash2, Search, MessageSquare, Eye, Upload } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-
-interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  perfil: "aluno" | "professor" | "administrativo" | "mentor" | "master";
-  dataCadastro: string;
-  status: "ativo" | "inativo";
-}
+import MensagensForumModal from "./MensagensForumModal";
+import FormularioUsuario from "./FormularioUsuario";
+import PerfilAlunoModal from "./PerfilAlunoModal";
+import ImportarAlunos from "./ImportarAlunos";
+import { trpc } from "@/lib/trpc";
 
 export default function GestaoUsuarios() {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([
-    { id: 1, nome: "Fernando Mesquita", email: "fernando@dom.com", perfil: "master", dataCadastro: "2025-01-01", status: "ativo" },
-    { id: 2, nome: "Maria Silva", email: "maria@dom.com", perfil: "mentor", dataCadastro: "2025-01-05", status: "ativo" },
-    { id: 3, nome: "João Santos", email: "joao@dom.com", perfil: "professor", dataCadastro: "2025-01-10", status: "ativo" },
-    { id: 4, nome: "Ana Costa", email: "ana@dom.com", perfil: "administrativo", dataCadastro: "2025-01-12", status: "ativo" },
-    { id: 5, nome: "Pedro Oliveira", email: "pedro@dom.com", perfil: "aluno", dataCadastro: "2025-01-15", status: "ativo" },
-  ]);
+  // Buscar usuários do backend
+  const { data: usuariosData, isLoading, refetch } = trpc.admin.usuarios.list.useQuery();
+  const deletarUsuarioMutation = trpc.admin.usuarios.delete.useMutation();
+  
+  const usuarios = usuariosData || [];
 
   const [busca, setBusca] = useState("");
-  const [dialogAberto, setDialogAberto] = useState(false);
-  const [novoUsuario, setNovoUsuario] = useState({
-    nome: "",
-    email: "",
-    perfil: "aluno" as Usuario["perfil"],
-  });
+  const [formularioAberto, setFormularioAberto] = useState(false);
+  const [perfilAberto, setPerfilAberto] = useState(false);
+  const [importarAberto, setImportarAberto] = useState(false);
+  const [mensagensDialogAberto, setMensagensDialogAberto] = useState(false);
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState<any | null>(null);
+  const [usuarioEditando, setUsuarioEditando] = useState<any | null>(null);
+  const [usuarioPerfil, setUsuarioPerfil] = useState<number | null>(null);
 
   const getPerfilColor = (perfil: string) => {
     switch (perfil) {
@@ -53,36 +45,48 @@ export default function GestaoUsuarios() {
     }
   };
 
-  const handleCriarUsuario = () => {
-    if (!novoUsuario.nome || !novoUsuario.email) {
-      toast.error("Preencha todos os campos");
-      return;
+  const handleNovoUsuario = () => {
+    setUsuarioEditando(null);
+    setFormularioAberto(true);
+  };
+  
+  const handleEditarUsuario = (usuario: any) => {
+    setUsuarioEditando(usuario);
+    setFormularioAberto(true);
+  };
+  
+  const handleVerPerfil = (usuarioId: number) => {
+    setUsuarioPerfil(usuarioId);
+    setPerfilAberto(true);
+  };
+
+  const handleExcluir = async (id: number) => {
+    if (!confirm("Tem certeza que deseja excluir este usuário?")) return;
+    
+    try {
+      await deletarUsuarioMutation.mutateAsync({ id });
+      toast.success("Usuário excluído");
+      refetch();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao excluir usuário");
     }
-
-    const usuario: Usuario = {
-      id: usuarios.length + 1,
-      nome: novoUsuario.nome,
-      email: novoUsuario.email,
-      perfil: novoUsuario.perfil,
-      dataCadastro: new Date().toISOString().split("T")[0],
-      status: "ativo",
-    };
-
-    setUsuarios([...usuarios, usuario]);
-    setDialogAberto(false);
-    setNovoUsuario({ nome: "", email: "", perfil: "aluno" });
-    toast.success("Usuário criado com sucesso!");
   };
 
-  const handleExcluir = (id: number) => {
-    setUsuarios(usuarios.filter(u => u.id !== id));
-    toast.success("Usuário excluído");
-  };
-
-  const usuariosFiltrados = usuarios.filter(u =>
-    u.nome.toLowerCase().includes(busca.toLowerCase()) ||
-    u.email.toLowerCase().includes(busca.toLowerCase())
+  const usuariosFiltrados = usuarios.filter((u: any) =>
+    (u.name?.toLowerCase() || "").includes(busca.toLowerCase()) ||
+    (u.email?.toLowerCase() || "").includes(busca.toLowerCase())
   );
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando usuários...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -99,73 +103,24 @@ export default function GestaoUsuarios() {
           </div>
         </div>
 
-        <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Novo Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Criar Novo Usuário</DialogTitle>
-              <DialogDescription>
-                Preencha os dados do novo usuário
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div>
-                <Label htmlFor="nome">Nome</Label>
-                <Input
-                  id="nome"
-                  value={novoUsuario.nome}
-                  onChange={(e) => setNovoUsuario({ ...novoUsuario, nome: e.target.value })}
-                  placeholder="Nome completo"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={novoUsuario.email}
-                  onChange={(e) => setNovoUsuario({ ...novoUsuario, email: e.target.value })}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-              <div>
-                <Label htmlFor="perfil">Perfil</Label>
-                <Select
-                  value={novoUsuario.perfil}
-                  onValueChange={(value) => setNovoUsuario({ ...novoUsuario, perfil: value as Usuario["perfil"] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aluno">Aluno</SelectItem>
-                    <SelectItem value="professor">Professor</SelectItem>
-                    <SelectItem value="administrativo">Administrativo</SelectItem>
-                    <SelectItem value="mentor">Mentor</SelectItem>
-                    <SelectItem value="master">Master</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogAberto(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCriarUsuario}>Criar Usuário</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button onClick={() => setImportarAberto(true)} variant="outline">
+            <Upload className="h-4 w-4 mr-2" />
+            Importar Alunos
+          </Button>
+          <Button onClick={handleNovoUsuario}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Novo Usuário
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Usuários Cadastrados ({usuariosFiltrados.length})</CardTitle>
-          <CardDescription>Gerencie todos os usuários do sistema</CardDescription>
+          <CardTitle>Usuários Cadastrados</CardTitle>
+          <CardDescription>
+            Gerencie todos os usuários da plataforma
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -180,30 +135,55 @@ export default function GestaoUsuarios() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {usuariosFiltrados.map((usuario) => (
+              {usuariosFiltrados.map((usuario: any) => (
                 <TableRow key={usuario.id}>
-                  <TableCell className="font-medium">{usuario.nome}</TableCell>
+                  <TableCell className="font-medium">{usuario.name}</TableCell>
                   <TableCell>{usuario.email}</TableCell>
                   <TableCell>
-                    <Badge className={getPerfilColor(usuario.perfil)}>
-                      {usuario.perfil.charAt(0).toUpperCase() + usuario.perfil.slice(1)}
+                    <Badge className={getPerfilColor(usuario.role)}>
+                      {usuario.role.charAt(0).toUpperCase() + usuario.role.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(usuario.dataCadastro).toLocaleDateString("pt-BR")}</TableCell>
+                  <TableCell>{new Date(usuario.createdAt).toLocaleDateString("pt-BR")}</TableCell>
                   <TableCell>
                     <Badge variant={usuario.status === "ativo" ? "default" : "secondary"}>
                       {usuario.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell>
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="icon">
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleVerPerfil(usuario.id)}
+                        title="Ver perfil completo"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => {
+                          setUsuarioSelecionado(usuario);
+                          setMensagensDialogAberto(true);
+                        }}
+                        title="Ver mensagens do fórum"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => handleEditarUsuario(usuario)}
+                        title="Editar usuário"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={() => handleExcluir(usuario.id)}
+                        title="Excluir usuário"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -215,6 +195,47 @@ export default function GestaoUsuarios() {
           </Table>
         </CardContent>
       </Card>
+      
+      {/* Formulário de Usuário */}
+      <FormularioUsuario
+        open={formularioAberto}
+        onOpenChange={setFormularioAberto}
+        usuario={usuarioEditando}
+        onSuccess={refetch}
+      />
+      
+      {/* Importar Alunos */}
+      <ImportarAlunos
+        open={importarAberto}
+        onOpenChange={setImportarAberto}
+        onSuccess={refetch}
+      />
+      
+      {/* Modal de Perfil */}
+      {usuarioPerfil && (
+        <PerfilAlunoModal
+          open={perfilAberto}
+          onOpenChange={setPerfilAberto}
+          usuarioId={usuarioPerfil}
+          onEditar={() => {
+            const usuario = usuarios.find((u: any) => u.id === usuarioPerfil);
+            if (usuario) {
+              setPerfilAberto(false);
+              handleEditarUsuario(usuario);
+            }
+          }}
+        />
+      )}
+      
+      {/* Modal de Mensagens do Fórum */}
+      {usuarioSelecionado && (
+        <MensagensForumModal
+          open={mensagensDialogAberto}
+          onOpenChange={setMensagensDialogAberto}
+          userId={usuarioSelecionado.id}
+          userName={usuarioSelecionado.name}
+        />
+      )}
     </div>
   );
 }

@@ -163,36 +163,21 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        <Card className="md:col-span-2">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">Progresso no Plano</CardTitle>
-              <p className="text-lg font-bold mt-1">{stats?.nomePlano || "Seu Plano"}</p>
-            </div>
-            <Target className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Metas Concluídas</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm text-muted-foreground">Metas Concluídas</div>
-                  <div className="text-2xl font-bold">
-                    {stats?.metasConcluidas || 0} {(stats?.metasConcluidas || 0) === 1 ? 'meta' : 'metas'}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-primary">
-                    {stats?.totalMetas ? (((stats?.metasConcluidas || 0) / stats.totalMetas) * 100).toFixed(1).replace('.', ',') : '0,0'}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">Completo</div>
-                </div>
-              </div>
-              <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-500" 
-                  style={{ width: `${stats?.totalMetas ? (((stats?.metasConcluidas || 0) / stats.totalMetas) * 100).toFixed(1) : 0}%` }}
-                />
-              </div>
+            <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {stats?.totalMetas ? Math.round(((stats?.metasConcluidas || 0) / stats.totalMetas) * 100) : 0}% concluído
+            </p>
+            <div className="mt-2 h-2 bg-secondary rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-green-500 transition-all" 
+                style={{ width: `${stats?.totalMetas ? ((stats?.metasConcluidas || 0) / stats.totalMetas) * 100 : 0}%` }}
+              />
             </div>
           </CardContent>
         </Card>
@@ -250,36 +235,34 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
           <Link href="/anotacoes">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-yellow-100 rounded-lg">
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-yellow-100 rounded-lg">
                     <StickyNote className="h-6 w-6 text-yellow-600" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold mb-1">Anotações de Meta</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Visualize suas anotações pessoais
-                    </p>
+                  <div>
+                    <CardTitle className="text-base">Anotações de Meta</CardTitle>
+                    <CardDescription>Visualize suas anotações pessoais</CardDescription>
                   </div>
                 </div>
-              </CardContent>
+              </CardHeader>
             </Card>
           </Link>
           <Link href="/plano">
             <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Calendar className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">Meu Plano de Estudos</CardTitle>
-                      <CardDescription>Visualize suas metas da semana</CardDescription>
-                    </div>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Calendar className="h-6 w-6 text-blue-600" />
                   </div>
-                </CardHeader>
-              </Card>
+                  <div>
+                    <CardTitle className="text-base">Meu Plano de Estudos</CardTitle>
+                    <CardDescription>Visualize suas metas da semana</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
           </Link>
 
           <Link href="/aulas">

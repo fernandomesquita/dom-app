@@ -46,6 +46,28 @@ export default function MetaAMeta({ metas, onMetaConcluida }: MetaAMetaProps) {
     localStorage.setItem("ultimaMetaVisualizada", metaAtualIndex.toString());
   }, [metaAtualIndex]);
 
+  // Detectar quando a meta atual foi concluída e avançar automaticamente
+  useEffect(() => {
+    const metaAtual = metas[metaAtualIndex];
+    if (metaAtual && metaAtual.concluida) {
+      // Procurar a próxima meta não concluída a partir da posição atual
+      for (let i = metaAtualIndex + 1; i < metas.length; i++) {
+        if (!metas[i].concluida) {
+          setTimeout(() => setMetaAtualIndex(i), 500);
+          return;
+        }
+      }
+      
+      // Se não encontrou nenhuma meta não concluída à frente, procurar desde o início
+      for (let i = 0; i < metaAtualIndex; i++) {
+        if (!metas[i].concluida) {
+          setTimeout(() => setMetaAtualIndex(i), 500);
+          return;
+        }
+      }
+    }
+  }, [metas, metaAtualIndex]);
+
   // Navegação por teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

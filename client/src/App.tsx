@@ -15,13 +15,27 @@ import EstatisticasQuestoes from "./pages/EstatisticasQuestoes";
 import Forum from "./pages/Forum";
 import Revisao from "./pages/Revisao";
 import AnotacoesMeta from "./pages/AnotacoesMeta";
-import Anotacoes from "./pages/Anotacoes";
 import Admin from "./pages/Admin";
+import GestaoMetas from "./pages/admin/GestaoMetas";
+import Cadastro from "./pages/Cadastro";
+import Login from "./pages/Login";
+import VerificarEmail from "./pages/VerificarEmail";
+import RecuperarSenha from "./pages/RecuperarSenha";
+import RedefinirSenha from "./pages/RedefinirSenha";
+import Perfil from "./pages/Perfil";
 
 function Router() {
   return (
-    <DOMLayout>
-      <Switch>
+    <Switch>
+      {/* Rotas públicas de autenticação (sem layout) */}
+      <Route path={"/cadastro"} component={Cadastro} />
+      <Route path={"/login"} component={Login} />
+      <Route path={"/verificar-email/:token"} component={VerificarEmail} />
+      <Route path={"/recuperar-senha"} component={RecuperarSenha} />
+      <Route path={"/redefinir-senha/:token"} component={RedefinirSenha} />
+      
+      {/* Rotas protegidas (com layout) */}
+      <DOMLayout>
         <Route path={"/"} component={Dashboard} />
         <Route path={"/plano"} component={Plano} />
         <Route path={"/aulas"} component={Aulas} />
@@ -31,14 +45,15 @@ function Router() {
       <Route path={"/questoes/estatisticas"} component={EstatisticasQuestoes} />
         <Route path={"/forum"} component={Forum} />
         <Route path={"/revisao"} component={Revisao} />
-        <Route path={"/anotacoes-meta"} component={AnotacoesMeta} />
-        <Route path={"/anotacoes"} component={Anotacoes} />
+        <Route path={"/anotacoes"} component={AnotacoesMeta} />
+        <Route path={"/perfil"} component={Perfil} />
         <Route path={"/admin"} component={Admin} />
+        <Route path={"/admin/planos/:id/metas"} component={GestaoMetas} />
         <Route path={"/404"} component={NotFound} />
         {/* Final fallback route */}
         <Route component={NotFound} />
-      </Switch>
-    </DOMLayout>
+      </DOMLayout>
+    </Switch>
   );
 }
 

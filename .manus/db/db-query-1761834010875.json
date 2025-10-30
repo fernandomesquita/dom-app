@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM progresso_metas LIKE '%eara%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute SHOW COLUMNS FROM progresso_metas LIKE '%eara%';",
+  "rows": [
+    {
+      "Field": "ciclo_eara",
+      "Type": "varchar(50)",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nciclo_eara\tvarchar(50)\tYES\t\tNULL\t\n",
+  "stderr": "",
+  "execution_time_ms": 104
+}

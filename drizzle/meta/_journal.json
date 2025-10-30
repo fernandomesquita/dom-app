@@ -68,15 +68,36 @@
     {
       "idx": 9,
       "version": "5",
-      "when": 1761776128206,
-      "tag": "0009_fat_metal_master",
+      "when": 1761796538960,
+      "tag": "0009_chemical_norrin_radd",
       "breakpoints": true
     },
     {
       "idx": 10,
       "version": "5",
-      "when": 1761778519292,
-      "tag": "0010_dizzy_ezekiel",
+      "when": 1761828666325,
+      "tag": "0010_military_raider",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1761829434839,
+      "tag": "0011_orange_tarot",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1761831825966,
+      "tag": "0012_colorful_robin_chapel",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1761833864116,
+      "tag": "0013_violet_deathstrike",
       "breakpoints": true
     }
   ]

@@ -17,7 +17,6 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
-  StickyNote,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -57,7 +56,6 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
     { icon: <HelpCircle size={20} />, label: "Questões", path: "/questoes" },
     { icon: <MessageSquare size={20} />, label: "Fórum", path: "/forum" },
     { icon: <RotateCcw size={20} />, label: "Revisão", path: "/revisao" },
-    { icon: <StickyNote size={20} />, label: "Anotações", path: "/anotacoes" },
   ];
 
   // Adicionar item de Admin para usuários administrativos
@@ -105,23 +103,23 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
         {navItems.map((item) => {
           const isActive = location === item.path;
           return (
-            <Link key={item.path} href={item.path}>
-              <a
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.icon}
-                {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
-                {item.badge && (
-                  <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
-                )}
-              </a>
+            <Link 
+              key={item.path} 
+              href={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-foreground hover:bg-accent hover:text-accent-foreground"
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              {item.icon}
+              {!sidebarCollapsed && <span className="font-medium">{item.label}</span>}
+              {item.badge && (
+                <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-bold px-2 py-0.5 rounded-full">
+                  {item.badge}
+                </span>
+              )}
             </Link>
           );
         })}

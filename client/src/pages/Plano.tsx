@@ -7,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
 import MetaAMeta from "@/components/MetaAMeta";
-import ConfigurarCronograma from "@/components/ConfigurarCronograma";
-import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List, Settings } from "lucide-react";
+import CronogramaAprimorado from "@/components/CronogramaAprimorado";
+import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ import { useEffect } from "react";
 
 export default function Plano() {
   const { conquistas, mostrarConquistas, limparConquistas } = useConquistaNotification();
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedMeta, setSelectedMeta] = useState<any | null>(null);
   const [metas, setMetas] = useState<any[]>([]);
@@ -30,71 +30,52 @@ export default function Plano() {
   const [visualizacao, setVisualizacao] = useState<"calendario" | "lista" | "metaAMeta">("calendario");
   const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
   const [planoInfo, setPlanoInfo] = useState<any>(null);
-  const [modalConfigurarCronograma, setModalConfigurarCronograma] = useState(false);
   
   // Buscar metas do plano atribuído ao aluno
   const { data: minhasMetasData, isLoading: loadingMetas, refetch: refetchMetas } = trpc.metas.minhasMetas.useQuery();
   
-  // Mutation para redistribuir metas
-  const redistribuirMetas = trpc.metas.redistribuir.useMutation({
-    onSuccess: (data) => {
-      console.log("[Plano] Redistribuição bem-sucedida! Resposta:", data);
-      toast.success("Metas redistribuídas com sucesso!");
-      console.log("[Plano] Chamando refetchMetas...");
+  // Mutations
+  const concluirMetaMutation = trpc.metas.concluir.useMutation({
+    onSuccess: () => {
       refetchMetas();
-    },
-    onError: (error) => {
-      console.error("[Plano] Erro ao redistribuir metas:", error);
-      toast.error(error.message || "Erro ao redistribuir metas");
+      toast.success("Meta concluída com sucesso!");
     },
   });
   
-  // Detectar metaId na URL e abrir modal automaticamente
-  useEffect(() => {
-    if (metas.length > 0) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const metaId = urlParams.get('metaId');
-      if (metaId) {
-        const meta = metas.find(m => m.id === parseInt(metaId));
-        if (meta) {
-          setSelectedMeta(meta);
-          // Limpar URL sem recarregar página
-          window.history.replaceState({}, '', '/plano');
-        }
-      }
-    }
-  }, [metas]);
-
+  const pularMetaMutation = trpc.metas.pular.useMutation({
+    onSuccess: () => {
+      refetchMetas();
+      toast.info("Meta pulada");
+    },
+  });
+  
+  const adiarMetaMutation = trpc.metas.adiar.useMutation({
+    onSuccess: () => {
+      refetchMetas();
+      toast.info("Meta adiada");
+    },
+  });
+  
   useEffect(() => {
     if (minhasMetasData) {
-      console.log("[Plano] Dados recebidos do backend:", minhasMetasData);
       setPlanoInfo(minhasMetasData.plano);
       // Transformar metas para formato esperado pelo componente
-      const metasFormatadas = minhasMetasData.metas.map((meta: any, index: number) => {
-        // USAR dataAgendada do backend se existir, senão calcular baseado na data atual + índice
-        const dataAgendada = meta.dataAgendada 
-          ? new Date(meta.dataAgendada).toISOString().split('T')[0]
-          : new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        
-        console.log(`[Plano] Meta ${meta.id} (${meta.assunto}): dataAgendada=${dataAgendada}`);
-        
-        return {
-          id: meta.id,
-          disciplina: meta.disciplina,
-          assunto: meta.assunto,
-          tipo: meta.tipo,
-          duracao: meta.duracao,
-          incidencia: meta.incidencia,
-          concluida: meta.concluida || false,
-          dataConclusao: meta.dataConclusao,
-          tempoGasto: meta.tempoGasto,
-          dicaEstudo: meta.dicaEstudo,
-          orientacaoEstudos: meta.orientacaoEstudos,
-          data: dataAgendada,
-          anotacao: "",
-        };
-      });
-      console.log("[Plano] Metas formatadas:", metasFormatadas);
+      const metasFormatadas = minhasMetasData.metas.map((meta: any, index: number) => ({
+        id: meta.id,
+        disciplina: meta.disciplina,
+        assunto: meta.assunto,
+        tipo: meta.tipo,
+        duracao: meta.duracao,
+        incidencia: meta.incidencia,
+        concluida: meta.concluida || false,
+        dataConclusao: meta.dataConclusao,
+        tempoGasto: meta.tempoGasto,
+        dicaEstudo: meta.dicaEstudo,
+        orientacaoEstudos: meta.orientacaoEstudos,
+        // Distribuir metas ao longo da semana (por enquanto)
+        data: new Date(Date.now() + index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        anotacao: "",
+      }));
       setMetas(metasFormatadas);
     }
   }, [minhasMetasData]);
@@ -165,48 +146,8 @@ export default function Plano() {
 
   const handleTimeAdjust = (dateKey: string, newMinutes: number) => {
     setTemposPorDia(prev => ({ ...prev, [dateKey]: newMinutes }));
-    
-    // Converter horas para redistribuição
-    const horasDiarias = newMinutes / 60;
-    
-    // Usar dias da semana padrão (seg-sex) por enquanto
-    // TODO: pegar configuração salva do usuário
-    const diasSemana = [1, 2, 3, 4, 5]; // seg-sex
-    
-    console.log(`[handleTimeAdjust] Ajustando tempo para ${formatTime(newMinutes)} (${horasDiarias}h)`);
-    
-    // Redistribuir metas com novo tempo
-    redistribuirMetas.mutate({
-      horasDiarias,
-      diasSemana,
-    });
+    toast.info(`Tempo ajustado para ${formatTime(newMinutes)}. Metas serão realocadas automaticamente.`);
   };
-
-  const concluirMetaMutation = trpc.metas.concluir.useMutation({
-    onSuccess: (data: any) => {
-      toast.success("Meta concluída!");
-      setSelectedMeta(null);
-      
-      // Refetch para atualizar lista de metas
-      refetchMetas();
-      
-      // Mostrar conquistas desbloqueadas (se houver)
-      if (data.conquistasDesbloqueadas && data.conquistasDesbloqueadas.length > 0) {
-        mostrarConquistas(data.conquistasDesbloqueadas);
-      }
-      
-      // Verificar se foi a última meta e se o plano tem mensagem pós-conclusão
-      const todasConcluidas = metas.every(m => m.concluida || m.id === selectedMeta?.id);
-      if (todasConcluidas && planoInfo?.tipo === "gratuito" && planoInfo?.exibirMensagemPosPlano) {
-        setTimeout(() => {
-          setModalMensagemPosPlano(true);
-        }, 1500); // Aguardar 1.5s para exibir após o toast de conquistas
-      }
-    },
-    onError: () => {
-      toast.error("Erro ao concluir meta");
-    },
-  });
 
   const handleConcluirMeta = (id: number, tempoGasto?: number) => {
     concluirMetaMutation.mutate({
@@ -329,27 +270,16 @@ export default function Plano() {
         <Breadcrumb items={[{ label: "Meu Plano de Estudos" }]} />
       </div>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
-          <p className="text-muted-foreground mt-2">
-            Plano: <span className="font-semibold text-foreground">{planoInfo.nome || "Carregando..."}</span>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Meu Plano de Estudos</h1>
+        <p className="text-muted-foreground mt-2">
+          Plano: <span className="font-semibold text-foreground">{planoInfo.nome || "Carregando..."}</span>
+        </p>
+        {planoInfo.orgao && planoInfo.cargo && (
+          <p className="text-sm text-muted-foreground mt-1">
+            {planoInfo.orgao} - {planoInfo.cargo}
           </p>
-          {planoInfo.orgao && planoInfo.cargo && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {planoInfo.orgao} - {planoInfo.cargo}
-            </p>
-          )}
-        </div>
-        <Button 
-          variant="default" 
-          size="lg"
-          onClick={() => setModalConfigurarCronograma(true)}
-          className="flex items-center gap-2"
-        >
-          <Settings className="h-4 w-4" />
-          Configurar Cronograma
-        </Button>
+        )}
       </div>
 
       <Card>
@@ -442,64 +372,7 @@ export default function Plano() {
             </Button>
           </div>
 
-          {/* Barra de Progresso Semanal */}
-          <Card>
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-semibold">Progresso da Semana</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {(() => {
-                        const weekStart = getDaysOfWeek()[0];
-                        const weekEnd = getDaysOfWeek()[6];
-                        const metasDaSemana = metas.filter((m: any) => {
-                          const metaDate = new Date(m.data);
-                          return metaDate >= weekStart && metaDate <= weekEnd;
-                        });
-                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
-                        return `${metasConcluidasDaSemana.length} de ${metasDaSemana.length} metas concluídas`;
-                      })()}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">
-                      {(() => {
-                        const weekStart = getDaysOfWeek()[0];
-                        const weekEnd = getDaysOfWeek()[6];
-                        const metasDaSemana = metas.filter((m: any) => {
-                          const metaDate = new Date(m.data);
-                          return metaDate >= weekStart && metaDate <= weekEnd;
-                        });
-                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
-                        return Math.round((metasConcluidasDaSemana.length / Math.max(1, metasDaSemana.length)) * 100);
-                      })()}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">Completo</div>
-                  </div>
-                </div>
-                <div className="w-full bg-secondary rounded-full h-3 overflow-hidden">
-                  <div 
-                    className="bg-primary h-full transition-all duration-500 ease-out rounded-full"
-                    style={{
-                      width: `${(() => {
-                        const weekStart = getDaysOfWeek()[0];
-                        const weekEnd = getDaysOfWeek()[6];
-                        const metasDaSemana = metas.filter((m: any) => {
-                          const metaDate = new Date(m.data);
-                          return metaDate >= weekStart && metaDate <= weekEnd;
-                        });
-                        const metasConcluidasDaSemana = metasDaSemana.filter((m: any) => m.concluida);
-                        return Math.round((metasConcluidasDaSemana.length / Math.max(1, metasDaSemana.length)) * 100);
-                      })()}%`
-                    }}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-4">
+          <div className="grid grid-cols-7 gap-3">
             {getDaysOfWeek().map((day, index) => {
               const dayMetas = getMetasForDay(day);
               const dateKey = formatDateKey(day);
@@ -508,7 +381,7 @@ export default function Plano() {
               const isToday = formatDateKey(new Date()) === dateKey;
 
               return (
-                <div key={index} className="flex flex-col">
+                <div key={index} className="space-y-2">
                   <div className={`text-center p-2 rounded-lg ${isToday ? "bg-primary text-primary-foreground" : "bg-accent"}`}>
                     <div className="font-semibold text-sm">
                       {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"][index]}
@@ -516,7 +389,7 @@ export default function Plano() {
                     <div className="text-xs">{formatDate(day)}</div>
                   </div>
 
-                  <div className="space-y-3 min-h-[250px] flex-1">
+                  <div className="space-y-2 min-h-[200px]">
                     {dayMetas.length === 0 ? (
                       <div className="text-center text-sm text-muted-foreground p-4 border-2 border-dashed rounded-lg">
                         Sem metas
@@ -525,55 +398,28 @@ export default function Plano() {
                       dayMetas.map((meta) => (
                         <div
                           key={meta.id}
-                          className={`relative p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] group min-h-[140px] ${
-                            meta.concluida ? "opacity-60" : ""
+                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                            meta.concluida ? "opacity-50 grayscale" : ""
                           }`}
                           style={{
-                            backgroundColor: meta.cor ? meta.cor + "15" : "#f0f0f015",
-                            borderColor: meta.cor || "#e0e0e0",
+                            backgroundColor: meta.cor + "20",
+                            borderColor: meta.cor,
                           }}
                           onClick={() => setSelectedMeta(meta)}
+                          title={meta.dicaEstudo}
                         >
-                          {/* Checkbox de Conclusão */}
-                          <div className="absolute top-2 right-2 flex items-center gap-1">
-                            {meta.concluida ? (
-                              <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 rounded-full border-2 border-gray-300 group-hover:border-primary transition-colors" />
-                            )}
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <div className="font-semibold text-xs line-clamp-2">{meta.assunto}</div>
                             <span className="text-sm">{getIncidenciaIcon(meta.incidencia)}</span>
                           </div>
-
-                          {/* Conteúdo do Box */}
-                          <div className="pr-12">
-                            <div className="font-bold text-base mb-2 leading-tight" title={meta.assunto}>
-                              {meta.assunto}
-                            </div>
-                            <div className="text-sm text-muted-foreground mb-3 font-medium">
-                              {meta.disciplina}
-                            </div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
-                                {getTipoLabel(meta.tipo)}
-                              </Badge>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {formatTime(meta.duracao)}
-                              </div>
-                            </div>
+                          <div className="text-xs text-muted-foreground mb-2">{meta.disciplina}</div>
+                          <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
+                            {getTipoLabel(meta.tipo)}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTime(meta.duracao)}
                           </div>
-
-                          {/* Tooltip de Dica de Estudo (aparece no hover) */}
-                          {meta.dicaEstudo && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 p-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                              <div className="font-semibold mb-1">💡 Dica de Estudo:</div>
-                              <div>{meta.dicaEstudo}</div>
-                            </div>
-                          )}
                         </div>
                       ))
                     )}
@@ -734,34 +580,6 @@ export default function Plano() {
           planoNome={planoInfo.nome}
         />
       )}
-
-      <ConfigurarCronograma
-        open={modalConfigurarCronograma}
-        onClose={() => setModalConfigurarCronograma(false)}
-        onSave={(config) => {
-          console.log("[ConfigurarCronograma] Nova configuração:", config);
-          
-          // Converter dias da semana para array de números (0=domingo, 6=sábado)
-          const diasSemana: number[] = [];
-          if (config.diasSemana.domingo) diasSemana.push(0);
-          if (config.diasSemana.segunda) diasSemana.push(1);
-          if (config.diasSemana.terca) diasSemana.push(2);
-          if (config.diasSemana.quarta) diasSemana.push(3);
-          if (config.diasSemana.quinta) diasSemana.push(4);
-          if (config.diasSemana.sexta) diasSemana.push(5);
-          if (config.diasSemana.sabado) diasSemana.push(6);
-          
-          console.log("[ConfigurarCronograma] Dias da semana convertidos:", diasSemana);
-          console.log("[ConfigurarCronograma] Horas diárias:", config.horasDiarias);
-          console.log("[ConfigurarCronograma] Chamando redistribuirMetas.mutate...");
-          
-          // Redistribuir metas com configurações personalizadas
-          redistribuirMetas.mutate({
-            horasDiarias: config.horasDiarias,
-            diasSemana: diasSemana,
-          });
-        }}
-      />
     </div>
   );
 }

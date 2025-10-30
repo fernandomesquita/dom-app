@@ -1,4 +1,4 @@
-import { eq, sql, desc, asc, and, count, inArray, lt, gt, isNotNull } from "drizzle-orm";
+import { eq, sql, desc, asc, and, count, inArray, lt, gt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser, users,
@@ -259,7 +259,27 @@ export async function getQuestaoById(id: number) {
 export async function getForumTopicos() {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.select().from(forumTopicos);
+  const { desc } = await import("drizzle-orm");
+  
+  // JOIN com users para pegar nome e pontos do autor
+  const result = await db
+    .select({
+      id: forumTopicos.id,
+      titulo: forumTopicos.titulo,
+      conteudo: forumTopicos.conteudo,
+      categoria: forumTopicos.categoria,
+      userId: forumTopicos.userId,
+      curtidas: forumTopicos.curtidas,
+      visualizacoes: forumTopicos.visualizacoes,
+      createdAt: forumTopicos.createdAt,
+      updatedAt: forumTopicos.updatedAt,
+      autor: users.name,
+      autorPontos: users.pontos,
+    })
+    .from(forumTopicos)
+    .leftJoin(users, eq(forumTopicos.userId, users.id))
+    .orderBy(desc(forumTopicos.updatedAt));
+  
   return result;
 }
 
@@ -334,15 +354,7 @@ export async function updateMeta(id: number, updates: Partial<InsertMeta>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  console.log("[updateMeta] ID:", id);
-  console.log("[updateMeta] Updates recebidos:", JSON.stringify(updates, null, 2));
-  
   await db.update(metas).set(updates).where(eq(metas.id, id));
-  
-  // Buscar meta atualizada para confirmar
-  const metaAtualizada = await db.select().from(metas).where(eq(metas.id, id)).limit(1);
-  console.log("[updateMeta] Meta após update:", JSON.stringify(metaAtualizada[0], null, 2));
-  
   return { id, ...updates };
 }
 
@@ -907,25 +919,6 @@ export async function getEstatisticasDashboard(userId: number) {
   if (!db) return null;
   const { and } = await import("drizzle-orm");
   
-  // Buscar plano atual do usuário
-  const matriculaAtiva = await db
-    .select({
-      planoId: matriculas.planoId,
-      planoNome: planos.nome,
-    })
-    .from(matriculas)
-    .leftJoin(planos, eq(matriculas.planoId, planos.id))
-    .where(
-      and(
-        eq(matriculas.userId, userId),
-        eq(matriculas.ativo, 1)
-      )
-    )
-    .orderBy(desc(matriculas.dataInicio))
-    .limit(1);
-  
-  const nomePlano = matriculaAtiva[0]?.planoNome || "Seu Plano";
-  
   // Buscar metas concluídas
   const metasConcluidasData = await db
     .select()
@@ -990,7 +983,6 @@ export async function getEstatisticasDashboard(userId: number) {
     questoesResolvidas: questoesData.length,
     taxaAcerto,
     sequenciaDias: diasUnicos,
-    nomePlano,
   };
 }
 
@@ -1886,9 +1878,6 @@ export async function atribuirPlano(userId: number, planoId: number, dataInicio:
       ativo: 1,
     });
 
-    // Distribuir metas automaticamente ao longo dos dias disponíveis
-    await distribuirMetasPlano(userId, planoId, dataInicioDate, 4, [1, 2, 3, 4, 5]);
-
     return {
       success: true,
       matriculaId: Number((result as any).insertId || 0),
@@ -1953,7 +1942,17 @@ export async function getAllUsers() {
         email: users.email,
         role: users.role,
         pontos: users.pontos,
+        cpf: users.cpf,
+        telefone: users.telefone,
+        dataNascimento: users.dataNascimento,
+        endereco: users.endereco,
+        foto: users.foto,
+        bio: users.bio,
+        status: users.status,
+        observacoes: users.observacoes,
         createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        lastSignedIn: users.lastSignedIn,
       })
       .from(users);
 
@@ -2026,7 +2025,6 @@ export async function getMetasAluno(userId: number) {
           concluida: progresso.length > 0 && progresso[0].concluida === 1,
           dataConclusao: progresso.length > 0 ? progresso[0].dataConclusao : null,
           tempoGasto: progresso.length > 0 ? progresso[0].tempoGasto : null,
-          dataAgendada: progresso.length > 0 ? progresso[0].dataAgendada : null,
         };
       })
     );
@@ -2096,499 +2094,1440 @@ export async function concluirMeta(userId: number, metaId: number, tempoGasto?: 
 }
 
 
-// Função para buscar dados completos do aluno para o painel administrativo
-export async function getDadosAluno(alunoId: number) {
+/**
+ * Buscar usuário completo por ID
+ */
+export async function getUserById(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    // Buscar dados do aluno
-    const aluno = await db
-      .select({
-        id: users.id,
-        nome: users.name,
-        email: users.email,
-        role: users.role,
-        ativo: sql<number>`1`,
-        createdAt: users.createdAt,
-      })
-      .from(users)
-      .where(eq(users.id, alunoId))
-      .limit(1);
-
-    if (aluno.length === 0) {
-      return null;
-    }
-
-    // Buscar matrícula ativa (plano atual)
-    const matriculaAtiva = await db
-      .select({
-        id: matriculas.id,
-        planoId: matriculas.planoId,
-        dataInicio: matriculas.dataInicio,
-        dataTermino: matriculas.dataTermino,
-        planoNome: planos.nome,
-        planoOrgao: planos.orgao,
-        planoCargo: planos.cargo,
-      })
-      .from(matriculas)
-      .leftJoin(planos, eq(matriculas.planoId, planos.id))
-      .where(
-        and(
-          eq(matriculas.userId, alunoId),
-          eq(matriculas.ativo, 1)
-        )
-      )
-      .orderBy(desc(matriculas.dataInicio))
-      .limit(1);
-
-    // Buscar todas as metas do plano atual
-    let metasDoPlano: any[] = [];
-    let totalMetas = 0;
-    
-    if (matriculaAtiva.length > 0 && matriculaAtiva[0].planoId) {
-      metasDoPlano = await db
-        .select()
-        .from(metas)
-        .where(eq(metas.planoId, matriculaAtiva[0].planoId))
-        .orderBy(metas.ordem);
-      
-      totalMetas = metasDoPlano.length;
-    }
-
-    // Buscar progresso das metas
-    const progressoDasMetas = await db
+    const result = await db
       .select()
-      .from(progressoMetas)
-      .where(eq(progressoMetas.userId, alunoId));
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
 
-    // Calcular métricas
-    const metasConcluidas = progressoDasMetas.filter(p => p.concluida === 1).length;
-    const horasEstudadas = progressoDasMetas.reduce((acc, p) => acc + (p.tempoGasto || 0), 0) / 60; // converter minutos para horas
-    
-    // Calcular sequência de dias consecutivos
-    const datasUnicasSet = new Set(
-      progressoDasMetas
-        .filter(p => p.dataConclusao)
-        .map(p => p.dataConclusao!.toISOString().split('T')[0])
-    );
-    const datasUnicas = Array.from(datasUnicasSet).sort().reverse();
-    
-    let sequenciaDias = 0;
-    const hoje = new Date().toISOString().split('T')[0];
-    
-    if (datasUnicas.length > 0 && (datasUnicas[0] === hoje || datasUnicas[0] === new Date(Date.now() - 86400000).toISOString().split('T')[0])) {
-      sequenciaDias = 1;
-      for (let i = 1; i < datasUnicas.length; i++) {
-        const dataAtual = new Date(datasUnicas[i - 1]);
-        const dataAnterior = new Date(datasUnicas[i]);
-        const diffDias = Math.floor((dataAtual.getTime() - dataAnterior.getTime()) / (1000 * 60 * 60 * 24));
+    return result[0] || null;
+  } catch (error) {
+    console.error("Erro ao buscar usuário por ID:", error);
+    throw new Error(`Erro ao buscar usuário: ${error}`);
+  }
+}
+
+/**
+ * Buscar usuário por CPF
+ */
+export async function getUserByCPF(cpf: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.cpf, cpf))
+      .limit(1);
+
+    return result[0] || null;
+  } catch (error) {
+    console.error("Erro ao buscar usuário por CPF:", error);
+    throw new Error(`Erro ao buscar usuário por CPF: ${error}`);
+  }
+}
+
+/**
+ * Atualizar dados do usuário
+ */
+export async function updateUser(id: number, data: Partial<InsertUser>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db
+      .update(users)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    throw new Error(`Erro ao atualizar usuário: ${error}`);
+  }
+}
+
+/**
+ * Criar novo usuário
+ */
+export async function createUser(data: InsertUser) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const result = await db.insert(users).values(data);
+    return { success: true, id: result[0].insertId };
+  } catch (error) {
+    console.error("Erro ao criar usuário:", error);
+    throw new Error(`Erro ao criar usuário: ${error}`);
+  }
+}
+
+/**
+ * Alternar status do usuário (ativo/inativo/suspenso)
+ */
+export async function toggleUserStatus(id: number, status: "ativo" | "inativo" | "suspenso") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db
+      .update(users)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(users.id, id));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao alterar status do usuário:", error);
+    throw new Error(`Erro ao alterar status: ${error}`);
+  }
+}
+
+/**
+ * Deletar usuário (soft delete - marca como inativo)
+ */
+export async function deleteUser(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Soft delete: apenas marca como inativo
+    await db
+      .update(users)
+      .set({ status: "inativo", updatedAt: new Date() })
+      .where(eq(users.id, id));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao deletar usuário:", error);
+    throw new Error(`Erro ao deletar usuário: ${error}`);
+  }
+}
+
+/**
+ * Obter alunos com progresso (para relatórios)
+ */
+export async function getAlunosComProgresso() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    // Buscar todos os alunos
+    const alunos = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "aluno"));
+
+    // Para cada aluno, buscar estatísticas
+    const alunosComProgresso = await Promise.all(
+      alunos.map(async (aluno) => {
+        // Buscar matrícula ativa
+        const matricula = await db
+          .select()
+          .from(matriculas)
+          .where(and(
+            eq(matriculas.userId, aluno.id),
+            eq(matriculas.ativo, 1)
+          ))
+          .limit(1);
+
+        if (matricula.length === 0) {
+          return {
+            ...aluno,
+            planoId: null,
+            planoNome: null,
+            metasConcluidas: 0,
+            totalMetas: 0,
+            horasEstudadas: 0,
+            taxaConclusao: 0,
+          };
+        }
+
+        // Buscar estatísticas
+        const stats = await getEstatisticasDashboard(aluno.id);
         
-        if (diffDias === 1) {
-          sequenciaDias++;
-        } else {
-          break;
+        // Calcular taxa de conclusão
+        const taxaConclusao = stats && stats.totalMetas > 0 
+          ? Math.round((stats.metasConcluidas / stats.totalMetas) * 100)
+          : 0;
+
+        return {
+          ...aluno,
+          planoId: matricula[0].planoId,
+          planoNome: null, // Será preenchido depois
+          metasConcluidas: stats?.metasConcluidas || 0,
+          totalMetas: stats?.totalMetas || 0,
+          horasEstudadas: stats?.horasEstudadas || 0,
+          taxaConclusao,
+        };
+      })
+    );
+
+    return alunosComProgresso;
+  } catch (error) {
+    console.error("Erro ao buscar alunos com progresso:", error);
+    throw new Error(`Erro ao buscar alunos: ${error}`);
+  }
+}
+
+/**
+ * Importar alunos de CSV/Excel
+ */
+export async function importarAlunosCSV(dados: Array<{
+  nome: string;
+  email: string;
+  cpf?: string;
+  telefone?: string;
+  dataNascimento?: string;
+  endereco?: string;
+  role?: "aluno" | "professor" | "administrativo" | "mentor" | "master";
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const resultados = {
+    sucesso: 0,
+    erros: [] as Array<{ linha: number; erro: string; dados: any }>,
+  };
+
+  for (let i = 0; i < dados.length; i++) {
+    const linha = i + 2; // +2 porque linha 1 é header e array começa em 0
+    const aluno = dados[i];
+
+    try {
+      // Validar campos obrigatórios
+      if (!aluno.nome || !aluno.email) {
+        resultados.erros.push({
+          linha,
+          erro: "Nome e email são obrigatórios",
+          dados: aluno,
+        });
+        continue;
+      }
+
+      // Verificar se email já existe
+      const emailExistente = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, aluno.email))
+        .limit(1);
+
+      if (emailExistente.length > 0) {
+        resultados.erros.push({
+          linha,
+          erro: `Email ${aluno.email} já cadastrado`,
+          dados: aluno,
+        });
+        continue;
+      }
+
+      // Verificar se CPF já existe (se fornecido)
+      if (aluno.cpf) {
+        const cpfExistente = await db
+          .select()
+          .from(users)
+          .where(eq(users.cpf, aluno.cpf))
+          .limit(1);
+
+        if (cpfExistente.length > 0) {
+          resultados.erros.push({
+            linha,
+            erro: `CPF ${aluno.cpf} já cadastrado`,
+            dados: aluno,
+          });
+          continue;
         }
       }
-    }
 
-    // Agrupar metas por disciplina
-    const metasPorDisciplina = metasDoPlano.reduce((acc: any, meta) => {
-      if (!acc[meta.disciplina]) {
-        acc[meta.disciplina] = { nome: meta.disciplina, metas: 0 };
-      }
-      acc[meta.disciplina].metas++;
-      return acc;
-    }, {});
-
-    // Contar metas por tipo
-    const tipoEstudo = metasDoPlano.filter(m => m.tipo === 'Estudo').length;
-    const tipoRevisao = metasDoPlano.filter(m => m.tipo === 'Revisão').length;
-    const tipoQuestoes = metasDoPlano.filter(m => m.tipo === 'Questões').length;
-
-    // Combinar metas com progresso
-    const metasComProgresso = metasDoPlano.map(meta => {
-      const progresso = progressoDasMetas.find(p => p.metaId === meta.id);
-      return {
-        ...meta,
-        concluida: progresso?.concluida === 1,
-        dataConclusao: progresso?.dataConclusao,
-        tempoGasto: progresso?.tempoGasto,
-        dataAgendada: progresso?.dataAgendada,
-      };
-    });
-
-    // Buscar histórico de atividades (últimas 20)
-    const historico = progressoDasMetas
-      .filter(p => p.dataConclusao)
-      .sort((a, b) => b.dataConclusao!.getTime() - a.dataConclusao!.getTime())
-      .slice(0, 20)
-      .map(p => {
-        const meta = metasDoPlano.find(m => m.id === p.metaId);
-        return {
-          acao: 'Meta concluída',
-          detalhes: meta ? `${meta.disciplina} - ${meta.assunto}` : 'Meta não encontrada',
-          data: p.dataConclusao,
-        };
+      // Criar usuário
+      // Nota: openId será gerado no primeiro login via OAuth
+      // Para importação, criamos um openId temporário
+      await db.insert(users).values({
+        openId: `import_${Date.now()}_${i}`, // Temporário até primeiro login
+        name: aluno.nome,
+        email: aluno.email,
+        cpf: aluno.cpf || null,
+        telefone: aluno.telefone || null,
+        dataNascimento: aluno.dataNascimento || null,
+        endereco: aluno.endereco || null,
+        role: aluno.role || "aluno",
+        status: "ativo",
       });
 
-    return {
-      aluno: {
-        ...aluno[0],
-        planoAtual: matriculaAtiva.length > 0 ? {
-          nome: matriculaAtiva[0].planoNome,
-          orgao: matriculaAtiva[0].planoOrgao,
-          cargo: matriculaAtiva[0].planoCargo,
-          dataInicio: matriculaAtiva[0].dataInicio,
-          dataTermino: matriculaAtiva[0].dataTermino,
-          totalMetas,
-        } : null,
-      },
-      metricas: {
-        totalMetas,
-        metasConcluidas,
-        horasEstudadas: Math.round(horasEstudadas * 10) / 10, // arredondar para 1 casa decimal
-        sequenciaDias,
-        disciplinas: Object.values(metasPorDisciplina),
-        tipoEstudo,
-        tipoRevisao,
-        tipoQuestoes,
-      },
-      metas: metasComProgresso,
-      historico,
-    };
-  } catch (error) {
-    console.error("Erro ao buscar dados do aluno:", error);
-    throw new Error(`Erro ao buscar dados do aluno: ${error}`);
-  }
-}
-
-
-/**
- * Distribuir metas do plano ao longo dos dias disponíveis
- * Algoritmo inteligente que preenche as horas diárias disponíveis
- */
-export async function distribuirMetasPlano(
-  userId: number,
-  planoId: number,
-  dataInicio: Date,
-  horasDiarias: number = 4,
-  diasSemana: number[] = [1, 2, 3, 4, 5] // Segunda a Sexta por padrão
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    // Buscar todas as metas do plano ordenadas por prioridade e incidência
-    const metasDoPlano = await db
-      .select()
-      .from(metas)
-      .where(eq(metas.planoId, planoId))
-      .orderBy(asc(metas.ordem));
-
-    // Ordenar metas por prioridade: incidência alta > média > baixa
-    const metasOrdenadas = metasDoPlano.sort((a, b) => {
-      const incidenciaValor = { alta: 3, media: 2, baixa: 1 };
-      const valorA = incidenciaValor[a.incidencia as keyof typeof incidenciaValor] || 0;
-      const valorB = incidenciaValor[b.incidencia as keyof typeof incidenciaValor] || 0;
-      return valorB - valorA; // Decrescente (alta primeiro)
-    });
-
-    // Distribuir metas ao longo dos dias
-    let dataAtual = new Date(dataInicio);
-    let horasUsadasHoje = 0;
-    const minutosDisponiveis = horasDiarias * 60;
-
-    for (const meta of metasOrdenadas) {
-      const duracaoMeta = meta.duracao; // em minutos
-
-      // Se a meta não cabe no dia atual, avançar para o próximo dia disponível
-      if (horasUsadasHoje + duracaoMeta > minutosDisponiveis) {
-        // Avançar para o próximo dia disponível
-        do {
-          dataAtual.setDate(dataAtual.getDate() + 1);
-        } while (!diasSemana.includes(dataAtual.getDay()));
-        
-        horasUsadasHoje = 0;
-      }
-
-      // Criar registro de progresso com data agendada
-      await db.insert(progressoMetas).values({
-        userId,
-        metaId: meta.id,
-        dataAgendada: new Date(dataAtual),
-        concluida: 0,
-        dataConclusao: null,
-        tempoGasto: 0,
-      });
-
-      horasUsadasHoje += duracaoMeta;
-
-      console.log(`[distribuirMetasPlano] Meta ${meta.id} agendada para ${dataAtual.toISOString().split('T')[0]} - ${duracaoMeta}min`);
-    }
-
-    return { success: true, metasDistribuidas: metasOrdenadas.length };
-  } catch (error) {
-    console.error("Erro ao distribuir metas:", error);
-    throw new Error(`Erro ao distribuir metas: ${error}`);
-  }
-}
-
-
-/**
- * Redistribuir metas de um aluno que já tem plano atribuído
- * Útil para corrigir distribuição ou quando aluno altera configurações
- */
-export async function redistribuirMetasAluno(
-  userId: number,
-  horasDiarias: number = 4,
-  diasSemana: number[] = [1, 2, 3, 4, 5]
-) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  console.log("[redistribuirMetasAluno] Iniciando redistribuição...");
-  console.log("[redistribuirMetasAluno] userId:", userId);
-  console.log("[redistribuirMetasAluno] horasDiarias:", horasDiarias);
-  console.log("[redistribuirMetasAluno] diasSemana:", diasSemana);
-
-  try {
-    // Buscar matrícula ativa
-    const matriculaAtiva = await db
-      .select()
-      .from(matriculas)
-      .where(and(eq(matriculas.userId, userId), eq(matriculas.ativo, 1)));
-
-    if (matriculaAtiva.length === 0) {
-      throw new Error("Usuário não possui plano atribuído");
-    }
-
-    const planoId = matriculaAtiva[0].planoId;
-    const dataInicio = matriculaAtiva[0].dataInicio;
-    
-    console.log("[redistribuirMetasAluno] planoId:", planoId);
-    console.log("[redistribuirMetasAluno] dataInicio:", dataInicio);
-
-    // Deletar registros de progresso não concluídos
-    console.log("[redistribuirMetasAluno] Deletando progressoMetas não concluídos...");
-    const deleteResult = await db
-      .delete(progressoMetas)
-      .where(
-        and(
-          eq(progressoMetas.userId, userId),
-          eq(progressoMetas.concluida, 0)
-        )
-      );
-    console.log("[redistribuirMetasAluno] Registros deletados:", deleteResult);
-
-    // Redistribuir metas com configurações personalizadas
-    console.log("[redistribuirMetasAluno] Chamando distribuirMetasPlano...");
-    await distribuirMetasPlano(userId, planoId, dataInicio, horasDiarias, diasSemana);
-    console.log("[redistribuirMetasAluno] Redistribuição concluída com sucesso!");
-
-    return { success: true };
-  } catch (error) {
-    console.error("[redistribuirMetasAluno] ERRO:", error);
-    throw new Error(`Erro ao redistribuir metas: ${error}`);
-  }
-}
-
-/**
- * Buscar metas com anotações do aluno
- */
-export async function getMetasComAnotacoes(userId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    // Buscar progresso de metas com anotações não vazias
-    const progressoComAnotacoes = await db
-      .select({
-        progressoId: progressoMetas.id,
-        metaId: progressoMetas.metaId,
-        dataAgendada: progressoMetas.dataAgendada,
-        concluida: progressoMetas.concluida,
-        dataConclusao: progressoMetas.dataConclusao,
-        tempoGasto: progressoMetas.tempoGasto,
-        anotacao: progressoMetas.anotacao,
-        updatedAt: progressoMetas.updatedAt,
-        // Dados da meta
-        disciplina: metas.disciplina,
-        assunto: metas.assunto,
-        tipo: metas.tipo,
-        duracao: metas.duracao,
-        incidencia: metas.incidencia,
-        dicaEstudo: metas.dicaEstudo,
-      })
-      .from(progressoMetas)
-      .innerJoin(metas, eq(progressoMetas.metaId, metas.id))
-      .where(
-        and(
-          eq(progressoMetas.userId, userId),
-          isNotNull(progressoMetas.anotacao),
-          sql`${progressoMetas.anotacao} != ''`
-        )
-      )
-      .orderBy(desc(progressoMetas.updatedAt));
-
-    return progressoComAnotacoes;
-  } catch (error) {
-    console.error("Erro ao buscar metas com anotações:", error);
-    throw new Error(`Erro ao buscar metas com anotações: ${error}`);
-  }
-}
-
-/**
- * Salvar anotação de uma meta
- */
-export async function salvarAnotacaoMeta(userId: number, metaId: number, anotacao: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-
-  try {
-    // Buscar progresso existente
-    const progressoExistente = await db
-      .select()
-      .from(progressoMetas)
-      .where(
-        and(
-          eq(progressoMetas.userId, userId),
-          eq(progressoMetas.metaId, metaId)
-        )
-      );
-
-    if (progressoExistente.length > 0) {
-      // Atualizar anotação
-      await db
-        .update(progressoMetas)
-        .set({ anotacao, updatedAt: new Date() })
-        .where(eq(progressoMetas.id, progressoExistente[0].id));
-    } else {
-      // Criar novo registro de progresso com anotação
-      // Buscar data agendada da meta (se existir em outro progresso ou usar data atual)
-      const dataAgendada = new Date();
-      
-      await db.insert(progressoMetas).values({
-        userId,
-        metaId,
-        dataAgendada,
-        concluida: 0,
-        tempoGasto: 0,
-        anotacao,
+      resultados.sucesso++;
+    } catch (error: any) {
+      resultados.erros.push({
+        linha,
+        erro: error.message || "Erro desconhecido",
+        dados: aluno,
       });
     }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Erro ao salvar anotação:", error);
-    throw new Error(`Erro ao salvar anotação: ${error}`);
   }
+
+  return resultados;
 }
 
 
-// ========== MATERIAIS DE APOIO ==========
+// ========== AUTENTICAÇÃO E REGISTRO ==========
 
-export async function getAllMateriais() {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const result = await db
-    .select({
-      id: materiais.id,
-      titulo: materiais.titulo,
-      descricao: materiais.descricao,
-      urlArquivo: materiais.urlArquivo,
-      tipoArquivo: materiais.tipoArquivo,
-      tamanhoBytes: materiais.tamanhoBytes,
-      metaId: materiais.metaId,
-      disciplina: materiais.disciplina,
-      uploadedBy: materiais.uploadedBy,
-      uploaderNome: users.name,
-      ativo: materiais.ativo,
-      createdAt: materiais.createdAt,
-      updatedAt: materiais.updatedAt,
-    })
-    .from(materiais)
-    .leftJoin(users, eq(materiais.uploadedBy, users.id))
-    .where(eq(materiais.ativo, 1))
-    .orderBy(desc(materiais.createdAt));
-  
-  return result;
-}
-
-export async function getMateriaisByMetaId(metaId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  
-  const result = await db
-    .select({
-      id: materiais.id,
-      titulo: materiais.titulo,
-      descricao: materiais.descricao,
-      urlArquivo: materiais.urlArquivo,
-      tipoArquivo: materiais.tipoArquivo,
-      tamanhoBytes: materiais.tamanhoBytes,
-      uploadedBy: materiais.uploadedBy,
-      uploaderNome: users.name,
-      createdAt: materiais.createdAt,
-    })
-    .from(materiais)
-    .leftJoin(users, eq(materiais.uploadedBy, users.id))
-    .where(
-      and(
-        eq(materiais.metaId, metaId),
-        eq(materiais.ativo, 1)
-      )
-    )
-    .orderBy(desc(materiais.createdAt));
-  
-  return result;
-}
-
-export async function createMaterial(data: {
-  titulo: string;
-  descricao?: string;
-  urlArquivo: string;
-  tipoArquivo: string;
-  tamanhoBytes?: number;
-  metaId?: number;
-  disciplina?: string;
-  uploadedBy: number;
+/**
+ * Registrar novo usuário (auto-cadastro)
+ */
+export async function registerUser(dados: {
+  nome: string;
+  email: string;
+  cpf: string;
+  telefone: string;
+  dataNascimento?: string;
+  password?: string; // Opcional, se usar login com senha
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const [result] = await db.insert(materiais).values(data);
-  return { id: result.insertId, ...data };
+
+  const { hashPassword, validateCPF, validateEmail, validatePhone, generateTempOpenId } = await import("./auth");
+
+  // Validações
+  if (!validateEmail(dados.email)) {
+    throw new Error("Email inválido");
+  }
+
+  if (!validateCPF(dados.cpf)) {
+    throw new Error("CPF inválido");
+  }
+
+  if (!validatePhone(dados.telefone)) {
+    throw new Error("Telefone inválido");
+  }
+
+  // Verificar se email já existe
+  const emailExistente = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, dados.email))
+    .limit(1);
+
+  if (emailExistente.length > 0) {
+    throw new Error("Este email já está cadastrado");
+  }
+
+  // Verificar se CPF já existe
+  const cpfExistente = await db
+    .select()
+    .from(users)
+    .where(eq(users.cpf, dados.cpf))
+    .limit(1);
+
+  if (cpfExistente.length > 0) {
+    throw new Error("Este CPF já está cadastrado");
+  }
+
+  // Hash da senha se fornecida
+  let passwordHash = null;
+  if (dados.password) {
+    passwordHash = await hashPassword(dados.password);
+  }
+
+  // Criar usuário
+  const [novoUsuario] = await db.insert(users).values({
+    openId: generateTempOpenId(), // Será substituído no primeiro login OAuth
+    name: dados.nome,
+    email: dados.email,
+    cpf: dados.cpf,
+    telefone: dados.telefone,
+    dataNascimento: dados.dataNascimento || null,
+    passwordHash,
+    role: "aluno",
+    status: "ativo",
+    emailVerified: 0, // Não verificado
+  });
+
+  return novoUsuario;
 }
 
-export async function deleteMaterial(id: number, userId: number, userRole: string) {
+/**
+ * Criar token de verificação de email
+ */
+export async function createEmailVerificationToken(userId: number): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  // Verificar se o usuário é o uploader ou é admin
-  const [material] = await db
+
+  const { generateToken } = await import("./auth");
+  const { emailVerificationTokens } = await import("../drizzle/schema");
+
+  const token = generateToken(32);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
+
+  await db.insert(emailVerificationTokens).values({
+    userId,
+    token,
+    expiresAt,
+  });
+
+  return token;
+}
+
+/**
+ * Verificar email usando token
+ */
+export async function verifyEmail(token: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { emailVerificationTokens } = await import("../drizzle/schema");
+
+  // Buscar token
+  const [tokenData] = await db
     .select()
-    .from(materiais)
-    .where(eq(materiais.id, id))
+    .from(emailVerificationTokens)
+    .where(eq(emailVerificationTokens.token, token))
     .limit(1);
-  
-  if (!material) {
-    throw new Error("Material não encontrado");
+
+  if (!tokenData) {
+    throw new Error("Token inválido");
   }
-  
-  const isAdmin = ["master", "administrativo"].includes(userRole);
-  const isOwner = material.uploadedBy === userId;
-  
-  if (!isAdmin && !isOwner) {
-    throw new Error("Sem permissão para deletar este material");
+
+  // Verificar expiração
+  if (new Date() > tokenData.expiresAt) {
+    throw new Error("Token expirado");
   }
-  
-  // Soft delete
+
+  // Marcar email como verificado
   await db
-    .update(materiais)
-    .set({ ativo: 0 })
-    .where(eq(materiais.id, id));
-  
+    .update(users)
+    .set({ emailVerified: 1 })
+    .where(eq(users.id, tokenData.userId));
+
+  // Deletar token usado
+  await db
+    .delete(emailVerificationTokens)
+    .where(eq(emailVerificationTokens.id, tokenData.id));
+
+  return true;
+}
+
+/**
+ * Criar token de reset de senha
+ */
+export async function createPasswordResetToken(email: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { generateToken } = await import("./auth");
+  const { passwordResetTokens } = await import("../drizzle/schema");
+
+  // Buscar usuário por email
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    // Não revelar se o email existe ou não (segurança)
+    return null;
+  }
+
+  const token = generateToken(32);
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+  await db.insert(passwordResetTokens).values({
+    userId: user.id,
+    token,
+    expiresAt,
+  });
+
+  return token;
+}
+
+/**
+ * Resetar senha usando token
+ */
+export async function resetPassword(token: string, newPassword: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { hashPassword, validatePasswordStrength } = await import("./auth");
+  const { passwordResetTokens } = await import("../drizzle/schema");
+
+  // Validar força da senha
+  const validation = validatePasswordStrength(newPassword);
+  if (!validation.valid) {
+    throw new Error(validation.errors.join(", "));
+  }
+
+  // Buscar token
+  const [tokenData] = await db
+    .select()
+    .from(passwordResetTokens)
+    .where(eq(passwordResetTokens.token, token))
+    .limit(1);
+
+  if (!tokenData) {
+    throw new Error("Token inválido");
+  }
+
+  // Verificar expiração
+  if (new Date() > tokenData.expiresAt) {
+    throw new Error("Token expirado");
+  }
+
+  // Atualizar senha
+  const passwordHash = await hashPassword(newPassword);
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, tokenData.userId));
+
+  // Deletar token usado
+  await db
+    .delete(passwordResetTokens)
+    .where(eq(passwordResetTokens.id, tokenData.id));
+
+  return true;
+}
+
+/**
+ * Login com email e senha
+ */
+export async function loginWithPassword(email: string, password: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { verifyPassword } = await import("./auth");
+
+  // Buscar usuário
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user || !user.passwordHash) {
+    throw new Error("Email ou senha inválidos");
+  }
+
+  // Verificar senha
+  const isValid = await verifyPassword(password, user.passwordHash);
+  if (!isValid) {
+    throw new Error("Email ou senha inválidos");
+  }
+
+  // Verificar status
+  if (user.status !== "ativo") {
+    throw new Error("Conta inativa ou suspensa");
+  }
+
+  // Atualizar último login
+  await db
+    .update(users)
+    .set({ lastSignedIn: new Date() })
+    .where(eq(users.id, user.id));
+
+  return user;
+}
+
+/**
+ * Definir senha para usuário (primeiro acesso)
+ */
+export async function setPassword(userId: number, password: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { hashPassword, validatePasswordStrength } = await import("./auth");
+
+  // Validar força da senha
+  const validation = validatePasswordStrength(password);
+  if (!validation.valid) {
+    throw new Error(validation.errors.join(", "));
+  }
+
+  // Atualizar senha
+  const passwordHash = await hashPassword(password);
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, userId));
+
+  return true;
+}
+
+// ========== AUDITORIA ==========
+
+/**
+ * Registrar ação no log de auditoria
+ */
+export async function logAudit(dados: {
+  userId?: number;
+  action: string;
+  entity: string;
+  entityId?: number;
+  oldData?: any;
+  newData?: any;
+  ip?: string;
+  userAgent?: string;
+}) {
+  const db = await getDb();
+  if (!db) return; // Não falhar se auditoria não funcionar
+
+  const { auditLogs } = await import("../drizzle/schema");
+
+  try {
+    await db.insert(auditLogs).values({
+      userId: dados.userId || null,
+      action: dados.action,
+      entity: dados.entity,
+      entityId: dados.entityId || null,
+      oldData: dados.oldData ? JSON.stringify(dados.oldData) : null,
+      newData: dados.newData ? JSON.stringify(dados.newData) : null,
+      ip: dados.ip || null,
+      userAgent: dados.userAgent || null,
+    });
+  } catch (error) {
+    console.error("Erro ao registrar auditoria:", error);
+  }
+}
+
+/**
+ * Buscar logs de auditoria
+ */
+export async function getAuditLogs(filtros?: {
+  userId?: number;
+  action?: string;
+  entity?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { auditLogs } = await import("../drizzle/schema");
+
+  let query = db.select().from(auditLogs);
+
+  if (filtros?.userId) {
+    query = query.where(eq(auditLogs.userId, filtros.userId)) as any;
+  }
+
+  if (filtros?.action) {
+    query = query.where(eq(auditLogs.action, filtros.action)) as any;
+  }
+
+  if (filtros?.entity) {
+    query = query.where(eq(auditLogs.entity, filtros.entity)) as any;
+  }
+
+  const logs = await query
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(filtros?.limit || 100);
+
+  return logs;
+}
+
+
+// ========== PERMISSÕES ==========
+
+/**
+ * Verificar se um usuário tem uma permissão específica
+ */
+export async function hasPermission(userId: number, permissionName: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const { permissions, rolePermissions } = await import("../drizzle/schema");
+
+  // Buscar usuário
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) return false;
+
+  // Master tem todas as permissões
+  if (user.role === "master") return true;
+
+  // Buscar permissão
+  const [permission] = await db
+    .select()
+    .from(permissions)
+    .where(eq(permissions.name, permissionName))
+    .limit(1);
+
+  if (!permission) return false;
+
+  // Verificar se o role do usuário tem essa permissão
+  const [rolePermission] = await db
+    .select()
+    .from(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.role, user.role),
+        eq(rolePermissions.permissionId, permission.id)
+      )
+    )
+    .limit(1);
+
+  return !!rolePermission;
+}
+
+/**
+ * Buscar todas as permissões de um usuário
+ */
+export async function getUserPermissions(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { permissions, rolePermissions } = await import("../drizzle/schema");
+
+  // Buscar usuário
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) return [];
+
+  // Master tem todas as permissões
+  if (user.role === "master") {
+    return await db.select().from(permissions);
+  }
+
+  // Buscar permissões do role
+  const userPermissions = await db
+    .select({
+      id: permissions.id,
+      name: permissions.name,
+      description: permissions.description,
+      module: permissions.module,
+    })
+    .from(rolePermissions)
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(rolePermissions.role, user.role));
+
+  return userPermissions;
+}
+
+/**
+ * Listar todas as permissões do sistema
+ */
+export async function getAllPermissions() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { permissions } = await import("../drizzle/schema");
+
+  return await db.select().from(permissions).orderBy(permissions.module, permissions.name);
+}
+
+/**
+ * Listar permissões de um role específico
+ */
+export async function getRolePermissions(role: string) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const { permissions, rolePermissions } = await import("../drizzle/schema");
+
+  const rolePerms = await db
+    .select({
+      id: permissions.id,
+      name: permissions.name,
+      description: permissions.description,
+      module: permissions.module,
+    })
+    .from(rolePermissions)
+    .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(eq(rolePermissions.role, role as any));
+
+  return rolePerms;
+}
+
+/**
+ * Atribuir permissão a um role
+ */
+export async function assignPermissionToRole(role: string, permissionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { rolePermissions } = await import("../drizzle/schema");
+
+  await db.insert(rolePermissions).values({
+    role: role as any,
+    permissionId,
+  });
+
+  return true;
+}
+
+/**
+ * Remover permissão de um role
+ */
+export async function removePermissionFromRole(role: string, permissionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { rolePermissions } = await import("../drizzle/schema");
+
+  await db
+    .delete(rolePermissions)
+    .where(
+      and(
+        eq(rolePermissions.role, role as any),
+        eq(rolePermissions.permissionId, permissionId)
+      )
+    );
+
+  return true;
+}
+
+
+/**
+ * ====================================================================
+ * GESTÃO AVANÇADA DE METAS
+ * ====================================================================
+ */
+
+/**
+ * Reordenar meta (drag-and-drop)
+ */
+export async function reordenarMeta(metaId: number, novaOrdem: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { metas } = await import("../drizzle/schema");
+  const { eq, and, gte, lte } = await import("drizzle-orm");
+
+  // Buscar meta atual
+  const [metaAtual] = await db.select().from(metas).where(eq(metas.id, metaId)).limit(1);
+  if (!metaAtual) throw new Error("Meta não encontrada");
+
+  const ordemAtual = metaAtual.ordem;
+  const planoId = metaAtual.planoId;
+
+  // Se movendo para baixo (aumentando ordem)
+  if (novaOrdem > ordemAtual) {
+    // Decrementar ordem das metas entre ordemAtual e novaOrdem
+    await db
+      .update(metas)
+      .set({ ordem: sql`ordem - 1` })
+      .where(
+        and(
+          eq(metas.planoId, planoId),
+          gte(metas.ordem, ordemAtual + 1),
+          lte(metas.ordem, novaOrdem)
+        )
+      );
+  }
+  // Se movendo para cima (diminuindo ordem)
+  else if (novaOrdem < ordemAtual) {
+    // Incrementar ordem das metas entre novaOrdem e ordemAtual
+    await db
+      .update(metas)
+      .set({ ordem: sql`ordem + 1` })
+      .where(
+        and(
+          eq(metas.planoId, planoId),
+          gte(metas.ordem, novaOrdem),
+          lte(metas.ordem, ordemAtual - 1)
+        )
+      );
+  }
+
+  // Atualizar ordem da meta movida
+  await db.update(metas).set({ ordem: novaOrdem }).where(eq(metas.id, metaId));
+
   return { success: true };
+}
+
+/**
+ * Deletar múltiplas metas
+ */
+export async function deletarMetasLote(metaIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { metas } = await import("../drizzle/schema");
+  const { inArray } = await import("drizzle-orm");
+
+  // Deletar metas
+  await db.delete(metas).where(inArray(metas.id, metaIds));
+
+  return { success: true, deletadas: metaIds.length };
+}
+
+/**
+ * Atualizar múltiplas metas
+ */
+export async function atualizarMetasLote(
+  metaIds: number[],
+  dados: {
+    disciplina?: string;
+    tipo?: "estudo" | "revisao" | "questoes";
+    incidencia?: "baixa" | "media" | "alta";
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { metas } = await import("../drizzle/schema");
+  const { inArray } = await import("drizzle-orm");
+
+  // Atualizar metas
+  await db.update(metas).set(dados).where(inArray(metas.id, metaIds));
+
+  return { success: true, atualizadas: metaIds.length };
+}
+
+/**
+ * Estatísticas de metas por plano
+ */
+export async function getEstatisticasMetas(planoId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const { metas } = await import("../drizzle/schema");
+  const { eq, sql } = await import("drizzle-orm");
+
+  // Buscar todas as metas do plano
+  const todasMetas = await db.select().from(metas).where(eq(metas.planoId, planoId));
+
+  // Calcular estatísticas
+  const totalMetas = todasMetas.length;
+  const totalHoras = todasMetas.reduce((sum, meta) => sum + meta.duracao, 0) / 60; // converter minutos para horas
+
+  // Contar por tipo
+  const porTipo = {
+    estudo: todasMetas.filter((m) => m.tipo === "estudo").length,
+    revisao: todasMetas.filter((m) => m.tipo === "revisao").length,
+    questoes: todasMetas.filter((m) => m.tipo === "questoes").length,
+  };
+
+  // Contar por incidência
+  const porIncidencia = {
+    alta: todasMetas.filter((m) => m.incidencia === "alta").length,
+    media: todasMetas.filter((m) => m.incidencia === "media").length,
+    baixa: todasMetas.filter((m) => m.incidencia === "baixa").length,
+  };
+
+  // Contar por disciplina
+  const disciplinas = [...new Set(todasMetas.map((m) => m.disciplina))];
+  const porDisciplina = disciplinas.map((disciplina) => ({
+    disciplina,
+    quantidade: todasMetas.filter((m) => m.disciplina === disciplina).length,
+    horas: todasMetas.filter((m) => m.disciplina === disciplina).reduce((sum, m) => sum + m.duracao, 0) / 60,
+  }));
+
+  return {
+    totalMetas,
+    totalHoras,
+    porTipo,
+    porIncidencia,
+    porDisciplina,
+  };
+}
+
+
+/**
+ * Criar múltiplas metas (importação em lote)
+ */
+export async function criarMetasLote(metasData: Array<{
+  planoId: number;
+  disciplina: string;
+  assunto: string;
+  tipo: "estudo" | "revisao" | "questoes";
+  duracao: number;
+  incidencia?: "baixa" | "media" | "alta" | null;
+  prioridade?: number;
+  ordem: number;
+  dicaEstudo?: string | null;
+  cor?: string | null;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { metas } = await import("../drizzle/schema");
+
+  // Inserir todas as metas
+  const metasInseridas = await db.insert(metas).values(
+    metasData.map((meta) => ({
+      planoId: meta.planoId,
+      disciplina: meta.disciplina,
+      assunto: meta.assunto,
+      tipo: meta.tipo,
+      duracao: meta.duracao,
+      incidencia: meta.incidencia || null,
+      prioridade: meta.prioridade || 3,
+      ordem: meta.ordem,
+      dicaEstudo: meta.dicaEstudo || null,
+      cor: meta.cor || null,
+    }))
+  ).returning();
+
+  return {
+    success: true,
+    criadas: metasInseridas.length,
+    metas: metasInseridas,
+  };
+}
+
+
+/**
+ * Pular meta (não será contabilizada no progresso)
+ */
+export async function pularMeta(userId: number, metaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { progressoMetas } = await import("../drizzle/schema");
+  const { eq, and } = await import("drizzle-orm");
+
+  // Verificar se já existe progresso
+  const progressoExistente = await db
+    .select()
+    .from(progressoMetas)
+    .where(
+      and(
+        eq(progressoMetas.userId, userId),
+        eq(progressoMetas.metaId, metaId)
+      )
+    )
+    .limit(1);
+
+  if (progressoExistente.length > 0) {
+    // Atualizar como pulada
+    await db
+      .update(progressoMetas)
+      .set({
+        pulada: true,
+        dataPulada: new Date(),
+      })
+      .where(eq(progressoMetas.id, progressoExistente[0].id));
+  } else {
+    // Criar novo registro como pulada
+    await db.insert(progressoMetas).values({
+      userId,
+      metaId,
+      pulada: true,
+      dataPulada: new Date(),
+    });
+  }
+
+  return { success: true };
+}
+
+/**
+ * Adiar meta para próximo dia disponível
+ */
+export async function adiarMeta(userId: number, metaId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { metas, progressoMetas, matriculas } = await import("../drizzle/schema");
+  const { eq, and } = await import("drizzle-orm");
+
+  // Buscar a meta
+  const meta = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.id, metaId))
+    .limit(1);
+
+  if (meta.length === 0) {
+    throw new Error("Meta não encontrada");
+  }
+
+  // Buscar matrícula do aluno para o plano desta meta
+  const matricula = await db
+    .select()
+    .from(matriculas)
+    .where(
+      and(
+        eq(matriculas.userId, userId),
+        eq(matriculas.planoId, meta[0].planoId)
+      )
+    )
+    .limit(1);
+
+  if (matricula.length === 0) {
+    throw new Error("Matrícula não encontrada");
+  }
+
+  // Calcular próximo dia disponível (amanhã)
+  const hoje = new Date();
+  const amanha = new Date(hoje);
+  amanha.setDate(hoje.getDate() + 1);
+
+  // Buscar todas as metas do aluno para verificar distribuição
+  const metasDoAluno = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.planoId, meta[0].planoId));
+
+  // Por enquanto, simplesmente adicionar 1 dia à data atual
+  // TODO: Implementar lógica mais inteligente de redistribuição
+  const novaData = amanha.toISOString().split("T")[0];
+
+  // Atualizar a data da meta (isso afeta todos os alunos - não é ideal)
+  // TODO: Criar tabela de cronograma personalizado por aluno
+  
+  // Por enquanto, apenas marcar como adiada no progresso
+  const progressoExistente = await db
+    .select()
+    .from(progressoMetas)
+    .where(
+      and(
+        eq(progressoMetas.userId, userId),
+        eq(progressoMetas.metaId, metaId)
+      )
+    )
+    .limit(1);
+
+  if (progressoExistente.length > 0) {
+    await db
+      .update(progressoMetas)
+      .set({
+        adiada: true,
+        dataAdiamento: new Date(),
+      })
+      .where(eq(progressoMetas.id, progressoExistente[0].id));
+  } else {
+    await db.insert(progressoMetas).values({
+      userId,
+      metaId,
+      adiada: true,
+      dataAdiamento: new Date(),
+    });
+  }
+
+  return { success: true, novaData };
+}
+
+
+/**
+ * Duplicar plano (copiar plano com todas as metas)
+ */
+export async function duplicarPlano(planoId: number, novoNome?: string, createdBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { planos, metas } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+
+  // Buscar plano original
+  const planoOriginal = await db
+    .select()
+    .from(planos)
+    .where(eq(planos.id, planoId))
+    .limit(1);
+
+  if (planoOriginal.length === 0) {
+    throw new Error("Plano não encontrado");
+  }
+
+  const plano = planoOriginal[0];
+
+  // Criar novo plano
+  const novoPlanoData = {
+    ...plano,
+    nome: novoNome || `${plano.nome} (Cópia)`,
+    createdBy: createdBy || plano.createdBy,
+    ativo: 0, // Criar desativado por padrão
+  };
+
+  // Remover campos que não devem ser copiados
+  delete (novoPlanoData as any).id;
+  delete (novoPlanoData as any).createdAt;
+  delete (novoPlanoData as any).updatedAt;
+
+  const [novoPlano] = await db.insert(planos).values(novoPlanoData as any).returning();
+
+  // Copiar todas as metas
+  const metasOriginais = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.planoId, planoId));
+
+  if (metasOriginais.length > 0) {
+    const novasMetas = metasOriginais.map((meta) => {
+      const novaMeta = { ...meta };
+      delete (novaMeta as any).id;
+      delete (novaMeta as any).createdAt;
+      delete (novaMeta as any).updatedAt;
+      novaMeta.planoId = novoPlano.id;
+      return novaMeta;
+    });
+
+    await db.insert(metas).values(novasMetas as any);
+  }
+
+  return {
+    success: true,
+    novoPlanoId: novoPlano.id,
+    metasCopiadas: metasOriginais.length,
+  };
+}
+
+/**
+ * Ativar/desativar múltiplos planos
+ */
+export async function ativarPlanosLote(planoIds: number[], ativo: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { planos } = await import("../drizzle/schema");
+  const { inArray } = await import("drizzle-orm");
+
+  await db
+    .update(planos)
+    .set({ ativo: ativo ? 1 : 0 })
+    .where(inArray(planos.id, planoIds));
+
+  return {
+    success: true,
+    atualizados: planoIds.length,
+  };
+}
+
+/**
+ * Listar alunos matriculados em um plano
+ */
+export async function getAlunosDoPlano(planoId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const { matriculas, users } = await import("../drizzle/schema");
+  const { eq } = await import("drizzle-orm");
+
+  const matriculasDoPlano = await db
+    .select({
+      matriculaId: matriculas.id,
+      userId: matriculas.userId,
+      dataInicio: matriculas.dataInicio,
+      dataFim: matriculas.dataFim,
+      horasDiarias: matriculas.horasDiarias,
+      diasEstudo: matriculas.diasEstudo,
+      ativo: matriculas.ativo,
+      userName: users.name,
+      userEmail: users.email,
+      userCpf: users.cpf,
+      userFoto: users.foto,
+    })
+    .from(matriculas)
+    .leftJoin(users, eq(matriculas.userId, users.id))
+    .where(eq(matriculas.planoId, planoId));
+
+  return matriculasDoPlano.map((m) => ({
+    matriculaId: m.matriculaId,
+    userId: m.userId,
+    nome: m.userName,
+    email: m.userEmail,
+    cpf: m.userCpf,
+    foto: m.userFoto,
+    dataInicio: m.dataInicio,
+    dataFim: m.dataFim,
+    horasDiarias: m.horasDiarias,
+    diasEstudo: m.diasEstudo,
+    ativo: m.ativo === 1,
+  }));
+}
+
+
+// ============================================
+// ESTATÍSTICAS DE PROGRESSO
+// ============================================
+
+export async function getEstatisticasProgresso(userId: number, periodo: string = "tudo") {
+  const db = await getDb();
+  if (!db) return null;
+  
+  // Calcular data de início baseado no período
+  let dataInicio: Date | null = null;
+  const agora = new Date();
+  
+  switch (periodo) {
+    case "semana":
+      dataInicio = new Date(agora);
+      dataInicio.setDate(agora.getDate() - 7);
+      break;
+    case "mes":
+      dataInicio = new Date(agora);
+      dataInicio.setMonth(agora.getMonth() - 1);
+      break;
+    case "trimestre":
+      dataInicio = new Date(agora);
+      dataInicio.setMonth(agora.getMonth() - 3);
+      break;
+    case "ano":
+      dataInicio = new Date(agora);
+      dataInicio.setFullYear(agora.getFullYear() - 1);
+      break;
+    default:
+      dataInicio = null; // "tudo"
+  }
+  
+  // Buscar progresso de metas
+  let query = db.select().from(progressoMetas).where(eq(progressoMetas.userId, userId));
+  
+  if (dataInicio) {
+    query = query.where(gte(progressoMetas.dataConclusao, dataInicio.toISOString()));
+  }
+  
+  const progressos = await query;
+  
+  // Calcular estatísticas
+  const totalMetas = progressos.length;
+  const metasConcluidas = progressos.filter(p => p.concluida === 1).length;
+  const metasPuladas = progressos.filter(p => p.pulada && p.pulada > 0).length;
+  const metasAdiadas = progressos.filter(p => p.adiada && p.adiada > 0).length;
+  const tempoTotalEstudo = progressos.reduce((sum, p) => sum + (p.tempoGasto || 0), 0);
+  
+  // Taxa de conclusão
+  const taxaConclusao = totalMetas > 0 ? (metasConcluidas / totalMetas) * 100 : 0;
+  
+  // Média de tempo por meta
+  const tempoMedioPorMeta = metasConcluidas > 0 ? tempoTotalEstudo / metasConcluidas : 0;
+  
+  return {
+    totalMetas,
+    metasConcluidas,
+    metasPuladas,
+    metasAdiadas,
+    tempoTotalEstudo, // em minutos
+    taxaConclusao,
+    tempoMedioPorMeta,
+    periodo,
+  };
+}
+
+export async function getEstatisticasPorDisciplinaProgresso(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Buscar progresso com join de metas para pegar disciplina
+  const progressos = await db
+    .select({
+      disciplina: metas.disciplina,
+      concluida: progressoMetas.concluida,
+      tempoGasto: progressoMetas.tempoGasto,
+      pulada: progressoMetas.pulada,
+    })
+    .from(progressoMetas)
+    .innerJoin(metas, eq(progressoMetas.metaId, metas.id))
+    .where(eq(progressoMetas.userId, userId));
+  
+  // Agrupar por disciplina
+  const estatisticasPorDisciplina = progressos.reduce((acc: any, p) => {
+    const disc = p.disciplina || "Sem disciplina";
+    
+    if (!acc[disc]) {
+      acc[disc] = {
+        disciplina: disc,
+        totalMetas: 0,
+        metasConcluidas: 0,
+        metasPuladas: 0,
+        tempoTotal: 0,
+      };
+    }
+    
+    acc[disc].totalMetas++;
+    if (p.concluida === 1) acc[disc].metasConcluidas++;
+    if (p.pulada && p.pulada > 0) acc[disc].metasPuladas++;
+    acc[disc].tempoTotal += p.tempoGasto || 0;
+    
+    return acc;
+  }, {});
+  
+  // Converter para array e calcular taxa de conclusão
+  return Object.values(estatisticasPorDisciplina).map((stat: any) => ({
+    ...stat,
+    taxaConclusao: stat.totalMetas > 0 ? (stat.metasConcluidas / stat.totalMetas) * 100 : 0,
+    tempoMedio: stat.metasConcluidas > 0 ? stat.tempoTotal / stat.metasConcluidas : 0,
+  }));
+}
+
+export async function getEvolucaoTemporalProgresso(userId: number, periodo: string = "30dias") {
+  const db = await getDb();
+  if (!db) return [];
+  
+  // Calcular data de início
+  const agora = new Date();
+  let dataInicio = new Date(agora);
+  let dias = 30;
+  
+  switch (periodo) {
+    case "7dias":
+      dias = 7;
+      dataInicio.setDate(agora.getDate() - 7);
+      break;
+    case "30dias":
+      dias = 30;
+      dataInicio.setDate(agora.getDate() - 30);
+      break;
+    case "90dias":
+      dias = 90;
+      dataInicio.setDate(agora.getDate() - 90);
+      break;
+    case "ano":
+      dias = 365;
+      dataInicio.setFullYear(agora.getFullYear() - 1);
+      break;
+  }
+  
+  // Buscar progresso no período
+  const progressos = await db
+    .select()
+    .from(progressoMetas)
+    .where(
+      and(
+        eq(progressoMetas.userId, userId),
+        gte(progressoMetas.dataConclusao, dataInicio.toISOString())
+      )
+    );
+  
+  // Agrupar por data
+  const progressoPorDia: { [key: string]: any } = {};
+  
+  // Inicializar todos os dias com 0
+  for (let i = 0; i < dias; i++) {
+    const data = new Date(dataInicio);
+    data.setDate(dataInicio.getDate() + i);
+    const dataStr = data.toISOString().split('T')[0];
+    progressoPorDia[dataStr] = {
+      data: dataStr,
+      metasConcluidas: 0,
+      tempoEstudo: 0,
+      metasPuladas: 0,
+    };
+  }
+  
+  // Preencher com dados reais
+  progressos.forEach(p => {
+    if (!p.dataConclusao) return;
+    const dataStr = new Date(p.dataConclusao).toISOString().split('T')[0];
+    
+    if (progressoPorDia[dataStr]) {
+      if (p.concluida === 1) {
+        progressoPorDia[dataStr].metasConcluidas++;
+        progressoPorDia[dataStr].tempoEstudo += p.tempoGasto || 0;
+      }
+      if (p.pulada && p.pulada > 0) {
+        progressoPorDia[dataStr].metasPuladas++;
+      }
+    }
+  });
+  
+  return Object.values(progressoPorDia);
 }

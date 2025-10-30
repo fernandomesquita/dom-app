@@ -23,8 +23,10 @@ import GestaoAvisos from "@/components/admin/GestaoAvisos";
 import RelatoriosAnalytics from "@/components/admin/RelatoriosAnalytics";
 import GestaoUsuarios from "@/components/admin/GestaoUsuarios";
 import GestaoPlanos from "@/components/admin/GestaoPlanos";
-import GestaoMetas from "@/components/admin/GestaoMetas";
 import AtribuirPlano from "@/components/admin/AtribuirPlano";
+import GestaoMatriculas from "@/components/admin/GestaoMatriculas";
+import DashboardAlunoAdmin from "@/components/admin/DashboardAlunoAdmin";
+import RelatorioComparativo from "@/components/admin/RelatorioComparativo";
 import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
 
@@ -64,8 +66,10 @@ export default function Admin() {
     usuarios: isMaster || isAdministrativo,
     planos: isMaster || isMentor || isAdministrativo,
     atribuirPlanos: isMaster || isMentor || isAdministrativo,
+    matriculas: isMaster || isMentor || isAdministrativo,
     metas: isMaster || isMentor,
     aulas: isMaster || isAdministrativo || isProfessor,
+    materiais: isMaster || isMentor || isProfessor,
     avisos: isMaster || isMentor || isAdministrativo,
     relatorios: isMaster || isMentor,
     personalizacao: isMaster,
@@ -77,8 +81,10 @@ export default function Admin() {
     { value: "usuarios", label: "Usuários", show: availableTabs.usuarios },
     { value: "planos", label: "Planos", show: availableTabs.planos },
     { value: "atribuirPlanos", label: "Atribuir Planos", show: availableTabs.atribuirPlanos },
+    { value: "matriculas", label: "Matrículas", show: availableTabs.matriculas },
     { value: "metas", label: "Metas", show: availableTabs.metas },
     { value: "aulas", label: "Aulas", show: availableTabs.aulas },
+    { value: "materiais", label: "Materiais", show: availableTabs.materiais },
     { value: "avisos", label: "Avisos", show: availableTabs.avisos },
     { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
     { value: "personalizacao", label: "Personalização", show: availableTabs.personalizacao },
@@ -221,10 +227,30 @@ export default function Admin() {
           </TabsContent>
         )}
 
+        {/* Tab: Gestão de Matrículas (Master, Mentor, Administrativo) */}
+        {availableTabs.matriculas && (
+          <TabsContent value="matriculas" className="space-y-4">
+            <GestaoMatriculas />
+          </TabsContent>
+        )}
+
         {/* Tab: Gestão de Metas (Master, Mentor) */}
         {availableTabs.metas && (
           <TabsContent value="metas" className="space-y-4">
-            <GestaoPlanos />
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestão de Metas</CardTitle>
+                <CardDescription>
+                  {isMaster && "Criar, editar, excluir, publicar e configurar cores de metas"}
+                  {isMentor && "Inserir, editar, remover, habilitar/desabilitar e reordenar metas"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-center py-8">
+                  Selecione um plano para visualizar e gerenciar suas metas
+                </p>
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
 
@@ -257,6 +283,35 @@ export default function Admin() {
           </TabsContent>
         )}
 
+        {/* Tab: Gestão de Materiais (Master, Mentor, Professor) */}
+        {availableTabs.materiais && (
+          <TabsContent value="materiais" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Gestão de Materiais</CardTitle>
+                    <CardDescription>
+                      {isMaster && "Gerencie todo o repositório de materiais de apoio"}
+                      {isMentor && "Faça upload de PDFs, documentos e apresentações"}
+                      {isProfessor && "Compartilhe materiais didáticos com os alunos"}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Adicionar Material
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground text-center py-8">
+                  Sistema de gestão de materiais em desenvolvimento
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         {/* Tab: Avisos (Master, Mentor, Administrativo) */}
         {availableTabs.avisos && (
           <TabsContent value="avisos" className="space-y-4">
@@ -268,6 +323,8 @@ export default function Admin() {
         {availableTabs.relatorios && (
           <TabsContent value="relatorios" className="space-y-4">
             <RelatoriosAnalytics />
+            <DashboardAlunoAdmin />
+            <RelatorioComparativo />
           </TabsContent>
         )}
 

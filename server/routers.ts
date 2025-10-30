@@ -19,7 +19,7 @@ export const appRouter = router({
   }),
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
-  auth: router({
+  authentication: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
@@ -28,6 +28,192 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+    
+    // Registro de novo usuário
+    register: publicProcedure
+      .input(z.object({
+        nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
+        email: z.string().email("Email inválido"),
+        cpf: z.string().min(11, "CPF inválido"),
+        telefone: z.string().min(10, "Telefone inválido"),
+        dataNascimento: z.string().optional(),
+        password: z.string().min(8, "Senha deve ter no mínimo 8 caracteres").optional(),
+        aceitouTermos: z.boolean().refine(val => val === true, "Você deve aceitar os termos de uso"),
+      }))
+      .mutation(async ({ input }) => {
+        const { registerUser, createEmailVerificationToken, logAudit } = await import("./db");
+        
+        try {
+          const novoUsuario = await registerUser({
+            nome: input.nome,
+            email: input.email,
+            cpf: input.cpf,
+            telefone: input.telefone,
+            dataNascimento: input.dataNascimento,
+            password: input.password,
+          });
+          
+          // Criar token de verificação de email
+          const verificationToken = await createEmailVerificationToken(novoUsuario.insertId);
+          
+          // Log de auditoria
+          await logAudit({
+            action: "register",
+            entity: "users",
+            entityId: novoUsuario.insertId,
+            newData: { email: input.email, nome: input.nome },
+          });
+          
+          return {
+            success: true,
+            userId: novoUsuario.insertId,
+            verificationToken, // Retornar para envio de email
+          };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao registrar usuário");
+        }
+      }),
+    
+    // Verificar email
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        const { verifyEmail } = await import("./db");
+        
+        try {
+          await verifyEmail(input.token);
+          return { success: true };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao verificar email");
+        }
+      }),
+    
+    // Reenviar email de verificação
+    resendVerificationEmail: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("Não autenticado");
+        
+        const { createEmailVerificationToken } = await import("./db");
+        
+        const verificationToken = await createEmailVerificationToken(ctx.user.id);
+        
+        return {
+          success: true,
+          verificationToken,
+        };
+      }),
+    
+    // Solicitar reset de senha
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const { createPasswordResetToken } = await import("./db");
+        
+        const token = await createPasswordResetToken(input.email);
+        
+        // Sempre retornar sucesso para não revelar se o email existe
+        return {
+          success: true,
+          token, // Retornar para envio de email
+        };
+      }),
+    
+    // Resetar senha
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input }) => {
+        const { resetPassword } = await import("./db");
+        
+        try {
+          await resetPassword(input.token, input.newPassword);
+          return { success: true };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao resetar senha");
+        }
+      }),
+    
+    // Login com senha
+    loginWithPassword: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        password: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { loginWithPassword, logAudit } = await import("./db");
+        
+        try {
+          const user = await loginWithPassword(input.email, input.password);
+          
+          // Log de auditoria
+          await logAudit({
+            userId: user.id,
+            action: "login_password",
+            entity: "users",
+            entityId: user.id,
+            ip: ctx.req.ip,
+            userAgent: ctx.req.headers["user-agent"],
+          });
+          
+          return {
+            success: true,
+            user,
+          };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao fazer login");
+        }
+      }),
+    
+    // Definir senha (primeiro acesso)
+    setPassword: protectedProcedure
+      .input(z.object({ password: z.string().min(8) }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Não autenticado");
+        
+        const { setPassword } = await import("./db");
+        
+        try {
+          await setPassword(ctx.user.id, input.password);
+          return { success: true };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao definir senha");
+        }
+      }),
+    
+    // Atualizar perfil próprio
+    updateProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().optional(),
+        telefone: z.string().optional(),
+        dataNascimento: z.string().optional(),
+        endereco: z.string().optional(),
+        foto: z.string().optional(),
+        bio: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Não autenticado");
+        
+        const { updateUser, logAudit } = await import("./db");
+        
+        try {
+          await updateUser(ctx.user.id, input);
+          
+          // Log de auditoria
+          await logAudit({
+            userId: ctx.user.id,
+            action: "update_profile",
+            entity: "users",
+            entityId: ctx.user.id,
+            newData: input,
+          });
+          
+          return { success: true };
+        } catch (error: any) {
+          throw new Error(error.message || "Erro ao atualizar perfil");
+        }
+      }),
   }),
 
   // Routers do sistema DOM
@@ -185,6 +371,45 @@ export const appRouter = router({
           return await getPlanoComEstatisticas(input.id);
         }),
       
+      // Duplicar plano
+      duplicar: protectedProcedure
+        .input(z.object({ 
+          planoId: z.number(),
+          novoNome: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { duplicarPlano } = await import("./db");
+          return await duplicarPlano(input.planoId, input.novoNome, ctx.user.id);
+        }),
+      
+      // Ativar/desativar múltiplos planos
+      ativarLote: protectedProcedure
+        .input(z.object({ 
+          planoIds: z.array(z.number()),
+          ativo: z.boolean(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { ativarPlanosLote } = await import("./db");
+          return await ativarPlanosLote(input.planoIds, input.ativo);
+        }),
+      
+      // Listar alunos matriculados em um plano
+      listarAlunos: protectedProcedure
+        .input(z.object({ planoId: z.number() }))
+        .query(async ({ ctx, input }) => {
+          if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+            throw new Error("Acesso negado");
+          }
+          const { getAlunosDoPlano } = await import("./db");
+          return await getAlunosDoPlano(input.planoId);
+        }),
+      
       importarPlanilha: protectedProcedure
         .input(z.object({ dados: z.array(z.any()) }))
         .mutation(async ({ ctx, input }) => {
@@ -305,37 +530,92 @@ export const appRouter = router({
         const { concluirMeta } = await import("./db");
         return await concluirMeta(ctx.user.id, input.metaId, input.tempoGasto);
       }),
-
-    // Redistribuir metas do aluno
-    redistribuir: protectedProcedure
-      .input(z.object({
-        horasDiarias: z.number().min(1).max(12).optional(),
-        diasSemana: z.array(z.number().min(0).max(6)).optional(),
-      }).optional())
-      .mutation(async ({ ctx, input }) => {
-        const { redistribuirMetasAluno } = await import("./db");
-        return await redistribuirMetasAluno(
-          ctx.user.id,
-          input?.horasDiarias,
-          input?.diasSemana
-        );
-      }),
-
-    // Buscar metas com anotações do aluno
-    minhasAnotacoes: protectedProcedure.query(async ({ ctx }) => {
-      const { getMetasComAnotacoes } = await import("./db");
-      return await getMetasComAnotacoes(ctx.user.id);
-    }),
-
-    // Salvar anotação de uma meta
-    salvarAnotacao: protectedProcedure
+    
+    // Pular meta (não será contabilizada)
+    pular: protectedProcedure
       .input(z.object({
         metaId: z.number(),
-        anotacao: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const { salvarAnotacaoMeta } = await import("./db");
-        return await salvarAnotacaoMeta(ctx.user.id, input.metaId, input.anotacao);
+        const { pularMeta } = await import("./db");
+        return await pularMeta(ctx.user.id, input.metaId);
+      }),
+    
+    // Adiar meta para próximo dia disponível
+    adiar: protectedProcedure
+      .input(z.object({
+        metaId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { adiarMeta } = await import("./db");
+        return await adiarMeta(ctx.user.id, input.metaId);
+      }),
+    
+    // Reordenar metas (drag-and-drop)
+    reordenar: protectedProcedure
+      .input(z.object({
+        metaId: z.number(),
+        novaOrdem: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { reordenarMeta } = await import("./db");
+        return await reordenarMeta(input.metaId, input.novaOrdem);
+      }),
+    
+    // Excluir múltiplas metas
+    deletarLote: protectedProcedure
+      .input(z.object({
+        metaIds: z.array(z.number()),
+      }))
+      .mutation(async ({ input }) => {
+        const { deletarMetasLote } = await import("./db");
+        return await deletarMetasLote(input.metaIds);
+      }),
+    
+    // Atualizar múltiplas metas
+    atualizarLote: protectedProcedure
+      .input(z.object({
+        metaIds: z.array(z.number()),
+        dados: z.object({
+          disciplina: z.string().optional(),
+          tipo: z.enum(["estudo", "revisao", "questoes"]).optional(),
+          incidencia: z.enum(["baixa", "media", "alta"]).optional(),
+        }),
+      }))
+      .mutation(async ({ input }) => {
+        const { atualizarMetasLote } = await import("./db");
+        return await atualizarMetasLote(input.metaIds, input.dados);
+      }),
+    
+    // Estatísticas de metas por plano
+    estatisticas: protectedProcedure
+      .input(z.object({
+        planoId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        const { getEstatisticasMetas } = await import("./db");
+        return await getEstatisticasMetas(input.planoId);
+      }),
+    
+    // Criar múltiplas metas (importação em lote)
+    criarLote: protectedProcedure
+      .input(z.object({
+        metas: z.array(z.object({
+          planoId: z.number(),
+          disciplina: z.string(),
+          assunto: z.string(),
+          tipo: z.enum(["estudo", "revisao", "questoes"]),
+          duracao: z.number(),
+          incidencia: z.enum(["baixa", "media", "alta"]).nullable().optional(),
+          prioridade: z.number().min(1).max(5).optional(),
+          ordem: z.number(),
+          dicaEstudo: z.string().nullable().optional(),
+          cor: z.string().nullable().optional(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { criarMetasLote } = await import("./db");
+        return await criarMetasLote(input.metas);
       }),
   }),
 
@@ -410,6 +690,27 @@ export const appRouter = router({
       return await getNotificacoesForumRespostas(ctx.user.id);
     }),
     
+    // Buscar todas as mensagens (tópicos e respostas) de um usuário
+    getMensagensUsuario: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        // Apenas master e administrativo podem visualizar
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) return { topicos: [], respostas: [] };
+        
+        const { forumTopicos, forumRespostas } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        const topicos = await db.select().from(forumTopicos).where(eq(forumTopicos.userId, input.userId));
+        const respostas = await db.select().from(forumRespostas).where(eq(forumRespostas.userId, input.userId));
+        
+        return { topicos, respostas };
+      }),
+    
     marcarNotificacaoLida: protectedProcedure.input((val: unknown) => {
       if (typeof val === "object" && val !== null && "respostaId" in val && typeof val.respostaId === "number") {
         return val as { respostaId: number };
@@ -419,6 +720,195 @@ export const appRouter = router({
       const { marcarNotificacaoForumLida } = await import("./db");
       return await marcarNotificacaoForumLida(ctx.user.id, input.respostaId);
     }),
+    
+    // Mutations para criar tópicos e respostas
+    criarTopico: protectedProcedure
+      .input(z.object({
+        titulo: z.string(),
+        conteudo: z.string(),
+        categoria: z.string(),
+        disciplina: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        console.log("[FORUM] Criando tópico:", input, "User:", ctx.user.id);
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumTopicos } = await import("../drizzle/schema");
+        const resultado = await db.insert(forumTopicos).values({
+          titulo: input.titulo,
+          conteudo: input.conteudo,
+          categoria: input.categoria,
+          userId: ctx.user.id,
+          curtidas: 0,
+          visualizacoes: 0,
+        });
+        
+        return { success: true };
+      }),
+    
+    criarResposta: protectedProcedure
+      .input(z.object({
+        topicoId: z.number(),
+        conteudo: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumRespostas, forumTopicos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Inserir resposta
+        const resultado = await db.insert(forumRespostas).values({
+          topicoId: input.topicoId,
+          conteudo: input.conteudo,
+          userId: ctx.user.id,
+          curtidas: 0,
+        });
+        
+        // Calcular e adicionar pontos ao usuário
+        const { calcularPontosResposta } = await import("../shared/gamification");
+        const { users } = await import("../drizzle/schema");
+        const pontosGanhos = calcularPontosResposta(input.conteudo, false);
+        
+        await db.update(users)
+          .set({ pontos: ctx.user.pontos + pontosGanhos })
+          .where(eq(users.id, ctx.user.id));
+        
+        // Atualizar updatedAt do tópico (bump)
+        await db.update(forumTopicos)
+          .set({ updatedAt: new Date() })
+          .where(eq(forumTopicos.id, input.topicoId));
+        
+        return { success: true, pontosGanhos };
+      }),
+    
+    editarTopico: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        conteudo: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumTopicos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Buscar tópico para verificar autor e tempo
+        const topico = await db.select().from(forumTopicos).where(eq(forumTopicos.id, input.id)).limit(1);
+        if (topico.length === 0) {
+          throw new Error("Tópico não encontrado");
+        }
+        
+        // Verificar se é o autor
+        if (topico[0].userId !== ctx.user.id) {
+          throw new Error("Apenas o autor pode editar");
+        }
+        
+        // Verificar se passaram menos de 5 minutos
+        const now = new Date();
+        const created = new Date(topico[0].createdAt);
+        const minutesSinceCreated = (now.getTime() - created.getTime()) / (1000 * 60);
+        
+        if (minutesSinceCreated > 5) {
+          throw new Error("Tempo limite de edição excedido (5 minutos)");
+        }
+        
+        // Atualizar conteúdo
+        await db.update(forumTopicos)
+          .set({ conteudo: input.conteudo, updatedAt: new Date() })
+          .where(eq(forumTopicos.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    marcarMelhorResposta: protectedProcedure
+      .input(z.object({
+        respostaId: z.number(),
+        topicoId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumRespostas, forumTopicos, users } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        // Verificar se o usuário é o autor do tópico
+        const topico = await db.select().from(forumTopicos).where(eq(forumTopicos.id, input.topicoId)).limit(1);
+        if (!topico[0] || topico[0].userId !== ctx.user.id) {
+          throw new Error("Apenas o autor do tópico pode marcar a melhor resposta");
+        }
+        
+        // Desmarcar qualquer resposta anterior como solução
+        await db.update(forumRespostas)
+          .set({ solucao: 0 })
+          .where(eq(forumRespostas.topicoId, input.topicoId));
+        
+        // Marcar nova resposta como solução
+        await db.update(forumRespostas)
+          .set({ solucao: 1 })
+          .where(eq(forumRespostas.id, input.respostaId));
+        
+        // Buscar resposta para pegar o autor e dar bônus de pontos
+        const resposta = await db.select().from(forumRespostas).where(eq(forumRespostas.id, input.respostaId)).limit(1);
+        if (resposta[0]) {
+          const BONUS_MELHOR_RESPOSTA = 50;
+          // Buscar pontos atuais do usuário
+          const usuario = await db.select().from(users).where(eq(users.id, resposta[0].userId)).limit(1);
+          if (usuario[0]) {
+            await db.update(users)
+              .set({ pontos: usuario[0].pontos + BONUS_MELHOR_RESPOSTA })
+              .where(eq(users.id, resposta[0].userId));
+          }
+        }
+        
+        return { success: true };
+      }),
+    
+    deletarTopico: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Apenas master e administrativo podem deletar
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumTopicos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        await db.delete(forumTopicos).where(eq(forumTopicos.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    deletarResposta: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Apenas master e administrativo podem deletar
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumRespostas } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        await db.delete(forumRespostas).where(eq(forumRespostas.id, input.id));
+        
+        return { success: true };
+      }),
   }),
 
   matriculas: router({
@@ -605,65 +1095,194 @@ export const appRouter = router({
       const { getAllUsers } = await import("./db");
       return await getAllUsers();
     }),
-
-    getDadosAluno: protectedProcedure
-      .input(z.object({ alunoId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+    
+    // Router de gestão de usuários
+    usuarios: router({
+      list: protectedProcedure.query(async ({ ctx }) => {
+        if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
           throw new Error("Unauthorized");
         }
-        const { getDadosAluno } = await import("./db");
-        return await getDadosAluno(input.alunoId);
+        const { getAllUsers } = await import("./db");
+        return await getAllUsers();
       }),
-  }),
-
-  materiais: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      const { getAllMateriais } = await import("./db");
-      return await getAllMateriais();
+      
+      getById: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
+            throw new Error("Unauthorized");
+          }
+          const { getUserById } = await import("./db");
+          return await getUserById(input.id);
+        }),
+      
+      create: protectedProcedure
+        .input(z.object({
+          name: z.string().min(1, "Nome é obrigatório"),
+          email: z.string().email("Email inválido"),
+          cpf: z.string().optional(),
+          telefone: z.string().optional(),
+          dataNascimento: z.string().optional(),
+          endereco: z.string().optional(),
+          foto: z.string().optional(),
+          bio: z.string().optional(),
+          role: z.enum(["aluno", "professor", "administrativo", "mentor", "master"]).default("aluno"),
+          observacoes: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
+            throw new Error("Unauthorized");
+          }
+          
+          const { createUser } = await import("./db");
+          
+          // Criar openId temporário (será substituído no primeiro login OAuth)
+          const openId = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          return await createUser({
+            openId,
+            name: input.name,
+            email: input.email,
+            cpf: input.cpf || null,
+            telefone: input.telefone || null,
+            dataNascimento: input.dataNascimento || null,
+            endereco: input.endereco || null,
+            foto: input.foto || null,
+            bio: input.bio || null,
+            role: input.role,
+            observacoes: input.observacoes || null,
+            status: "ativo",
+          });
+        }),
+      
+      update: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          email: z.string().email().optional(),
+          cpf: z.string().optional(),
+          telefone: z.string().optional(),
+          dataNascimento: z.string().optional(),
+          endereco: z.string().optional(),
+          foto: z.string().optional(),
+          bio: z.string().optional(),
+          role: z.enum(["aluno", "professor", "administrativo", "mentor", "master"]).optional(),
+          observacoes: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
+            throw new Error("Unauthorized");
+          }
+          
+          const { id, ...data } = input;
+          const { updateUser } = await import("./db");
+          return await updateUser(id, data);
+        }),
+      
+      delete: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+            throw new Error("Apenas Master e Administrativo podem excluir usuários");
+          }
+          
+          const { deleteUser } = await import("./db");
+          return await deleteUser(input.id);
+        }),
+      
+      toggleStatus: protectedProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["ativo", "inativo", "suspenso"]),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+            throw new Error("Unauthorized");
+          }
+          
+          const { toggleUserStatus } = await import("./db");
+          return await toggleUserStatus(input.id, input.status);
+        }),
+      
+      importarCSV: protectedProcedure
+        .input(z.object({
+          dados: z.array(z.object({
+            nome: z.string(),
+            email: z.string().email(),
+            cpf: z.string().optional(),
+            telefone: z.string().optional(),
+            dataNascimento: z.string().optional(),
+            endereco: z.string().optional(),
+            role: z.enum(["aluno", "professor", "administrativo", "mentor", "master"]).optional(),
+          })),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+            throw new Error("Unauthorized");
+          }
+          
+          const { importarAlunosCSV } = await import("./db");
+          return await importarAlunosCSV(input.dados);
+        }),
+      
+      getAlunosComProgresso: protectedProcedure.query(async ({ ctx }) => {
+        if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
+          throw new Error("Unauthorized");
+        }
+        const { getAlunosComProgresso } = await import("./db");
+        return await getAlunosComProgresso();
+      }),
     }),
-    
-    byMetaId: protectedProcedure
-      .input(z.object({ metaId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const { getMateriaisByMetaId } = await import("./db");
-        return await getMateriaisByMetaId(input.metaId);
-      }),
-    
-    create: protectedProcedure
+  }),
+  
+  // Router de estatísticas de progresso
+  estatisticas: router({
+    progresso: protectedProcedure
       .input(z.object({
-        titulo: z.string(),
-        descricao: z.string().optional(),
-        urlArquivo: z.string(),
-        tipoArquivo: z.string(),
-        tamanhoBytes: z.number().optional(),
-        metaId: z.number().optional(),
-        disciplina: z.string().optional(),
+        userId: z.number().optional(),
+        periodo: z.enum(["semana", "mes", "trimestre", "ano", "tudo"]).optional(),
       }))
-      .mutation(async ({ ctx, input }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
+      .query(async ({ ctx, input }) => {
+        const userId = input.userId || ctx.user.id;
         
-        // Apenas professores, mentores e admins podem criar materiais
-        const allowedRoles = ["master", "professor", "mentor", "administrativo"];
-        if (!allowedRoles.includes(ctx.user.role || "")) {
-          throw new Error("Sem permissão para criar materiais");
+        // Verificar permissão (só pode ver próprias stats ou se for admin)
+        if (userId !== ctx.user.id && !['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
         }
         
-        const { createMaterial } = await import("./db");
-        return await createMaterial({
-          ...input,
-          uploadedBy: ctx.user.id,
-        });
+        const { getEstatisticasProgresso } = await import("./db");
+        return await getEstatisticasProgresso(userId, input.periodo || "tudo");
       }),
     
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        if (!ctx.user) throw new Error("Not authenticated");
+    porDisciplina: protectedProcedure
+      .input(z.object({
+        userId: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const userId = input.userId || ctx.user.id;
         
-        const { deleteMaterial } = await import("./db");
-        return await deleteMaterial(input.id, ctx.user.id, ctx.user.role || "aluno");
+        if (userId !== ctx.user.id && !['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { getEstatisticasPorDisciplinaProgresso } = await import("./db");
+        return await getEstatisticasPorDisciplinaProgresso(userId);
+      }),
+    
+    evolucaoTemporal: protectedProcedure
+      .input(z.object({
+        userId: z.number().optional(),
+        periodo: z.enum(["7dias", "30dias", "90dias", "ano"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const userId = input.userId || ctx.user.id;
+        
+        if (userId !== ctx.user.id && !['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { getEvolucaoTemporalProgresso } = await import("./db");
+        return await getEvolucaoTemporalProgresso(userId, input.periodo || "30dias");
       }),
   }),
 });
-export type AppRouter = typeof appRouter;

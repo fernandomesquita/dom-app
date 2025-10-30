@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/Breadcrumb";
-import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Plus, Search, CheckCircle, User } from "lucide-react";
+import { ArrowLeft, MessageSquare, ThumbsUp, Eye, Plus, Search, CheckCircle, User, Trash2, Edit } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { mockForumTopicos } from "@/lib/mockData";
+// import { mockForumTopicos } from "@/lib/mockData";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import UserBadge from "@/components/UserBadge";
 
 interface Resposta {
   id: number;
@@ -30,8 +32,11 @@ export default function Forum() {
   const { user } = useAuth();
   const isMentorOrMaster = user?.role === "mentor" || user?.role === "master";
   
-  const [topicos, setTopicos] = useState(mockForumTopicos);
-  const [topicoSelecionado, setTopicoSelecionado] = useState<typeof mockForumTopicos[0] | null>(null);
+  // Buscar tópicos do banco
+  const { data: topicosData, refetch: refetchTopicos } = trpc.forum.listTopicos.useQuery();
+  const topicos = topicosData || [];
+  
+  const [topicoSelecionado, setTopicoSelecionado] = useState<any | null>(null);
   const [respostas, setRespostas] = useState<Resposta[]>([
     {
       id: 1,
@@ -68,8 +73,45 @@ export default function Forum() {
   const [filtroDisciplina, setFiltroDisciplina] = useState("todas");
   const [ordenacao, setOrdenacao] = useState("recentes");
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
+  const [editandoTopico, setEditandoTopico] = useState(false);
+  const [conteudoEditado, setConteudoEditado] = useState("");
 
   const disciplinasUnicas = Array.from(new Set(topicos.map(t => t.disciplina)));
+
+  const criarTopicoMutation = trpc.forum.criarTopico.useMutation({
+    onSuccess: () => {
+      toast.success("Tópico criado com sucesso!");
+      setNovoTopico({ titulo: "", categoria: "duvidas", conteudo: "" });
+      setDialogNovoTopicoAberto(false);
+      // Recarregar tópicos do banco
+      refetchTopicos();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao criar tópico");
+    },
+  });
+
+  const deletarTopicoMutation = trpc.forum.deletarTopico.useMutation({
+    onSuccess: () => {
+      toast.success("Tópico deletado com sucesso!");
+      setTopicoSelecionado(null);
+      refetchTopicos();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao deletar tópico");
+    },
+  });
+
+  const editarTopicoMutation = trpc.forum.editarTopico.useMutation({
+    onSuccess: () => {
+      toast.success("Tópico editado com sucesso!");
+      setEditandoTopico(false);
+      refetchTopicos();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao editar tópico");
+    },
+  });
 
   const handleCriarTopico = () => {
     if (!novoTopico.titulo || !novoTopico.conteudo) {
@@ -77,23 +119,11 @@ export default function Forum() {
       return;
     }
 
-    const topico = {
-      id: topicos.length + 1,
+    criarTopicoMutation.mutate({
       titulo: novoTopico.titulo,
-      autor: user?.name || "Usuário",
-      disciplina: "", // Campo removido, mantido vazio para compatibilidade
-      categoria: getCategoriaLabel(novoTopico.categoria),
       conteudo: novoTopico.conteudo,
-      respostas: 0,
-      visualizacoes: 0,
-      curtidas: 0,
-      createdAt: new Date(),
-    };
-
-    setTopicos([topico, ...topicos]);
-    setNovoTopico({ titulo: "", categoria: "duvidas", conteudo: "" });
-    setDialogNovoTopicoAberto(false);
-    toast.success("Tópico criado com sucesso!");
+      categoria: getCategoriaLabel(novoTopico.categoria),
+    });
   };
 
   const handleCurtirTopico = (id: number) => {
@@ -232,10 +262,46 @@ export default function Forum() {
                   Por {topicoSelecionado.autor} • {topicoSelecionado.createdAt.toLocaleDateString("pt-BR")}
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => handleCurtirTopico(topicoSelecionado.id)}>
-                <ThumbsUp className="h-4 w-4 mr-2" />
-                {topicoSelecionado.curtidas}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => handleCurtirTopico(topicoSelecionado.id)}>
+                  <ThumbsUp className="h-4 w-4 mr-2" />
+                  {topicoSelecionado.curtidas}
+                </Button>
+                {(() => {
+                  const now = new Date();
+                  const created = new Date(topicoSelecionado.createdAt);
+                  const minutesSinceCreated = (now.getTime() - created.getTime()) / (1000 * 60);
+                  const isAuthor = user?.id === topicoSelecionado.userId;
+                  const canEdit = isAuthor && minutesSinceCreated <= 5;
+                  
+                  return canEdit && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setConteudoEditado(topicoSelecionado.conteudo);
+                        setEditandoTopico(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  );
+                })()}
+                {(user?.role === "master" || user?.role === "administrativo") && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      if (confirm("Tem certeza que deseja deletar este tópico?")) {
+                        deletarTopicoMutation.mutate({ id: topicoSelecionado.id });
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -341,14 +407,14 @@ export default function Forum() {
         <Button variant="ghost" size="icon" onClick={() => setLocation("/")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Breadcrumb items={[{ label: "Fórum de Dúvidas" }]} />
+        <Breadcrumb items={[{ label: "Fórum da Comunidade" }]} />
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Fórum de Dúvidas</h1>
+          <h1 className="text-3xl font-bold">Fórum da Comunidade</h1>
           <p className="text-muted-foreground mt-2">
-            Tire suas dúvidas com mentores e colegas
+            Compartilhe conhecimento, tire dúvidas e conecte-se com a comunidade
           </p>
         </div>
         <Dialog open={dialogNovoTopicoAberto} onOpenChange={setDialogNovoTopicoAberto}>
@@ -404,6 +470,46 @@ export default function Forum() {
                   Cancelar
                 </Button>
                 <Button onClick={handleCriarTopico}>Criar Tópico</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Dialog Editar Tópico */}
+        <Dialog open={editandoTopico} onOpenChange={setEditandoTopico}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Tópico</DialogTitle>
+              <DialogDescription>
+                Você tem 5 minutos para editar após a publicação
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Conteúdo</Label>
+                <Textarea
+                  value={conteudoEditado}
+                  onChange={(e) => setConteudoEditado(e.target.value)}
+                  rows={8}
+                  placeholder="Descreva sua dúvida ou discussão..."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditandoTopico(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={() => {
+                  if (!conteudoEditado.trim()) {
+                    toast.error("O conteúdo não pode estar vazio");
+                    return;
+                  }
+                  if (topicoSelecionado) {
+                    editarTopicoMutation.mutate({
+                      id: topicoSelecionado.id,
+                      conteudo: conteudoEditado,
+                    });
+                  }
+                }}>Salvar Alterações</Button>
               </div>
             </div>
           </DialogContent>
@@ -506,15 +612,36 @@ export default function Forum() {
                         {topico.categoria}
                       </Badge>
                       <Badge variant="outline">{topico.disciplina}</Badge>
+                      {(() => {
+                        const now = new Date();
+                        const created = new Date(topico.createdAt);
+                        const updated = new Date(topico.updatedAt);
+                        const hoursSinceCreated = (now.getTime() - created.getTime()) / (1000 * 60 * 60);
+                        const hoursSinceUpdated = (now.getTime() - updated.getTime()) / (1000 * 60 * 60);
+                        
+                        if (hoursSinceCreated <= 48) {
+                          return <Badge className="bg-green-100 text-green-800 border-green-300">Novo</Badge>;
+                        } else if (hoursSinceUpdated <= 48 && updated.getTime() > created.getTime()) {
+                          return <Badge className="bg-blue-100 text-blue-800 border-blue-300">Atualizado</Badge>;
+                        }
+                        return null;
+                      })()}
                     </div>
                     <h3 className="font-semibold text-lg mb-1">{topico.titulo}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                       {topico.conteudo}
                     </p>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span>Por {topico.autor}</span>
+                      <div className="flex items-center gap-2">
+                        <span>Por {topico.autor}</span>
+                        {topico.autorPontos !== undefined && topico.autorPontos !== null && (
+                          <UserBadge pontos={topico.autorPontos} size="sm" />
+                        )}
+                      </div>
                       <span>•</span>
-                      <span>{topico.createdAt.toLocaleDateString("pt-BR")}</span>
+                      <span>
+                        {new Date(topico.createdAt).toLocaleDateString("pt-BR")} às {new Date(topico.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2 text-sm text-muted-foreground">

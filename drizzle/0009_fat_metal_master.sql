@@ -1,1 +1,0 @@
-ALTER TABLE `progresso_metas` ADD `anotacao` text;
