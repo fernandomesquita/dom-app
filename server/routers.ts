@@ -658,6 +658,88 @@ export const appRouter = router({
       const { salvarProgressoAula } = await import("./db");
       return await salvarProgressoAula(ctx.user.id, input.aulaId, input.posicao, input.percentual);
     }),
+    
+    // Anotações
+    criarAnotacao: protectedProcedure
+      .input(z.object({
+        aulaId: z.number(),
+        timestamp: z.number(),
+        conteudo: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { anotacoesAulas } = await import("../drizzle/schema");
+        
+        await db.insert(anotacoesAulas).values({
+          userId: ctx.user.id,
+          aulaId: input.aulaId,
+          timestamp: input.timestamp,
+          conteudo: input.conteudo,
+        });
+        
+        return { success: true };
+      }),
+    
+    listarAnotacoes: protectedProcedure
+      .input(z.object({ aulaId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) return [];
+        
+        const { anotacoesAulas } = await import("../drizzle/schema");
+        const { eq, and, asc } = await import("drizzle-orm");
+        
+        return await db.select()
+          .from(anotacoesAulas)
+          .where(and(
+            eq(anotacoesAulas.userId, ctx.user.id),
+            eq(anotacoesAulas.aulaId, input.aulaId)
+          ))
+          .orderBy(asc(anotacoesAulas.timestamp));
+      }),
+    
+    deletarAnotacao: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { anotacoesAulas } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        // Apenas o dono pode deletar
+        await db.delete(anotacoesAulas)
+          .where(and(
+            eq(anotacoesAulas.id, input.id),
+            eq(anotacoesAulas.userId, ctx.user.id)
+          ));
+        
+        return { success: true };
+      }),
+    
+    editarAnotacao: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        conteudo: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { anotacoesAulas } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        await db.update(anotacoesAulas)
+          .set({ conteudo: input.conteudo })
+          .where(and(
+            eq(anotacoesAulas.id, input.id),
+            eq(anotacoesAulas.userId, ctx.user.id)
+          ));
+        
+        return { success: true };
+      }),
   }),
 
   forum: router({

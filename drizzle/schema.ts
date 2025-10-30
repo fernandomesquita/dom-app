@@ -198,6 +198,22 @@ export type ProgressoAula = typeof progressoAulas.$inferSelect;
 export type InsertProgressoAula = typeof progressoAulas.$inferInsert;
 
 /**
+ * Anotações de aulas - notas dos alunos com timestamps
+ */
+export const anotacoesAulas = mysqlTable("anotacoes_aulas", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  aulaId: int("aula_id").notNull(),
+  timestamp: int("timestamp").notNull(), // posição do vídeo em segundos
+  conteudo: text("conteudo").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AnotacaoAula = typeof anotacoesAulas.$inferSelect;
+export type InsertAnotacaoAula = typeof anotacoesAulas.$inferInsert;
+
+/**
  * Questões - banco de questões para prática
  */
 export const questoes = mysqlTable("questoes", {
