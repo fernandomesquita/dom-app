@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import CentralNotificacoes from "./CentralNotificacoes";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
@@ -126,7 +127,12 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* Rodapé com Logout */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border space-y-2">
+        {isAuthenticated && (
+          <div className="flex items-center justify-center">
+            <CentralNotificacoes />
+          </div>
+        )}
         {isAuthenticated ? (
           <Button
             variant="outline"
@@ -167,13 +173,16 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
             )}
             <h1 className="text-lg font-bold text-foreground">{APP_TITLE}</h1>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAuthenticated && <CentralNotificacoes />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </Button>
+          </div>
         </div>
       </header>
 

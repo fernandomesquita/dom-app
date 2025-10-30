@@ -1042,6 +1042,186 @@ export const appRouter = router({
     }),
   }),
 
+  notificacoes: router({
+    // Listar notificações do usuário
+    minhas: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) return [];
+      
+      const { notificacoes } = await import("../drizzle/schema");
+      const { eq, desc } = await import("drizzle-orm");
+      
+      return await db.select()
+        .from(notificacoes)
+        .where(eq(notificacoes.userId, ctx.user.id))
+        .orderBy(desc(notificacoes.createdAt))
+        .limit(50);
+    }),
+    
+    // Contar não lidas
+    contarNaoLidas: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) return 0;
+      
+      const { notificacoes } = await import("../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+      
+      const resultado = await db.select()
+        .from(notificacoes)
+        .where(and(
+          eq(notificacoes.userId, ctx.user.id),
+          eq(notificacoes.lida, 0)
+        ));
+      
+      return resultado.length;
+    }),
+    
+    // Marcar como lida
+    marcarLida: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { notificacoes } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        await db.update(notificacoes)
+          .set({ lida: 1 })
+          .where(and(
+            eq(notificacoes.id, input.id),
+            eq(notificacoes.userId, ctx.user.id)
+          ));
+        
+        return { success: true };
+      }),
+    
+    // Marcar todas como lidas
+    marcarTodasLidas: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) throw new Error("Database not available");
+      
+      const { notificacoes } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      await db.update(notificacoes)
+        .set({ lida: 1 })
+        .where(eq(notificacoes.userId, ctx.user.id));
+      
+      return { success: true };
+    }),
+    
+    // Criar notificação (uso interno/admin)
+    criar: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        tipo: z.enum(["forum_resposta", "forum_mencao", "meta_vencendo", "meta_atrasada", "aula_nova", "material_novo", "aviso_geral", "conquista", "sistema"]),
+        titulo: z.string(),
+        mensagem: z.string(),
+        link: z.string().optional(),
+        metadata: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Apenas admin/master podem criar notificações manualmente
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { notificacoes } = await import("../drizzle/schema");
+        
+        await db.insert(notificacoes).values({
+          userId: input.userId,
+          tipo: input.tipo,
+          titulo: input.titulo,
+          mensagem: input.mensagem,
+          link: input.link,
+          metadata: input.metadata,
+          lida: 0,
+        });
+        
+        return { success: true };
+      }),
+    
+    // Obter preferências
+    preferencias: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) return null;
+      
+      const { preferenciasNotificacoes } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const resultado = await db.select()
+        .from(preferenciasNotificacoes)
+        .where(eq(preferenciasNotificacoes.userId, ctx.user.id))
+        .limit(1);
+      
+      // Se não existir, criar com valores padrão
+      if (resultado.length === 0) {
+        await db.insert(preferenciasNotificacoes).values({
+          userId: ctx.user.id,
+        });
+        
+        const novoResultado = await db.select()
+          .from(preferenciasNotificacoes)
+          .where(eq(preferenciasNotificacoes.userId, ctx.user.id))
+          .limit(1);
+        
+        return novoResultado[0] || null;
+      }
+      
+      return resultado[0];
+    }),
+    
+    // Atualizar preferências
+    atualizarPreferencias: protectedProcedure
+      .input(z.object({
+        inappForumResposta: z.number().optional(),
+        inappForumMencao: z.number().optional(),
+        inappMetaVencendo: z.number().optional(),
+        inappMetaAtrasada: z.number().optional(),
+        inappAulaNova: z.number().optional(),
+        inappMaterialNovo: z.number().optional(),
+        inappAvisoGeral: z.number().optional(),
+        inappConquista: z.number().optional(),
+        emailForumResposta: z.number().optional(),
+        emailForumMencao: z.number().optional(),
+        emailMetaVencendo: z.number().optional(),
+        emailMetaAtrasada: z.number().optional(),
+        emailAulaNova: z.number().optional(),
+        emailMaterialNovo: z.number().optional(),
+        emailAvisoGeral: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { preferenciasNotificacoes } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Garantir que preferências existem
+        const existe = await db.select()
+          .from(preferenciasNotificacoes)
+          .where(eq(preferenciasNotificacoes.userId, ctx.user.id))
+          .limit(1);
+        
+        if (existe.length === 0) {
+          await db.insert(preferenciasNotificacoes).values({
+            userId: ctx.user.id,
+            ...input,
+          });
+        } else {
+          await db.update(preferenciasNotificacoes)
+            .set(input)
+            .where(eq(preferenciasNotificacoes.userId, ctx.user.id));
+        }
+        
+        return { success: true };
+      }),
+  }),
+
   questoes: router({
     list: publicProcedure.query(async () => {
       const { getQuestoes } = await import("./db");

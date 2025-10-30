@@ -481,3 +481,65 @@ export const rolePermissions = mysqlTable("role_permissions", {
 
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type InsertRolePermission = typeof rolePermissions.$inferInsert;
+
+// ========== NOTIFICAÇÕES ==========
+
+/**
+ * Notificações - sistema unificado de notificações da plataforma
+ */
+export const notificacoes = mysqlTable("notificacoes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(), // destinatário
+  tipo: mysqlEnum("tipo", [
+    "forum_resposta", // alguém respondeu seu tópico
+    "forum_mencao", // você foi mencionado
+    "meta_vencendo", // meta próxima do prazo
+    "meta_atrasada", // meta atrasada
+    "aula_nova", // nova aula disponível
+    "material_novo", // novo material disponível
+    "aviso_geral", // aviso da administração
+    "conquista", // nova conquista/badge
+    "sistema", // notificação do sistema
+  ]).notNull(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  mensagem: text("mensagem").notNull(),
+  link: varchar("link", { length: 500 }), // URL para ação relacionada
+  lida: int("lida").default(0).notNull(), // 0 = não lida, 1 = lida
+  metadata: text("metadata"), // JSON com dados extras (id do tópico, meta, etc)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type Notificacao = typeof notificacoes.$inferSelect;
+export type InsertNotificacao = typeof notificacoes.$inferInsert;
+
+/**
+ * Preferências de notificações - controle de quais notificações o usuário quer receber
+ */
+export const preferenciasNotificacoes = mysqlTable("preferencias_notificacoes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().unique(),
+  
+  // In-app (central de notificações)
+  inappForumResposta: int("inapp_forum_resposta").default(1).notNull(),
+  inappForumMencao: int("inapp_forum_mencao").default(1).notNull(),
+  inappMetaVencendo: int("inapp_meta_vencendo").default(1).notNull(),
+  inappMetaAtrasada: int("inapp_meta_atrasada").default(1).notNull(),
+  inappAulaNova: int("inapp_aula_nova").default(1).notNull(),
+  inappMaterialNovo: int("inapp_material_novo").default(1).notNull(),
+  inappAvisoGeral: int("inapp_aviso_geral").default(1).notNull(),
+  inappConquista: int("inapp_conquista").default(1).notNull(),
+  
+  // Email
+  emailForumResposta: int("email_forum_resposta").default(0).notNull(),
+  emailForumMencao: int("email_forum_mencao").default(1).notNull(),
+  emailMetaVencendo: int("email_meta_vencendo").default(1).notNull(),
+  emailMetaAtrasada: int("email_meta_atrasada").default(1).notNull(),
+  emailAulaNova: int("email_aula_nova").default(0).notNull(),
+  emailMaterialNovo: int("email_material_novo").default(0).notNull(),
+  emailAvisoGeral: int("email_aviso_geral").default(1).notNull(),
+  
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferSelect;
+export type InsertPreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferInsert;
