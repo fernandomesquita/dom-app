@@ -4,14 +4,14 @@ import { Button } from "@/components/ui/button";
 import Breadcrumb from "@/components/Breadcrumb";
 import { BookOpen, Clock, Play, Search, Star, ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { mockAulas } from "@/lib/mockData";
 import { useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 export default function Aulas() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const aulas = mockAulas;
-  const isLoading = false;
+  
+  const { data: aulas, isLoading } = trpc.aulas.list.useQuery();
 
   const filteredAulas = aulas?.filter((aula) =>
     aula.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,15 +123,15 @@ export default function Aulas() {
 
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full ${getTipoColor(aula.tipo)}`}
+                    className={`text-xs px-2 py-1 rounded-full ${getTipoColor(aula.tipoConteudo || 'videoaula')}`}
                   >
-                    {aula.tipo}
+                    {aula.tipoConteudo || 'videoaula'}
                   </span>
                   <span
                     className={`text-xs px-2 py-1 rounded-full ${
-                      aula.nivelDificuldade === "Básico"
+                      aula.nivelDificuldade === "basico"
                         ? "bg-green-100 text-green-800"
-                        : aula.nivelDificuldade === "Intermediário"
+                        : aula.nivelDificuldade === "intermediario"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-red-100 text-red-800"
                     }`}
@@ -140,7 +140,11 @@ export default function Aulas() {
                   </span>
                 </div>
 
-                <Button className="w-full" variant="default">
+                <Button 
+                  className="w-full" 
+                  variant="default"
+                  onClick={() => setLocation(`/aulas/${aula.id}`)}
+                >
                   <Play className="h-4 w-4 mr-2" />
                   Assistir Aula
                 </Button>

@@ -4085,3 +4085,201 @@ export async function notificarOwnerNovoBug(bugId: number, bug: {
 
   console.log(`[notificarOwnerNovoBug] Notificação criada para owner sobre bug #${bugId}`);
 }
+
+
+// ===== CRUD DE QUESTÕES (ADMIN) =====
+
+export async function createQuestao(questao: {
+  enunciado: string;
+  alternativas: string; // JSON array
+  gabarito: string;
+  banca?: string;
+  concurso?: string;
+  ano?: number;
+  disciplina: string;
+  assuntos?: string; // JSON array
+  nivelDificuldade?: "facil" | "medio" | "dificil";
+  comentario?: string;
+  urlVideoResolucao?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Validações
+    if (!questao.enunciado || questao.enunciado.trim().length < 10) {
+      throw new Error("Enunciado deve ter no mínimo 10 caracteres");
+    }
+    
+    if (!questao.gabarito || !['A', 'B', 'C', 'D', 'E'].includes(questao.gabarito)) {
+      throw new Error("Gabarito deve ser A, B, C, D ou E");
+    }
+    
+    if (!questao.disciplina || questao.disciplina.trim().length < 3) {
+      throw new Error("Disciplina deve ter no mínimo 3 caracteres");
+    }
+    
+    // Validar alternativas (deve ser JSON array válido)
+    try {
+      const alt = JSON.parse(questao.alternativas);
+      if (!Array.isArray(alt) || alt.length < 2) {
+        throw new Error("Alternativas deve conter pelo menos 2 opções");
+      }
+    } catch (e) {
+      throw new Error("Alternativas deve ser um JSON array válido");
+    }
+    
+    const result = await db.insert(questoes).values({
+      enunciado: questao.enunciado,
+      alternativas: questao.alternativas,
+      gabarito: questao.gabarito,
+      banca: questao.banca,
+      concurso: questao.concurso,
+      ano: questao.ano,
+      disciplina: questao.disciplina,
+      assuntos: questao.assuntos,
+      nivelDificuldade: questao.nivelDificuldade || "medio",
+      comentario: questao.comentario,
+      urlVideoResolucao: questao.urlVideoResolucao,
+      ativo: 1,
+    });
+    
+    return { success: true, id: Number(result.insertId) };
+  } catch (error) {
+    console.error("[createQuestao] Erro:", error);
+    throw error;
+  }
+}
+
+export async function updateQuestao(
+  id: number,
+  updates: Partial<{
+    enunciado: string;
+    alternativas: string;
+    gabarito: string;
+    banca: string;
+    concurso: string;
+    ano: number;
+    disciplina: string;
+    assuntos: string;
+    nivelDificuldade: "facil" | "medio" | "dificil";
+    comentario: string;
+    urlVideoResolucao: string;
+  }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Validar se questão existe
+    const existing = await db.select().from(questoes).where(eq(questoes.id, id)).limit(1);
+    if (existing.length === 0) {
+      throw new Error("Questão não encontrada");
+    }
+    
+    // Validações condicionais
+    if (updates.enunciado && updates.enunciado.trim().length < 10) {
+      throw new Error("Enunciado deve ter no mínimo 10 caracteres");
+    }
+    
+    if (updates.gabarito && !['A', 'B', 'C', 'D', 'E'].includes(updates.gabarito)) {
+      throw new Error("Gabarito deve ser A, B, C, D ou E");
+    }
+    
+    if (updates.disciplina && updates.disciplina.trim().length < 3) {
+      throw new Error("Disciplina deve ter no mínimo 3 caracteres");
+    }
+    
+    if (updates.alternativas) {
+      try {
+        const alt = JSON.parse(updates.alternativas);
+        if (!Array.isArray(alt) || alt.length < 2) {
+          throw new Error("Alternativas deve conter pelo menos 2 opções");
+        }
+      } catch (e) {
+        throw new Error("Alternativas deve ser um JSON array válido");
+      }
+    }
+    
+    await db.update(questoes).set(updates).where(eq(questoes.id, id));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("[updateQuestao] Erro:", error);
+    throw error;
+  }
+}
+
+export async function deleteQuestao(id: number, deletadoPor: number, motivo?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Validar se questão existe
+    const existing = await db.select().from(questoes).where(eq(questoes.id, id)).limit(1);
+    if (existing.length === 0) {
+      throw new Error("Questão não encontrada");
+    }
+    
+    const questao = existing[0];
+    
+    // Mover para lixeira (soft delete)
+    await db.insert(questoesLixeira).values({
+      conteudoOriginal: JSON.stringify(questao),
+      deletadoPor,
+      motivoDelecao: motivo,
+      deletadoEm: new Date(),
+    });
+    
+    // Deletar questão
+    await db.delete(questoes).where(eq(questoes.id, id));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("[deleteQuestao] Erro:", error);
+    throw error;
+  }
+}
+
+export async function importarQuestoesEmLote(questoesArray: Array<{
+  enunciado: string;
+  alternativas: string;
+  gabarito: string;
+  banca?: string;
+  concurso?: string;
+  ano?: number;
+  disciplina: string;
+  assuntos?: string;
+  nivelDificuldade?: "facil" | "medio" | "dificil";
+  comentario?: string;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const results = {
+      sucesso: 0,
+      erros: 0,
+      detalhes: [] as Array<{ linha: number; erro?: string }>,
+    };
+    
+    for (let i = 0; i < questoesArray.length; i++) {
+      try {
+        await createQuestao(questoesArray[i]);
+        results.sucesso++;
+        results.detalhes.push({ linha: i + 1 });
+      } catch (error: any) {
+        results.erros++;
+        results.detalhes.push({ 
+          linha: i + 1, 
+          erro: error.message || "Erro desconhecido" 
+        });
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    console.error("[importarQuestoesEmLote] Erro:", error);
+    throw error;
+  }
+}

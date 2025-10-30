@@ -2,84 +2,171 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import Breadcrumb from "@/components/Breadcrumb";
-import { ArrowLeft, Play, Pause, CheckCircle, BookOpen, FileText, Clock, Star } from "lucide-react";
-import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { 
+  ArrowLeft, CheckCircle, BookOpen, FileText, Clock, Star, 
+  Play, Pause, Volume2, VolumeX, Maximize, Settings 
+} from "lucide-react";
+import { useLocation, useRoute } from "wouter";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import ReactPlayer from "react-player";
+
+interface Anotacao {
+  id: string;
+  texto: string;
+  timestamp: number;
+  createdAt: Date;
+}
 
 export default function AulaView() {
+  const [, params] = useRoute("/aulas/:id");
+  const aulaId = params?.id ? parseInt(params.id) : null;
   const [, setLocation] = useLocation();
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  
+  // Player states
+  const playerRef = useRef<ReactPlayer>(null);
+  const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.8);
+  const [muted, setMuted] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState(1);
+  const [played, setPlayed] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [anotacoes, setAnotacoes] = useState("");
+  const [seeking, setSeeking] = useState(false);
+  
+  // Anotações
+  const [anotacoes, setAnotacoes] = useState<Anotacao[]>([]);
   const [novaAnotacao, setNovaAnotacao] = useState("");
-
-  // Mock data - substituir por dados reais da API
-  const aula = {
-    id: 1,
-    titulo: "Introdução ao Direito Constitucional",
-    disciplina: "Direito Constitucional",
-    professor: "Prof. Dr. Carlos Silva",
-    duracao: "1h 45min",
-    descricao: "Nesta aula, vamos abordar os princípios fundamentais do Direito Constitucional brasileiro, incluindo a estrutura da Constituição Federal de 1988 e seus principais artigos.",
-    videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-    materiais: [
-      { nome: "Slides da Aula", tipo: "PDF", url: "#" },
-      { nome: "Resumo", tipo: "PDF", url: "#" },
-      { nome: "Exercícios", tipo: "PDF", url: "#" },
-    ],
-    topicos: [
-      "Conceitos básicos de Direito Constitucional",
-      "Estrutura da Constituição Federal",
-      "Princípios fundamentais",
-      "Direitos e garantias fundamentais",
-    ],
-  };
-
+  
+  // Queries
+  const { data: aula, isLoading } = trpc.aulas.getById.useQuery(
+    { id: aulaId! },
+    { enabled: !!aulaId }
+  );
+  
+  const { data: progresso } = trpc.aulas.meusProgressos.useQuery();
+  
+  // Mutations
   const marcarConcluida = trpc.aulas.marcarConcluida.useMutation({
     onSuccess: () => {
       toast.success("Aula marcada como concluída!");
     },
   });
-
+  
   const salvarProgresso = trpc.aulas.salvarProgresso.useMutation();
-
-  const handleMarcarConcluida = () => {
-    marcarConcluida.mutate({ aulaId: aula.id });
+  
+  // Handlers
+  const handlePlayPause = () => {
+    setPlaying(!playing);
   };
-
-  const handleSalvarAnotacao = () => {
-    if (novaAnotacao.trim()) {
-      const timestamp = new Date().toLocaleTimeString('pt-BR');
-      setAnotacoes(prev => prev + `\n[${timestamp}] ${novaAnotacao}`);
-      setNovaAnotacao("");
-      toast.success("Anotação salva!");
-    }
+  
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVolume(parseFloat(e.target.value));
   };
-
-  // Salvar progresso a cada 30 segundos
-  useEffect(() => {
-    if (isPlaying) {
-      const interval = setInterval(() => {
-        setCurrentTime(prev => {
-          const newTime = prev + 1;
-          salvarProgresso.mutate({ aulaId: aula.id, posicao: newTime, percentual: duration > 0 ? Math.round((newTime / duration) * 100) : 0 });
-          return newTime;
+  
+  const handleToggleMuted = () => {
+    setMuted(!muted);
+  };
+  
+  const handlePlaybackRateChange = (rate: number) => {
+    setPlaybackRate(rate);
+  };
+  
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPlayed(parseFloat(e.target.value));
+  };
+  
+  const handleSeekMouseDown = () => {
+    setSeeking(true);
+  };
+  
+  const handleSeekMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    setSeeking(false);
+    const target = e.target as HTMLInputElement;
+    playerRef.current?.seekTo(parseFloat(target.value));
+  };
+  
+  const handleProgress = (state: { played: number; playedSeconds: number }) => {
+    if (!seeking) {
+      setPlayed(state.played);
+      
+      // Salvar progresso a cada 10 segundos
+      if (Math.floor(state.playedSeconds) % 10 === 0 && aulaId) {
+        salvarProgresso.mutate({
+          aulaId,
+          posicao: Math.floor(state.playedSeconds),
+          percentual: Math.floor(state.played * 100),
         });
-      }, 1000);
-      return () => clearInterval(interval);
+      }
     }
-  }, [isPlaying]);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
+  
+  const handleDuration = (duration: number) => {
+    setDuration(duration);
+  };
+  
+  const handleMarcarConcluida = () => {
+    if (!aulaId) return;
+    marcarConcluida.mutate({ 
+      aulaId, 
+      percentual: 100,
+      posicao: Math.floor(duration),
+    });
+  };
+  
+  const handleSalvarAnotacao = () => {
+    if (!novaAnotacao.trim()) return;
+    
+    const currentTime = playerRef.current?.getCurrentTime() || 0;
+    const novaAnotacaoObj: Anotacao = {
+      id: Date.now().toString(),
+      texto: novaAnotacao,
+      timestamp: currentTime,
+      createdAt: new Date(),
+    };
+    
+    setAnotacoes(prev => [...prev, novaAnotacaoObj]);
+    setNovaAnotacao("");
+    toast.success("Anotação salva!");
+  };
+  
+  const handleJumpToTimestamp = (timestamp: number) => {
+    playerRef.current?.seekTo(timestamp);
+    setPlaying(true);
+  };
+  
+  const formatTime = (seconds: number) => {
+    const date = new Date(seconds * 1000);
+    const hh = date.getUTCHours();
+    const mm = date.getUTCMinutes();
+    const ss = date.getUTCSeconds().toString().padStart(2, '0');
+    if (hh) {
+      return `${hh}:${mm.toString().padStart(2, '0')}:${ss}`;
+    }
+    return `${mm}:${ss}`;
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando aula...</p>
+      </div>
+    );
+  }
+  
+  if (!aula) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg mb-4">Aula não encontrada</p>
+          <Button onClick={() => setLocation("/aulas")}>Voltar para Aulas</Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="min-h-screen bg-background">
       <div className="container py-6 space-y-6">
@@ -102,19 +189,109 @@ export default function AulaView() {
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardContent className="p-0">
-                <div className="aspect-video bg-black rounded-t-lg overflow-hidden">
-                  <iframe
-                    src={aula.videoUrl}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+                {/* Player de Vídeo */}
+                <div className="aspect-video bg-black rounded-t-lg overflow-hidden relative">
+                  {aula.urlVideo ? (
+                    <>
+                      <ReactPlayer
+                        ref={playerRef}
+                        url={aula.urlVideo}
+                        width="100%"
+                        height="100%"
+                        playing={playing}
+                        volume={volume}
+                        muted={muted}
+                        playbackRate={playbackRate}
+                        onProgress={handleProgress}
+                        onDuration={handleDuration}
+                        config={{
+                          youtube: {
+                            playerVars: { showinfo: 1 }
+                          }
+                        }}
+                      />
+                      
+                      {/* Controles Customizados */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 space-y-2">
+                        {/* Barra de Progresso */}
+                        <input
+                          type="range"
+                          min={0}
+                          max={0.999999}
+                          step="any"
+                          value={played}
+                          onMouseDown={handleSeekMouseDown}
+                          onChange={handleSeekChange}
+                          onMouseUp={handleSeekMouseUp}
+                          className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                        />
+                        
+                        {/* Controles */}
+                        <div className="flex items-center justify-between text-white">
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={handlePlayPause}
+                              className="text-white hover:bg-white/20"
+                            >
+                              {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+                            </Button>
+                            
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={handleToggleMuted}
+                                className="text-white hover:bg-white/20"
+                              >
+                                {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                              </Button>
+                              <input
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.1}
+                                value={volume}
+                                onChange={handleVolumeChange}
+                                className="w-20 h-1 bg-white/30 rounded-lg appearance-none cursor-pointer"
+                              />
+                            </div>
+                            
+                            <span className="text-sm">
+                              {formatTime(played * duration)} / {formatTime(duration)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={playbackRate}
+                              onChange={(e) => handlePlaybackRateChange(parseFloat(e.target.value))}
+                              className="bg-white/20 text-white text-sm rounded px-2 py-1 border-none"
+                            >
+                              <option value={0.5}>0.5x</option>
+                              <option value={0.75}>0.75x</option>
+                              <option value={1}>1x</option>
+                              <option value={1.25}>1.25x</option>
+                              <option value={1.5}>1.5x</option>
+                              <option value={2}>2x</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white">
+                      <p>Vídeo não disponível</p>
+                    </div>
+                  )}
                 </div>
+                
                 <div className="p-6 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
                       <h1 className="text-2xl font-bold">{aula.titulo}</h1>
-                      <p className="text-muted-foreground mt-1">{aula.professor}</p>
+                      <p className="text-muted-foreground mt-1">Professor: {aula.professorId || "Não informado"}</p>
                     </div>
                     <Button onClick={handleMarcarConcluida} size="sm">
                       <CheckCircle className="h-4 w-4 mr-2" />
@@ -126,36 +303,18 @@ export default function AulaView() {
                     <Badge variant="outline">{aula.disciplina}</Badge>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      {aula.duracao}
+                      {aula.duracao} min
                     </div>
                   </div>
 
-                  <p className="text-sm leading-relaxed">{aula.descricao}</p>
+                  {aula.descricao && (
+                    <p className="text-sm leading-relaxed">{aula.descricao}</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Tópicos Abordados */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5" />
-                  Tópicos Abordados
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {aula.topicos.map((topico, index) => (
-                    <li key={index} className="flex items-start gap-2">
-                      <Star className="h-4 w-4 mt-1 text-yellow-500" />
-                      <span>{topico}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Anotações */}
+            {/* Anotações com Timestamp */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -164,54 +323,52 @@ export default function AulaView() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {anotacoes && (
-                  <div className="p-4 bg-secondary rounded-lg">
-                    <pre className="text-sm whitespace-pre-wrap font-sans">{anotacoes}</pre>
+                {/* Lista de Anotações */}
+                {anotacoes.length > 0 && (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {anotacoes.map((anotacao) => (
+                      <div
+                        key={anotacao.id}
+                        className="p-3 bg-secondary rounded-lg space-y-1 cursor-pointer hover:bg-secondary/80 transition-colors"
+                        onClick={() => handleJumpToTimestamp(anotacao.timestamp)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-primary">
+                            {formatTime(anotacao.timestamp)}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {anotacao.createdAt.toLocaleTimeString('pt-BR')}
+                          </span>
+                        </div>
+                        <p className="text-sm">{anotacao.texto}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
+                
+                {/* Nova Anotação */}
                 <div className="space-y-2">
                   <Textarea
-                    placeholder="Adicione suas anotações aqui..."
+                    placeholder="Adicione uma anotação neste momento do vídeo..."
                     value={novaAnotacao}
                     onChange={(e) => setNovaAnotacao(e.target.value)}
-                    rows={4}
+                    rows={3}
                   />
-                  <Button onClick={handleSalvarAnotacao} className="w-full">
-                    Salvar Anotação
-                  </Button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Timestamp: {formatTime(played * duration)}
+                    </span>
+                    <Button onClick={handleSalvarAnotacao} size="sm">
+                      Salvar Anotação
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Coluna Lateral - Materiais */}
+          {/* Coluna Lateral */}
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Materiais de Apoio</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {aula.materiais.map((material, index) => (
-                  <a
-                    key={index}
-                    href={material.url}
-                    className="flex items-center justify-between p-3 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-medium text-sm">{material.nome}</p>
-                        <p className="text-xs text-muted-foreground">{material.tipo}</p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      Baixar
-                    </Button>
-                  </a>
-                ))}
-              </CardContent>
-            </Card>
-
             {/* Progresso */}
             <Card>
               <CardHeader>
@@ -220,21 +377,47 @@ export default function AulaView() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Tempo assistido</span>
-                    <span className="font-medium">{formatTime(currentTime)}</span>
+                    <span>Progresso</span>
+                    <span className="font-medium">{Math.floor(played * 100)}%</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full transition-all"
-                      style={{ width: `${duration > 0 ? (currentTime / duration) * 100 : 0}%` }}
+                      style={{ width: `${played * 100}%` }}
                     />
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Seu progresso é salvo automaticamente
+                  Seu progresso é salvo automaticamente a cada 10 segundos
                 </p>
               </CardContent>
             </Card>
+            
+            {/* Materiais de Apoio */}
+            {aula.urlMaterial && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Material de Apoio</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    href={aula.urlMaterial}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
+                  >
+                    <FileText className="h-5 w-5 text-primary" />
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">Material Complementar</p>
+                      <p className="text-xs text-muted-foreground">PDF</p>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      Abrir
+                    </Button>
+                  </a>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

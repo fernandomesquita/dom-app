@@ -24,6 +24,7 @@ import VerificarEmail from "./pages/VerificarEmail";
 import RecuperarSenha from "./pages/RecuperarSenha";
 import RedefinirSenha from "./pages/RedefinirSenha";
 import Perfil from "./pages/Perfil";
+import Conquistas from "./pages/Conquistas";
 
 function Router() {
   return (
@@ -49,6 +50,7 @@ function Router() {
         <Route path={"/revisao"} component={Revisao} />
         <Route path={"/anotacoes"} component={AnotacoesMeta} />
         <Route path={"/perfil"} component={Perfil} />
+        <Route path={"/conquistas"} component={Conquistas} />
         <Route path={"/admin"} component={Admin} />
         <Route path={"/admin/planos/:id/metas"} component={GestaoMetas} />
         <Route path={"/404"} component={NotFound} />

@@ -387,6 +387,68 @@
 - [x] Validar existência antes de updates/deletes
 - [x] Usar .limit(1) em queries de busca única
 
+### Sistema de Aulas Completo
+- [x] Player de vídeo avançado com React Player
+- [x] Controles customizados (play/pause, volume, velocidade)
+- [x] Barra de progresso interativa com seek
+- [x] Sistema de anotações com timestamp clicável
+- [x] Salvar progresso automático a cada 10 segundos
+- [x] Marcar aula como concluída
+- [x] Integração real com backend (busca por ID)
+- [x] Navegação de listagem para player (/aulas/:id)
+
+### Painel Administrativo de Questões
+- [x] Funções CRUD no backend (criar, editar, deletar)
+- [x] Validações de enunciado, gabarito e alternativas
+- [x] Soft delete com lixeira para auditoria
+- [x] Função de importação em lote
+- [x] Componente GestaoQuestoes completo
+- [x] Dashboard com estatísticas (total, disciplinas, bancas)
+- [x] Busca por enunciado ou disciplina
+- [x] Filtros por disciplina, banca e dificuldade
+- [x] Tabela com todas as questões
+- [x] Modal de criação com validações
+- [x] Modal de visualização com gabarito destacado
+- [x] Integração na tab "Questões" do painel Admin
+
+### Página de Estatísticas de Questões
+- [x] 4 cards de resumo (total, taxa de acerto, acertos, erros)
+- [x] Gráfico de barras: desempenho por disciplina
+- [x] Gráfico de pizza: distribuição acertos/erros
+- [x] Gráfico de linha: evolução temporal (30 dias)
+- [x] Lista das 10 questões mais erradas
+- [x] Botão "Revisar" para cada questão
+- [x] Tooltips customizados com informações detalhadas
+- [x] Loading states e empty states
+- [x] Design responsivo com Recharts
+
+### Sistema Visual de Conquistas
+- [x] Componente ConquistaBadge com design atrativo
+- [x] Gradiente dourado para desbloqueadas, grayscale para bloqueadas
+- [x] 3 tamanhos (sm, md, lg) e 11 ícones diferentes
+- [x] Badge de status e data de desbloqueio
+- [x] Efeito de brilho e hover
+- [x] Página completa de Conquistas
+- [x] 4 cards de estatísticas (total, desbloqueadas, bloqueadas, progresso %)
+- [x] Barra de progresso visual
+- [x] Botão "Verificar Conquistas"
+- [x] Conquistas agrupadas por tipo (Metas, Aulas, Questões, Sequências, Especiais)
+- [x] Grid responsivo (1-5 colunas)
+- [x] Componente ConquistasRecentes para dashboard
+- [x] Toast de notificação ao desbloquear
+- [x] Rota /conquistas adicionada no App.tsx
+
+### Responsividade Mobile Completa
+- [x] Dashboard: grids adaptativos (1-5 colunas)
+- [x] Página Plano: grid de metas responsivo (1-7 colunas)
+- [x] Questões: cards e filtros empilhados em mobile
+- [x] Estatísticas: gráficos Recharts responsivos
+- [x] Conquistas: grid adaptativo (1-5 colunas)
+- [x] Menu de navegação: hamburger funcional em mobile
+- [x] Sidebar colapsável em desktop
+- [x] Todos os formulários e modais responsivos
+- [x] Breakpoints: 320px (mobile), 768px (tablet), 1024px (desktop)
+
 
 ---
 

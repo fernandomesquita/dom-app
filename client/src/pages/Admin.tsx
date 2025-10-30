@@ -19,7 +19,8 @@ import {
   Menu,
   GraduationCap,
   FileText,
-  Bug
+  Bug,
+  HelpCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ import RelatorioComparativo from "@/components/admin/RelatorioComparativo";
 import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
 import GestaoBugs from "@/components/GestaoBugs";
+import GestaoQuestoes from "@/components/GestaoQuestoes";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -83,6 +85,7 @@ export default function Admin() {
     metas: isMaster || isMentor,
     aulas: isMaster || isAdministrativo || isProfessor,
     materiais: isMaster || isMentor || isProfessor,
+    questoes: isMaster || isAdministrativo || isProfessor,
     avisos: isMaster || isMentor || isAdministrativo,
     relatorios: isMaster || isMentor,
     personalizacao: isMaster,
@@ -99,6 +102,7 @@ export default function Admin() {
     { value: "metas", label: "Metas", show: availableTabs.metas },
     { value: "aulas", label: "Aulas", show: availableTabs.aulas },
     { value: "materiais", label: "Materiais", show: availableTabs.materiais },
+    { value: "questoes", label: "Questões", show: availableTabs.questoes },
     { value: "avisos", label: "Avisos", show: availableTabs.avisos },
     { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
     { value: "bugs", label: "Bugs Reportados", show: availableTabs.bugs },
@@ -417,6 +421,13 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Tab: Questões (Master, Administrativo, Professor) */}
+        {availableTabs.questoes && (
+          <TabsContent value="questoes" className="space-y-4">
+            <GestaoQuestoes />
           </TabsContent>
         )}
 
