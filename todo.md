@@ -554,3 +554,37 @@
 - [ ] Adicionar filtros por período (semana, mês, trimestre)
 - [ ] Criar página ou seção dedicada para comparativos
 - [ ] Garantir privacidade (apenas dados agregados, sem identificação)
+
+
+## 🔴 NOVAS FUNCIONALIDADES - Questões e Metas
+
+### Renomear Concurso para Entidade e Adicionar Cargo ✅
+- [x] Renomear campo concurso para entidade no schema
+- [x] Adicionar campo cargo no schema da tabela questoes
+- [x] Atualizar migration no banco de dados
+- [x] Renomear label "Concurso" para "Entidade" no GestaoQuestoes
+- [x] Adicionar campo "Cargo" no formulário de questões
+- [x] Reorganizar layout (Banca/Ano em uma linha, Entidade/Cargo em outra)
+
+### Vincular Questões às Metas ✅
+- [x] Criar tabela metas_questoes (metaId, questaoId, ordem)
+- [x] Adicionar schema no drizzle
+- [x] Criar funções backend (vincularQuestoesAMeta, getQuestoesDaMeta, buscarQuestoesPorFiltro)
+- [x] Adicionar mutations no router (vincularQuestoes, getQuestoes, buscarQuestoes)
+- [x] Criar componente EditarMetaModal com busca e seleção
+- [x] Implementar busca de questões por ID ou palavra-chave
+- [x] Permitir adicionar/remover múltiplas questões
+- [x] Salvar vinculação no backend
+
+### Exibir Questões nas Metas
+- [ ] Criar componente de visualização de questão completa
+- [ ] Exibir questões vinculadas na página Plano
+- [ ] Permitir resolver questões diretamente na meta
+- [ ] Marcar questão como respondida
+- [ ] Mostrar feedback (acerto/erro)
+
+### Contabilizar Resoluções nas Estatísticas
+- [ ] Atualizar função de salvar resposta para incluir origem (meta)
+- [ ] Contabilizar questões resolvidas nas metas para estatísticas gerais
+- [ ] Atualizar dashboard com questões resolvidas nas metas
+- [ ] Sincronizar progresso de metas com resolução de questões

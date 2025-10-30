@@ -223,7 +223,8 @@ export const questoes = mysqlTable("questoes", {
   alternativas: text("alternativas").notNull(), // JSON array
   gabarito: varchar("gabarito", { length: 10 }).notNull(), // A, B, C, D, E para múltipla escolha | Certo/Errado
   banca: varchar("banca", { length: 255 }),
-  concurso: varchar("concurso", { length: 255 }),
+  entidade: varchar("entidade", { length: 255 }),
+  cargo: varchar("cargo", { length: 255 }),
   ano: int("ano"),
   disciplina: varchar("disciplina", { length: 255 }).notNull(),
   assuntos: text("assuntos"), // JSON array
@@ -718,3 +719,17 @@ export const metasMateriais = mysqlTable("metas_materiais", {
 
 export type MetaMaterial = typeof metasMateriais.$inferSelect;
 export type InsertMetaMaterial = typeof metasMateriais.$inferInsert;
+
+/**
+ * Metas Questões - relacionamento entre metas e questões
+ */
+export const metasQuestoes = mysqlTable("metas_questoes", {
+  id: int("id").autoincrement().primaryKey(),
+  metaId: int("meta_id").notNull(),
+  questaoId: int("questao_id").notNull(),
+  ordem: int("ordem").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type MetaQuestao = typeof metasQuestoes.$inferSelect;
+export type InsertMetaQuestao = typeof metasQuestoes.$inferInsert;

@@ -475,7 +475,7 @@ export default function GestaoQuestoes() {
               </div>
             </div>
             
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Banca</Label>
                 <Input
@@ -486,21 +486,32 @@ export default function GestaoQuestoes() {
               </div>
               
               <div>
-                <Label>Concurso</Label>
-                <Input
-                  value={novaQuestao.concurso || ""}
-                  onChange={(e) => setNovaQuestao({ ...novaQuestao, concurso: e.target.value })}
-                  placeholder="Ex: TRF 1ª Região"
-                />
-              </div>
-              
-              <div>
                 <Label>Ano</Label>
                 <Input
                   type="number"
                   value={novaQuestao.ano || ""}
                   onChange={(e) => setNovaQuestao({ ...novaQuestao, ano: parseInt(e.target.value) || undefined })}
                   placeholder="Ex: 2024"
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Entidade</Label>
+                <Input
+                  value={novaQuestao.entidade || ""}
+                  onChange={(e) => setNovaQuestao({ ...novaQuestao, entidade: e.target.value })}
+                  placeholder="Ex: TRF 1ª Região"
+                />
+              </div>
+              
+              <div>
+                <Label>Cargo</Label>
+                <Input
+                  value={novaQuestao.cargo || ""}
+                  onChange={(e) => setNovaQuestao({ ...novaQuestao, cargo: e.target.value })}
+                  placeholder="Ex: Analista Judiciário"
                 />
               </div>
             </div>

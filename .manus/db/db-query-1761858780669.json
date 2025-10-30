@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS metas_questoes (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  meta_id INT NOT NULL,\n  questao_id INT NOT NULL,\n  ordem INT DEFAULT 0,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  UNIQUE KEY unique_meta_questao (meta_id, questao_id)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute CREATE TABLE IF NOT EXISTS metas_questoes (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  meta_id INT NOT NULL,\n  questao_id INT NOT NULL,\n  ordem INT DEFAULT 0,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  UNIQUE KEY unique_meta_questao (meta_id, questao_id)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 165
+}

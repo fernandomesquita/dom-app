@@ -514,6 +514,37 @@ export const appRouter = router({
       return await vincularAulaAMeta(input.metaId, input.aulaId);
     }),
 
+    vincularQuestoes: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && "questoesIds" in val) {
+        return val as { metaId: number; questoesIds: number[] };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { vincularQuestoesAMeta } = await import("./db");
+      return await vincularQuestoesAMeta(input.metaId, input.questoesIds);
+    }),
+
+    getQuestoes: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && typeof val.metaId === "number") {
+        return val as { metaId: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { getQuestoesDaMeta } = await import("./db");
+      return await getQuestoesDaMeta(input.metaId);
+    }),
+
+    buscarQuestoes: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null) {
+        return val as { busca?: string; disciplina?: string; limit?: number };
+      }
+      throw new Error("Invalid input");
+    }).query(async ({ input }) => {
+      const { buscarQuestoesPorFiltro } = await import("./db");
+      return await buscarQuestoesPorFiltro(input);
+    }),
+
     // Buscar metas do plano atribuído ao aluno
     minhasMetas: protectedProcedure.query(async ({ ctx }) => {
       const { getMetasAluno } = await import("./db");

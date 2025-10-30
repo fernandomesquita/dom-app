@@ -10,6 +10,7 @@ import {
   progressoAulas, InsertProgressoAula,
   questoes,
   respostasQuestoes,
+  metasQuestoes, InsertMetaQuestao,
   forumTopicos, InsertForumTopico,
   forumRespostas, InsertForumResposta,
   forumNotificacoesLidas,
@@ -4281,5 +4282,99 @@ export async function importarQuestoesEmLote(questoesArray: Array<{
   } catch (error) {
     console.error("[importarQuestoesEmLote] Erro:", error);
     throw error;
+  }
+}
+
+
+// ========== METAS QUESTÕES - Vinculação ==========
+
+export async function vincularQuestoesAMeta(metaId: number, questoesIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Remover vinculações antigas
+    await db.delete(metasQuestoes).where(eq(metasQuestoes.metaId, metaId));
+    
+    // Adicionar novas vinculações
+    if (questoesIds.length > 0) {
+      const vinculacoes = questoesIds.map((questaoId, index) => ({
+        metaId,
+        questaoId,
+        ordem: index,
+      }));
+      
+      await db.insert(metasQuestoes).values(vinculacoes as InsertMetaQuestao[]);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error("[vincularQuestoesAMeta] Erro:", error);
+    throw error;
+  }
+}
+
+export async function getQuestoesDaMeta(metaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const result = await db
+      .select({
+        id: questoes.id,
+        tipo: questoes.tipo,
+        enunciado: questoes.enunciado,
+        alternativas: questoes.alternativas,
+        gabarito: questoes.gabarito,
+        disciplina: questoes.disciplina,
+        banca: questoes.banca,
+        entidade: questoes.entidade,
+        cargo: questoes.cargo,
+        ano: questoes.ano,
+        nivelDificuldade: questoes.nivelDificuldade,
+        comentario: questoes.comentario,
+        ordem: metasQuestoes.ordem,
+      })
+      .from(metasQuestoes)
+      .innerJoin(questoes, eq(metasQuestoes.questaoId, questoes.id))
+      .where(eq(metasQuestoes.metaId, metaId))
+      .orderBy(asc(metasQuestoes.ordem));
+    
+    return result;
+  } catch (error) {
+    console.error("[getQuestoesDaMeta] Erro:", error);
+    return [];
+  }
+}
+
+export async function buscarQuestoesPorFiltro(filtro: {
+  busca?: string;
+  disciplina?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    let query = db.select().from(questoes).where(eq(questoes.ativo, 1));
+    
+    if (filtro.disciplina) {
+      query = query.where(eq(questoes.disciplina, filtro.disciplina)) as any;
+    }
+    
+    // Busca por ID ou enunciado
+    if (filtro.busca) {
+      const buscaNum = parseInt(filtro.busca);
+      if (!isNaN(buscaNum)) {
+        query = query.where(eq(questoes.id, buscaNum)) as any;
+      }
+    }
+    
+    query = query.limit(filtro.limit || 20).orderBy(desc(questoes.id)) as any;
+    
+    return await query;
+  } catch (error) {
+    console.error("[buscarQuestoesPorFiltro] Erro:", error);
+    return [];
   }
 }
