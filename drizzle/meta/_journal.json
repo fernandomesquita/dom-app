@@ -127,6 +127,13 @@
       "when": 1761848645275,
       "tag": "0017_numerous_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1761849356056,
+      "tag": "0018_freezing_metal_master",
+      "breakpoints": true
     }
   ]
 }

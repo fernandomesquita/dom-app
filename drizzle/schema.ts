@@ -256,6 +256,63 @@ export type RespostaQuestao = typeof respostasQuestoes.$inferSelect;
 export type InsertRespostaQuestao = typeof respostasQuestoes.$inferInsert;
 
 /**
+ * Lixeira de questões - auditoria de exclusões (apenas Master)
+ */
+export const questoesLixeira = mysqlTable("questoes_lixeira", {
+  id: int("id").autoincrement().primaryKey(),
+  conteudoOriginal: text("conteudo_original").notNull(), // JSON da questão completa
+  deletadoPor: int("deletado_por").notNull(),
+  motivoDelecao: text("motivo_delecao"),
+  deletadoEm: timestamp("deletado_em").defaultNow().notNull(),
+});
+
+export type QuestaoLixeira = typeof questoesLixeira.$inferSelect;
+export type InsertQuestaoLixeira = typeof questoesLixeira.$inferInsert;
+
+/**
+ * Conquistas de questões - gamificação
+ */
+export const conquistasQuestoes = mysqlTable("conquistas_questoes", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  tipo: varchar("tipo", { length: 50 }).notNull(), // '10_questoes', '50_questoes', 'streak_7_dias', etc
+  dataConquista: timestamp("data_conquista").defaultNow().notNull(),
+});
+
+export type ConquistaQuestao = typeof conquistasQuestoes.$inferSelect;
+export type InsertConquistaQuestao = typeof conquistasQuestoes.$inferInsert;
+
+/**
+ * Questões marcadas para revisar - sistema de revisão inteligente
+ */
+export const questoesRevisar = mysqlTable("questoes_revisar", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  questaoId: int("questao_id").notNull(),
+  proximaRevisao: timestamp("proxima_revisao").notNull(),
+  nivelDificuldadePercebida: int("nivel_dificuldade_percebida").default(3).notNull(), // 1-5
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type QuestaoRevisar = typeof questoesRevisar.$inferSelect;
+export type InsertQuestaoRevisar = typeof questoesRevisar.$inferInsert;
+
+/**
+ * Questões reportadas - feedback dos alunos sobre erros
+ */
+export const questoesReportadas = mysqlTable("questoes_reportadas", {
+  id: int("id").autoincrement().primaryKey(),
+  questaoId: int("questao_id").notNull(),
+  userId: int("user_id").notNull(),
+  motivo: text("motivo").notNull(),
+  status: mysqlEnum("status", ["pendente", "resolvido", "invalido"]).default("pendente").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type QuestaoReportada = typeof questoesReportadas.$inferSelect;
+export type InsertQuestaoReportada = typeof questoesReportadas.$inferInsert;
+
+/**
  * Fórum - tópicos de discussão
  */
 export const forumTopicos = mysqlTable("forum_topicos", {

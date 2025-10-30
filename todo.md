@@ -296,3 +296,41 @@
 - [x] Criar painel de lixeira (apenas Master) - backend pronto
 - [x] Implementar função de recuperar mensagem da lixeira
 - [x] Implementar função de deletar permanentemente
+
+
+---
+
+## 📝 MÓDULO DE QUESTÕES - PLANO COMPLETO
+
+### Dia 1: CRUD Administrativo + Filtros
+- [x] Criar tabelas adicionais (lixeira, conquistas, revisar, reportadas)
+- [x] Procedure: criarQuestao (admin)
+- [x] Procedure: editarQuestao (admin)
+- [x] Procedure: deletarQuestao → lixeira (admin)
+- [x] Procedure: filtrarQuestoes (múltiplos parâmetros)
+- [x] Procedure: buscarPorTexto (incluído no filtrar)
+- [ ] Frontend: Painel admin - listagem com filtros
+- [ ] Frontend: Formulário criar/editar questão
+
+### Dia 2: Sistema de Revisão + Gamificação
+- [ ] Algoritmo de espaçamento (Spaced Repetition)
+- [ ] Procedure: sugerirProximasQuestoes (baseado em erros)
+- [ ] Procedure: marcarParaRevisar
+- [ ] Procedure: getQuestoesParaRevisar
+- [ ] Procedure: verificarConquistas (após responder)
+- [ ] Procedure: getConquistas
+- [ ] Procedure: getRankingDisciplina
+- [ ] Sistema de streak de dias consecutivos
+
+### Dia 3: Interface + Polimento
+- [ ] Página /questoes/resolver (uma questão por vez)
+- [ ] Feedback visual (verde/vermelho)
+- [ ] Mostrar comentário após responder
+- [ ] Link para vídeo de resolução
+- [ ] Navegação (próxima/anterior)
+- [ ] Botão "Marcar para Revisar"
+- [ ] Botão "Reportar Erro"
+- [ ] Página de estatísticas detalhadas
+- [ ] Gráficos de evolução
+- [ ] Testes finais
+

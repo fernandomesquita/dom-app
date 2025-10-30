@@ -1558,6 +1558,181 @@ export const appRouter = router({
         const { getQuestoesMaisErradas } = await import("./db");
         return await getQuestoesMaisErradas(ctx.user.id, input.limit);
       }),
+    
+    // CRUD Administrativo
+    criarQuestao: protectedProcedure
+      .input(z.object({
+        enunciado: z.string().min(10),
+        alternativas: z.array(z.string()).min(2).max(5),
+        gabarito: z.enum(["A", "B", "C", "D", "E"]),
+        banca: z.string().optional(),
+        concurso: z.string().optional(),
+        ano: z.number().optional(),
+        disciplina: z.string(),
+        assuntos: z.array(z.string()).optional(),
+        nivelDificuldade: z.enum(["facil", "medio", "dificil"]).default("medio"),
+        comentario: z.string().optional(),
+        urlVideoResolucao: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoes } = await import("../drizzle/schema");
+        
+        await db.insert(questoes).values({
+          enunciado: input.enunciado,
+          alternativas: JSON.stringify(input.alternativas),
+          gabarito: input.gabarito,
+          banca: input.banca || null,
+          concurso: input.concurso || null,
+          ano: input.ano || null,
+          disciplina: input.disciplina,
+          assuntos: input.assuntos ? JSON.stringify(input.assuntos) : null,
+          nivelDificuldade: input.nivelDificuldade,
+          comentario: input.comentario || null,
+          urlVideoResolucao: input.urlVideoResolucao || null,
+          ativo: 1,
+        });
+        
+        return { success: true };
+      }),
+    
+    editarQuestao: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        enunciado: z.string().min(10).optional(),
+        alternativas: z.array(z.string()).min(2).max(5).optional(),
+        gabarito: z.enum(["A", "B", "C", "D", "E"]).optional(),
+        banca: z.string().optional(),
+        concurso: z.string().optional(),
+        ano: z.number().optional(),
+        disciplina: z.string().optional(),
+        assuntos: z.array(z.string()).optional(),
+        nivelDificuldade: z.enum(["facil", "medio", "dificil"]).optional(),
+        comentario: z.string().optional(),
+        urlVideoResolucao: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoes } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        const updateData: any = {};
+        if (input.enunciado) updateData.enunciado = input.enunciado;
+        if (input.alternativas) updateData.alternativas = JSON.stringify(input.alternativas);
+        if (input.gabarito) updateData.gabarito = input.gabarito;
+        if (input.banca !== undefined) updateData.banca = input.banca;
+        if (input.concurso !== undefined) updateData.concurso = input.concurso;
+        if (input.ano !== undefined) updateData.ano = input.ano;
+        if (input.disciplina) updateData.disciplina = input.disciplina;
+        if (input.assuntos) updateData.assuntos = JSON.stringify(input.assuntos);
+        if (input.nivelDificuldade) updateData.nivelDificuldade = input.nivelDificuldade;
+        if (input.comentario !== undefined) updateData.comentario = input.comentario;
+        if (input.urlVideoResolucao !== undefined) updateData.urlVideoResolucao = input.urlVideoResolucao;
+        
+        await db.update(questoes).set(updateData).where(eq(questoes.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    deletarQuestao: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        motivo: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoes, questoesLixeira } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Buscar questão antes de deletar
+        const questao = await db.select().from(questoes).where(eq(questoes.id, input.id)).limit(1);
+        
+        if (questao.length > 0) {
+          // Mover para lixeira
+          await db.insert(questoesLixeira).values({
+            conteudoOriginal: JSON.stringify(questao[0]),
+            deletadoPor: ctx.user.id,
+            motivoDelecao: input.motivo || null,
+          });
+          
+          // Deletar da tabela principal
+          await db.delete(questoes).where(eq(questoes.id, input.id));
+        }
+        
+        return { success: true };
+      }),
+    
+    // Filtros Avançados
+    filtrar: publicProcedure
+      .input(z.object({
+        disciplina: z.string().optional(),
+        banca: z.string().optional(),
+        concurso: z.string().optional(),
+        ano: z.number().optional(),
+        nivelDificuldade: z.enum(["facil", "medio", "dificil"]).optional(),
+        assunto: z.string().optional(),
+        texto: z.string().optional(),
+        limit: z.number().default(20),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoes } = await import("../drizzle/schema");
+        const { and, eq, like, sql } = await import("drizzle-orm");
+        
+        const conditions: any[] = [eq(questoes.ativo, 1)];
+        
+        if (input.disciplina) {
+          conditions.push(eq(questoes.disciplina, input.disciplina));
+        }
+        if (input.banca) {
+          conditions.push(eq(questoes.banca, input.banca));
+        }
+        if (input.concurso) {
+          conditions.push(like(questoes.concurso, `%${input.concurso}%`));
+        }
+        if (input.ano) {
+          conditions.push(eq(questoes.ano, input.ano));
+        }
+        if (input.nivelDificuldade) {
+          conditions.push(eq(questoes.nivelDificuldade, input.nivelDificuldade));
+        }
+        if (input.assunto) {
+          conditions.push(like(questoes.assuntos, `%${input.assunto}%`));
+        }
+        if (input.texto) {
+          conditions.push(like(questoes.enunciado, `%${input.texto}%`));
+        }
+        
+        const results = await db
+          .select()
+          .from(questoes)
+          .where(and(...conditions))
+          .limit(input.limit)
+          .offset(input.offset);
+        
+        return results;
+      }),
   }),
 
   dashboard: router({
