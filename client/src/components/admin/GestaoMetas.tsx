@@ -339,7 +339,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
 
       {/* Modal de Criação/Edição de Meta */}
       <Dialog open={modalMeta} onOpenChange={setModalMeta}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {metaEditando ? "Editar Meta" : "Nova Meta"}
@@ -349,103 +349,112 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-[1fr,1.5fr] gap-6 py-4">
+            {/* Coluna Esquerda - Campos Básicos */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="disciplina">Disciplina *</Label>
+                  <Input
+                    id="disciplina"
+                    placeholder="Ex: Direito Constitucional"
+                    value={formData.disciplina}
+                    onChange={(e) => setFormData({ ...formData, disciplina: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipo">Tipo</Label>
+                  <Select
+                    value={formData.tipo}
+                    onValueChange={(value: "estudo" | "revisao" | "questoes") =>
+                      setFormData({ ...formData, tipo: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="estudo">Estudo</SelectItem>
+                      <SelectItem value="revisao">Revisão</SelectItem>
+                      <SelectItem value="questoes">Questões</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="disciplina">Disciplina *</Label>
-                <Input
-                  id="disciplina"
-                  placeholder="Ex: Direito Constitucional"
-                  value={formData.disciplina}
-                  onChange={(e) => setFormData({ ...formData, disciplina: e.target.value })}
+                <Label htmlFor="assunto">Assunto *</Label>
+                <Textarea
+                  id="assunto"
+                  placeholder="Ex: Princípios Fundamentais da República"
+                  value={formData.assunto}
+                  onChange={(e) => setFormData({ ...formData, assunto: e.target.value })}
+                  rows={2}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="duracao">Duração (min)</Label>
+                  <Input
+                    id="duracao"
+                    type="number"
+                    min="1"
+                    value={formData.duracao}
+                    onChange={(e) =>
+                      setFormData({ ...formData, duracao: parseInt(e.target.value) || 60 })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="prioridade">Prioridade</Label>
+                  <Input
+                    id="prioridade"
+                    type="number"
+                    min="1"
+                    max="5"
+                    value={formData.prioridade}
+                    onChange={(e) =>
+                      setFormData({ ...formData, prioridade: parseInt(e.target.value) || 3 })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dicaEstudo">Dica de Estudo</Label>
+                <Textarea
+                  id="dicaEstudo"
+                  placeholder="Ex: Fazer resumo dos artigos 1º ao 4º"
+                  value={formData.dicaEstudo}
+                  onChange={(e) => setFormData({ ...formData, dicaEstudo: e.target.value })}
+                  rows={2}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo</Label>
-                <Select
-                  value={formData.tipo}
-                  onValueChange={(value: "estudo" | "revisao" | "questoes") =>
-                    setFormData({ ...formData, tipo: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="estudo">Estudo</SelectItem>
-                    <SelectItem value="revisao">Revisão</SelectItem>
-                    <SelectItem value="questoes">Questões</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="assunto">Assunto *</Label>
-              <Textarea
-                id="assunto"
-                placeholder="Ex: Princípios Fundamentais da República"
-                value={formData.assunto}
-                onChange={(e) => setFormData({ ...formData, assunto: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="duracao">Duração (minutos)</Label>
-                <Input
-                  id="duracao"
-                  type="number"
-                  min="1"
-                  value={formData.duracao}
-                  onChange={(e) =>
-                    setFormData({ ...formData, duracao: parseInt(e.target.value) || 60 })
-                  }
+                <Label htmlFor="aulaId">Aula Vinculada</Label>
+                <SeletorAula
+                  value={formData.aulaId}
+                  onChange={(aulaId) => setFormData({ ...formData, aulaId })}
+                  disciplina={formData.disciplina}
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="prioridade">Prioridade (1-5)</Label>
-                <Input
-                  id="prioridade"
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={formData.prioridade}
-                  onChange={(e) =>
-                    setFormData({ ...formData, prioridade: parseInt(e.target.value) || 3 })
-                  }
-                />
+                <p className="text-xs text-muted-foreground">
+                  Vincule uma aula para acesso direto
+                </p>
               </div>
             </div>
 
+            {/* Coluna Direita - Editor de Orientação (Destaque) */}
             <div className="space-y-2">
-              <Label htmlFor="dicaEstudo">Dica de Estudo (opcional)</Label>
-              <Textarea
-                id="dicaEstudo"
-                placeholder="Ex: Fazer resumo dos artigos 1º ao 4º"
-                value={formData.dicaEstudo}
-                onChange={(e) => setFormData({ ...formData, dicaEstudo: e.target.value })}
-                rows={2}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="aulaId">Aula Vinculada (opcional)</Label>
-              <SeletorAula
-                value={formData.aulaId}
-                onChange={(aulaId) => setFormData({ ...formData, aulaId })}
-                disciplina={formData.disciplina}
-              />
-              <p className="text-xs text-gray-500">
-                Vincule uma aula para que o aluno possa acessá-la diretamente desta meta
+              <Label htmlFor="orientacaoEstudos" className="text-base font-semibold">
+                📚 Orientação de Estudos
+              </Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Use este espaço para fornecer orientações detalhadas, links úteis e vídeos do YouTube
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="orientacaoEstudos">Orientação de Estudos (opcional)</Label>
               <RichTextEditor
                 content={formData.orientacaoEstudos}
                 onChange={(content) => setFormData({ ...formData, orientacaoEstudos: content })}

@@ -223,3 +223,5 @@
 **Última atualização**: 30/10/2025 12:55
 **Versão atual**: 331b6fc8
 **Bugs corrigidos nesta sessão**: 4/8 (50%)
+
+- [x] Reorganizar layout do modal de metas para formato horizontal (campos à esquerda, editor de orientação à direita)
