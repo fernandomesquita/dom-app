@@ -166,7 +166,14 @@ export async function createMatricula(matricula: InsertMatricula) {
 export async function getMetasByPlanoId(planoId: number) {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.select().from(metas).where(eq(metas.planoId, planoId));
+  
+  // Otimizado: ordenar por ordem e limitar campos se necessário
+  const result = await db
+    .select()
+    .from(metas)
+    .where(eq(metas.planoId, planoId))
+    .orderBy(metas.ordem);
+  
   return result;
 }
 

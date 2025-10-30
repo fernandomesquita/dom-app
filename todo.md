@@ -381,6 +381,12 @@
 - [x] Testar deleção de metas
 - [x] Validar limites (15-240min, 3+ chars)
 
+### Otimização de Performance
+- [x] Otimizar queries de listagem de metas
+- [x] Adicionar ordenação por ordem
+- [x] Validar existência antes de updates/deletes
+- [x] Usar .limit(1) em queries de busca única
+
 
 ---
 
