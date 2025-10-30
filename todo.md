@@ -286,3 +286,7 @@
 - [ ] Botão "Assistir Aula" direto da meta
 - [ ] Notificar respostas em tópicos do fórum
 - [ ] Lembrete de aulas não assistidas
+
+- [x] Implementar detecção automática de links em mensagens do fórum
+- [x] Reter mensagens com links de alunos, professores e mentores para moderação
+- [x] Permitir links diretos de Master e Administrativo

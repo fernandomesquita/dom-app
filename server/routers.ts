@@ -816,6 +816,35 @@ export const appRouter = router({
         const db = await import("./db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
         
+        // Detectar links no conteúdo
+        const { detectarLinks, podePostarLinksSemModeracao } = await import("./helpers/detectarLinks");
+        const links = detectarLinks(input.conteudo + " " + input.titulo);
+        
+        // Se tem links e usuário não tem permissão, reter para moderação
+        if (links.length > 0 && !podePostarLinksSemModeracao(ctx.user.role)) {
+          const { forumMensagensRetidas } = await import("../drizzle/schema");
+          
+          await db.insert(forumMensagensRetidas).values({
+            tipo: "topico",
+            autorId: ctx.user.id,
+            conteudo: JSON.stringify({
+              titulo: input.titulo,
+              conteudo: input.conteudo,
+              categoria: input.categoria,
+              disciplina: input.disciplina,
+            }),
+            linksDetectados: JSON.stringify(links),
+            status: "pendente",
+          });
+          
+          return { 
+            success: true, 
+            retido: true, 
+            mensagem: "Seu tópico contém links e está aguardando aprovação da moderação." 
+          };
+        }
+        
+        // Sem links ou usuário com permissão: publicar direto
         const { forumTopicos } = await import("../drizzle/schema");
         const resultado = await db.insert(forumTopicos).values({
           titulo: input.titulo,
@@ -826,7 +855,7 @@ export const appRouter = router({
           visualizacoes: 0,
         });
         
-        return { success: true };
+        return { success: true, retido: false };
       }),
     
     criarResposta: protectedProcedure
@@ -841,7 +870,31 @@ export const appRouter = router({
         const { forumRespostas, forumTopicos } = await import("../drizzle/schema");
         const { eq } = await import("drizzle-orm");
         
-        // Inserir resposta
+        // Detectar links no conteúdo
+        const { detectarLinks, podePostarLinksSemModeracao } = await import("./helpers/detectarLinks");
+        const links = detectarLinks(input.conteudo);
+        
+        // Se tem links e usuário não tem permissão, reter para moderação
+        if (links.length > 0 && !podePostarLinksSemModeracao(ctx.user.role)) {
+          const { forumMensagensRetidas } = await import("../drizzle/schema");
+          
+          await db.insert(forumMensagensRetidas).values({
+            tipo: "resposta",
+            topicoId: input.topicoId,
+            autorId: ctx.user.id,
+            conteudo: input.conteudo,
+            linksDetectados: JSON.stringify(links),
+            status: "pendente",
+          });
+          
+          return { 
+            success: true, 
+            retido: true,
+            mensagem: "Sua resposta contém links e está aguardando aprovação da moderação." 
+          };
+        }
+        
+        // Sem links ou usuário com permissão: publicar direto
         const resultado = await db.insert(forumRespostas).values({
           topicoId: input.topicoId,
           conteudo: input.conteudo,
