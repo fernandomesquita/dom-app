@@ -15,8 +15,18 @@ import {
   Shield,
   Upload,
   Key,
-  Palette
+  Palette,
+  Menu,
+  GraduationCap,
+  FileText
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import GestaoAvisos from "@/components/admin/GestaoAvisos";
@@ -33,6 +43,7 @@ import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades"
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("");
 
   // Verificar permissões por perfil
   const isMaster = user?.role === "master";
@@ -197,14 +208,42 @@ export default function Admin() {
       </div>
 
       {/* Tabs de Gestão */}
-      <Tabs defaultValue={tabs[0]?.value} className="space-y-6">
-        <TabsList className="flex w-full overflow-x-auto">
-          {tabs.map(tab => (
-            <TabsTrigger key={tab.value} value={tab.value}>
-              {tab.label}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs defaultValue={tabs[0]?.value} value={activeTab || tabs[0]?.value} onValueChange={setActiveTab} className="space-y-6">
+        {/* Desktop: TabsList horizontal */}
+        <div className="hidden lg:block">
+          <TabsList className="flex w-full overflow-x-auto">
+            {tabs.map(tab => (
+              <TabsTrigger key={tab.value} value={tab.value}>
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {/* Mobile/Tablet: Dropdown Menu */}
+        <div className="lg:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <Menu className="h-4 w-4" />
+                  {tabs.find(t => t.value === (activeTab || tabs[0]?.value))?.label || "Menu"}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[calc(100vw-2rem)] max-h-[60vh] overflow-y-auto">
+              {tabs.map(tab => (
+                <DropdownMenuItem
+                  key={tab.value}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={activeTab === tab.value ? "bg-accent" : ""}
+                >
+                  {tab.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         {/* Tab: Gestão de Usuários (Master, Administrativo) */}
         {availableTabs.usuarios && (

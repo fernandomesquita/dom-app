@@ -227,3 +227,5 @@
 - [x] Reorganizar layout do modal de metas para formato horizontal (campos à esquerda, editor de orientação à direita)
 
 - [x] Corrigir funcionalidade de reordenação de metas (botões de setas ↑↓ não estão funcionando)
+
+- [x] Implementar menu dropdown/expansível responsivo para navegação do painel administrativo (evitar overflow em telas menores)
