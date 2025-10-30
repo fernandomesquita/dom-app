@@ -8,7 +8,7 @@
 - [x] Bug #1: Erro JSX no AdicionarEditarMetaModal impedindo compilação
 - [x] Bug #2: Campo "Aula Vinculada" ausente no modal de criação de metas
 - [x] Bug #3: Editor rich text para "Orientação de Estudos" não implementado
-- [ ] Bug #4: Botões de reordenação de metas (setas para cima/baixo) não funcionam
+- [x] Bug #4: Botões de reordenação de metas (setas para cima/baixo) não funcionam (corrigido adicionando role mentor)
 - [x] Bug #5: Router 'auth' colidindo com método interno do tRPC
 - [ ] Bug #6: Dashboard do aluno não mostra notas das questões respondidas
 - [ ] Bug #7: Cards de metas no mobile quebram layout (não responsivo)
@@ -233,3 +233,5 @@
 - [x] Corrigir rota /admin retornando 404 (era problema transitório, rota está funcionando)
 
 - [x] Implementar funcionalidade de vincular uma meta a múltiplos planos (seletor multi-select de planos)
+
+- [ ] Adicionar seção no Dashboard com histórico detalhado de questões respondidas (nota individual, data, disciplina)
