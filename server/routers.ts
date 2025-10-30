@@ -781,6 +781,44 @@ export const appRouter = router({
           .set({ updatedAt: new Date() })
           .where(eq(forumTopicos.id, input.topicoId));
         
+        // Criar notificação para o autor do tópico (se não for ele mesmo)
+        const topico = await db.select().from(forumTopicos).where(eq(forumTopicos.id, input.topicoId)).limit(1);
+        const { notificacoes } = await import("../drizzle/schema");
+        
+        if (topico[0] && topico[0].userId !== ctx.user.id) {
+          await db.insert(notificacoes).values({
+            userId: topico[0].userId,
+            tipo: "forum_resposta",
+            titulo: "Nova resposta no seu tópico",
+            mensagem: `${ctx.user.name || "Alguém"} respondeu no tópico "${topico[0].titulo}"`,
+            link: `/forum/${input.topicoId}`,
+            metadata: JSON.stringify({ topicoId: input.topicoId, respostaUserId: ctx.user.id }),
+            lida: 0,
+          });
+        }
+        
+        // Detectar e notificar menções @usuario
+        const { detectarMencoes, buscarUserIdsPorNomes } = await import("./helpers/mencoes");
+        const mencoes = detectarMencoes(input.conteudo);
+        if (mencoes.length > 0) {
+          const userIdsMencionados = await buscarUserIdsPorNomes(mencoes);
+          
+          // Criar notificação para cada usuário mencionado (exceto autor e autor do tópico)
+          for (const userId of userIdsMencionados) {
+            if (userId !== ctx.user.id && userId !== topico[0]?.userId) {
+              await db.insert(notificacoes).values({
+                userId,
+                tipo: "forum_mencao",
+                titulo: "Você foi mencionado no fórum",
+                mensagem: `${ctx.user.name || "Alguém"} mencionou você em "${topico[0]?.titulo || "um tópico"}"`,
+                link: `/forum/${input.topicoId}`,
+                metadata: JSON.stringify({ topicoId: input.topicoId, respostaUserId: ctx.user.id }),
+                lida: 0,
+              });
+            }
+          }
+        }
+        
         return { success: true, pontosGanhos };
       }),
     

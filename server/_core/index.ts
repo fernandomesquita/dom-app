@@ -59,6 +59,13 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    
+    // Iniciar scheduler de jobs (apenas em produção)
+    if (process.env.NODE_ENV === "production") {
+      import("../jobs/scheduler").then(({ iniciarScheduler }) => {
+        iniciarScheduler();
+      });
+    }
   });
 }
 
