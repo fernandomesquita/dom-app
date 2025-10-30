@@ -8,7 +8,8 @@ import Breadcrumb from "@/components/Breadcrumb";
 import MetaModal from "@/components/MetaModal";
 import MetaAMeta from "@/components/MetaAMeta";
 import CronogramaAprimorado from "@/components/CronogramaAprimorado";
-import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List } from "lucide-react";
+import ConfigurarCronogramaModal from "@/components/ConfigurarCronogramaModal";
+import { ArrowLeft, ChevronLeft, ChevronRight, Filter, Clock, Calendar as CalendarIcon, List, Settings } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -30,6 +31,7 @@ export default function Plano() {
   const [visualizacao, setVisualizacao] = useState<"calendario" | "lista" | "metaAMeta">("calendario");
   const [modalMensagemPosPlano, setModalMensagemPosPlano] = useState(false);
   const [planoInfo, setPlanoInfo] = useState<any>(null);
+  const [modalConfigurarCronograma, setModalConfigurarCronograma] = useState(false);
   
   // Buscar metas do plano atribuído ao aluno
   const { data: minhasMetasData, isLoading: loadingMetas, refetch: refetchMetas } = trpc.metas.minhasMetas.useQuery();
@@ -282,6 +284,16 @@ export default function Plano() {
         )}
       </div>
 
+      <div className="flex gap-3 mb-4">
+        <Button
+          onClick={() => setModalConfigurarCronograma(true)}
+          className="flex items-center gap-2"
+        >
+          <Settings className="h-4 w-4" />
+          Configurar Cronograma
+        </Button>
+      </div>
+
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -372,7 +384,7 @@ export default function Plano() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-7 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-3">
             {getDaysOfWeek().map((day, index) => {
               const dayMetas = getMetasForDay(day);
               const dateKey = formatDateKey(day);
@@ -398,7 +410,7 @@ export default function Plano() {
                       dayMetas.map((meta) => (
                         <div
                           key={meta.id}
-                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md min-h-[140px] flex flex-col ${
                             meta.concluida ? "opacity-50 grayscale" : ""
                           }`}
                           style={{
@@ -409,16 +421,16 @@ export default function Plano() {
                           title={meta.dicaEstudo}
                         >
                           <div className="flex items-start justify-between gap-1 mb-1">
-                            <div className="font-semibold text-xs line-clamp-2">{meta.assunto}</div>
-                            <span className="text-sm">{getIncidenciaIcon(meta.incidencia)}</span>
+                            <div className="font-semibold text-xs sm:text-sm line-clamp-2 break-words">{meta.assunto}</div>
+                            <span className="text-sm flex-shrink-0">{getIncidenciaIcon(meta.incidencia)}</span>
                           </div>
-                          <div className="text-xs text-muted-foreground mb-2">{meta.disciplina}</div>
-                          <Badge className={`text-xs ${getTipoColor(meta.tipo)}`}>
+                          <div className="text-xs text-muted-foreground mb-2 line-clamp-1 break-words">{meta.disciplina}</div>
+                          <Badge className={`text-xs w-fit ${getTipoColor(meta.tipo)}`}>
                             {getTipoLabel(meta.tipo)}
                           </Badge>
-                          <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {formatTime(meta.duracao)}
+                          <div className="text-xs text-muted-foreground mt-auto pt-2 flex items-center gap-1">
+                            <Clock className="h-3 w-3 flex-shrink-0" />
+                            <span className="whitespace-nowrap">{formatTime(meta.duracao)}</span>
                           </div>
                         </div>
                       ))
@@ -580,6 +592,16 @@ export default function Plano() {
           planoNome={planoInfo.nome}
         />
       )}
+
+      <ConfigurarCronogramaModal
+        open={modalConfigurarCronograma}
+        onClose={() => setModalConfigurarCronograma(false)}
+        onSave={() => refetchMetas()}
+        configuracaoAtual={{
+          horasDiarias: 4,
+          diasSemana: "1,2,3,4,5",
+        }}
+      />
     </div>
   );
 }

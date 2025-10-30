@@ -617,6 +617,36 @@ export const appRouter = router({
         const { criarMetasLote } = await import("./db");
         return await criarMetasLote(input.metas);
       }),
+    
+    // Atualizar configurações de cronograma
+    atualizarConfiguracoes: protectedProcedure
+      .input(z.object({
+        horasDiarias: z.number().min(1).max(12),
+        diasSemana: z.string(), // formato: "1,2,3,4,5"
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { atualizarConfiguracoesCronograma } = await import("./db");
+        return await atualizarConfiguracoesCronograma(
+          ctx.user.id,
+          input.horasDiarias,
+          input.diasSemana
+        );
+      }),
+    
+    // Redistribuir metas baseado nas configurações
+    redistribuir: protectedProcedure
+      .input(z.object({
+        horasDiarias: z.number().min(1).max(12).optional(),
+        diasSemana: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { redistribuirMetasAluno } = await import("./db");
+        return await redistribuirMetasAluno(
+          ctx.user.id,
+          input.horasDiarias,
+          input.diasSemana
+        );
+      }),
   }),
 
   aulas: router({

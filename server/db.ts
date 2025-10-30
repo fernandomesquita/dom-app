@@ -3531,3 +3531,189 @@ export async function getEvolucaoTemporalProgresso(userId: number, periodo: stri
   
   return Object.values(progressoPorDia);
 }
+
+/**
+ * Atualizar configurações de cronograma do aluno
+ */
+export async function atualizarConfiguracoesCronograma(
+  userId: number,
+  horasDiarias: number,
+  diasSemana: string // formato: "1,2,3,4,5" (seg-sex)
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar matrícula ativa do aluno
+  const matricula = await db
+    .select()
+    .from(matriculas)
+    .where(
+      and(
+        eq(matriculas.userId, userId),
+        eq(matriculas.ativo, 1)
+      )
+    )
+    .limit(1);
+
+  if (matricula.length === 0) {
+    throw new Error("Nenhuma matrícula ativa encontrada");
+  }
+
+  // Atualizar configurações
+  await db
+    .update(matriculas)
+    .set({
+      horasDiarias,
+      diasEstudo: diasSemana,
+      updatedAt: new Date(),
+    })
+    .where(eq(matriculas.id, matricula[0].id));
+}
+
+/**
+ * Redistribuir metas do aluno baseado nas configurações de cronograma
+ */
+export async function redistribuirMetasAluno(
+  userId: number,
+  horasDiarias?: number,
+  diasSemana?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar matrícula ativa
+  const matricula = await db
+    .select()
+    .from(matriculas)
+    .where(
+      and(
+        eq(matriculas.userId, userId),
+        eq(matriculas.ativo, 1)
+      )
+    )
+    .limit(1);
+
+  if (matricula.length === 0) {
+    throw new Error("Nenhuma matrícula ativa encontrada");
+  }
+
+  const mat = matricula[0];
+  const horas = horasDiarias || mat.horasDiarias;
+  const dias = diasSemana || mat.diasEstudo;
+  
+  // Converter string de dias para array de números
+  const diasArray = dias.split(',').map(d => parseInt(d));
+  
+  // Buscar metas pendentes do plano
+  const metasPendentes = await db
+    .select({
+      metaId: metas.id,
+      duracao: metas.duracao,
+      incidencia: metas.incidencia,
+      ordem: metas.ordem,
+    })
+    .from(metas)
+    .leftJoin(
+      progressoMetas,
+      and(
+        eq(progressoMetas.metaId, metas.id),
+        eq(progressoMetas.userId, userId)
+      )
+    )
+    .where(
+      and(
+        eq(metas.planoId, mat.planoId),
+        or(
+          isNull(progressoMetas.concluida),
+          eq(progressoMetas.concluida, 0)
+        )
+      )
+    )
+    .orderBy(metas.ordem);
+
+  if (metasPendentes.length === 0) {
+    console.log("[Redistribuição] Nenhuma meta pendente encontrada");
+    return;
+  }
+
+  // Ordenar por incidência (alta → média → baixa) e depois por ordem
+  const metasOrdenadas = metasPendentes.sort((a, b) => {
+    const prioridadeIncidencia: { [key: string]: number } = {
+      'alta': 3,
+      'media': 2,
+      'baixa': 1,
+    };
+    
+    const prioA = prioridadeIncidencia[a.incidencia || 'media'] || 2;
+    const prioB = prioridadeIncidencia[b.incidencia || 'media'] || 2;
+    
+    if (prioA !== prioB) return prioB - prioA; // Maior prioridade primeiro
+    return (a.ordem || 0) - (b.ordem || 0); // Depois por ordem
+  });
+
+  // Distribuir metas ao longo dos dias
+  const minutosDisponiveis = horas * 60; // Converter horas para minutos
+  let dataAtual = new Date();
+  dataAtual.setHours(0, 0, 0, 0); // Zerar horário
+  
+  // Avançar para o próximo dia de estudo
+  while (!diasArray.includes(dataAtual.getDay())) {
+    dataAtual.setDate(dataAtual.getDate() + 1);
+  }
+
+  let minutosUsadosHoje = 0;
+  
+  for (const meta of metasOrdenadas) {
+    const duracaoMeta = meta.duracao || 60;
+    
+    // Se a meta não cabe no dia atual, avançar para o próximo
+    if (minutosUsadosHoje + duracaoMeta > minutosDisponiveis) {
+      // Avançar para o próximo dia de estudo
+      do {
+        dataAtual.setDate(dataAtual.getDate() + 1);
+      } while (!diasArray.includes(dataAtual.getDay()));
+      
+      minutosUsadosHoje = 0;
+    }
+    
+    // Atualizar ou criar progresso com a nova data
+    const dataAgendada = dataAtual.toISOString().split('T')[0];
+    
+    // Verificar se já existe progresso
+    const progressoExistente = await db
+      .select()
+      .from(progressoMetas)
+      .where(
+        and(
+          eq(progressoMetas.userId, userId),
+          eq(progressoMetas.metaId, meta.metaId)
+        )
+      )
+      .limit(1);
+    
+    if (progressoExistente.length > 0) {
+      // Atualizar data agendada
+      await db
+        .update(progressoMetas)
+        .set({
+          dataAgendada,
+          updatedAt: new Date(),
+        })
+        .where(eq(progressoMetas.id, progressoExistente[0].id));
+    } else {
+      // Criar novo progresso
+      await db.insert(progressoMetas).values({
+        userId,
+        metaId: meta.metaId,
+        dataAgendada,
+        concluida: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+    
+    minutosUsadosHoje += duracaoMeta;
+  }
+  
+  console.log(`[Redistribuição] ${metasOrdenadas.length} metas redistribuídas para o usuário ${userId}`);
+}

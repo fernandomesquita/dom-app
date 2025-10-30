@@ -334,3 +334,40 @@
 - [ ] Gráficos de evolução
 - [ ] Testes finais
 
+
+
+---
+
+## 🔴 PRIORIDADE CRÍTICA - PLANO 100%
+
+### Bug #7: Cards de metas quebram layout no mobile
+- [ ] Testar visualização em diferentes resoluções (320px, 375px, 768px, 1024px)
+- [ ] Ajustar grid responsivo para garantir 1-2 colunas em mobile
+- [ ] Garantir que texto não transborde dos cards
+- [ ] Testar scrolling horizontal se necessário
+
+### Bug: Redistribuição de metas não persiste configurações
+- [ ] Adicionar campos horasDiarias e diasSemana na tabela matriculas
+- [ ] Criar migration para novos campos
+- [ ] Salvar configurações ao alterar no ConfigurarCronograma
+- [ ] Carregar configurações salvas ao abrir página Plano
+- [ ] Aplicar configurações na redistribuição automática
+
+### Bug: Dials de tempo não atualizam após redistribuir
+- [ ] Forçar refetch de metas após mutation redistribuir
+- [ ] Sincronizar estado local com backend
+- [ ] Adicionar loading state durante redistribuição
+
+### Validações de formulários
+- [ ] Validar formulário de criação de metas (campos obrigatórios)
+- [ ] Validar duração de meta (15min-4h)
+- [ ] Validar formulário de criação de planos
+- [ ] Validar duração de plano (7-365 dias)
+- [ ] Validar horas diárias (1h-12h)
+- [ ] Adicionar mensagens de erro específicas
+
+### Tratamento de erros em mutations
+- [ ] Adicionar try/catch em todas as mutations críticas
+- [ ] Implementar rollback de estado em caso de falha
+- [ ] Melhorar mensagens de erro nos toasts
+- [ ] Adicionar logs de erro para debug
