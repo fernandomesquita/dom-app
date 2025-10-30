@@ -1733,6 +1733,342 @@ export const appRouter = router({
         
         return results;
       }),
+    
+    // Sistema de Revisão Inteligente
+    marcarParaRevisar: protectedProcedure
+      .input(z.object({
+        questaoId: z.number(),
+        nivelDificuldade: z.number().min(1).max(5).default(3),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoesRevisar } = await import("../drizzle/schema");
+        const { eq, and } = await import("drizzle-orm");
+        
+        // Calcular próxima revisão baseado na dificuldade
+        const diasAte: Record<number, number> = {
+          1: 7,  // Muito fácil
+          2: 5,  // Fácil
+          3: 3,  // Médio
+          4: 1,  // Difícil
+          5: 0,  // Muito difícil (revisar hoje)
+        };
+        
+        const dias = diasAte[input.nivelDificuldade] || 3;
+        const proximaRevisao = new Date();
+        proximaRevisao.setDate(proximaRevisao.getDate() + dias);
+        
+        // Verificar se já existe
+        const existente = await db
+          .select()
+          .from(questoesRevisar)
+          .where(
+            and(
+              eq(questoesRevisar.userId, ctx.user.id),
+              eq(questoesRevisar.questaoId, input.questaoId)
+            )
+          )
+          .limit(1);
+        
+        if (existente.length > 0) {
+          // Atualizar
+          await db
+            .update(questoesRevisar)
+            .set({
+              proximaRevisao,
+              nivelDificuldadePercebida: input.nivelDificuldade,
+            })
+            .where(
+              and(
+                eq(questoesRevisar.userId, ctx.user.id),
+                eq(questoesRevisar.questaoId, input.questaoId)
+              )
+            );
+        } else {
+          // Inserir
+          await db.insert(questoesRevisar).values({
+            userId: ctx.user.id,
+            questaoId: input.questaoId,
+            proximaRevisao,
+            nivelDificuldadePercebida: input.nivelDificuldade,
+          });
+        }
+        
+        return { success: true, proximaRevisao };
+      }),
+    
+    getQuestoesParaRevisar: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) throw new Error("Database not available");
+      
+      const { questoesRevisar, questoes } = await import("../drizzle/schema");
+      const { eq, lte, and } = await import("drizzle-orm");
+      
+      // Buscar questões com revisão agendada para hoje ou antes
+      const hoje = new Date();
+      
+      const results = await db
+        .select({
+          questao: questoes,
+          revisao: questoesRevisar,
+        })
+        .from(questoesRevisar)
+        .innerJoin(questoes, eq(questoesRevisar.questaoId, questoes.id))
+        .where(
+          and(
+            eq(questoesRevisar.userId, ctx.user.id),
+            lte(questoesRevisar.proximaRevisao, hoje)
+          )
+        )
+        .limit(20);
+      
+      return results;
+    }),
+    
+    sugerirProximasQuestoes: protectedProcedure
+      .input(z.object({
+        quantidade: z.number().default(10),
+        disciplina: z.string().optional(),
+        nivelDificuldade: z.enum(["facil", "medio", "dificil"]).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoes, respostasQuestoes, questoesRevisar } = await import("../drizzle/schema");
+        const { eq, and, notInArray, sql, lte } = await import("drizzle-orm");
+        
+        // Prioridade 1: Questões com revisão atrasada
+        const hoje = new Date();
+        const paraRevisar = await db
+          .select({ questaoId: questoesRevisar.questaoId })
+          .from(questoesRevisar)
+          .where(
+            and(
+              eq(questoesRevisar.userId, ctx.user.id),
+              lte(questoesRevisar.proximaRevisao, hoje)
+            )
+          );
+        
+        if (paraRevisar.length >= input.quantidade) {
+          const ids = paraRevisar.slice(0, input.quantidade).map(r => r.questaoId);
+          const questoesRevisao = await db
+            .select()
+            .from(questoes)
+            .where(sql`${questoes.id} IN (${ids.join(",")})`)
+            .limit(input.quantidade);
+          return questoesRevisao;
+        }
+        
+        // Prioridade 2: Questões que o aluno errou
+        const erradas = await db
+          .select({ questaoId: respostasQuestoes.questaoId })
+          .from(respostasQuestoes)
+          .where(
+            and(
+              eq(respostasQuestoes.userId, ctx.user.id),
+              eq(respostasQuestoes.acertou, 0)
+            )
+          )
+          .groupBy(respostasQuestoes.questaoId)
+          .limit(input.quantidade);
+        
+        if (erradas.length > 0) {
+          const idsErradas = erradas.map(e => e.questaoId);
+          const questoesErradas = await db
+            .select()
+            .from(questoes)
+            .where(sql`${questoes.id} IN (${idsErradas.join(",")})`)
+            .limit(input.quantidade);
+          
+          if (questoesErradas.length >= input.quantidade) {
+            return questoesErradas;
+          }
+        }
+        
+        // Prioridade 3: Questões novas (nunca respondidas)
+        const respondidas = await db
+          .select({ questaoId: respostasQuestoes.questaoId })
+          .from(respostasQuestoes)
+          .where(eq(respostasQuestoes.userId, ctx.user.id));
+        
+        const idsRespondidas = respondidas.map(r => r.questaoId);
+        
+        const conditions: any[] = [eq(questoes.ativo, 1)];
+        
+        if (idsRespondidas.length > 0) {
+          conditions.push(sql`${questoes.id} NOT IN (${idsRespondidas.join(",")})`);
+        }
+        
+        if (input.disciplina) {
+          conditions.push(eq(questoes.disciplina, input.disciplina));
+        }
+        
+        if (input.nivelDificuldade) {
+          conditions.push(eq(questoes.nivelDificuldade, input.nivelDificuldade));
+        }
+        
+        const questoesNovas = await db
+          .select()
+          .from(questoes)
+          .where(and(...conditions))
+          .limit(input.quantidade);
+        
+        return questoesNovas;
+      }),
+    
+    // Gamificação
+    verificarConquistas: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) throw new Error("Database not available");
+      
+      const { respostasQuestoes, conquistasQuestoes } = await import("../drizzle/schema");
+      const { eq, and, sql } = await import("drizzle-orm");
+      
+      // Contar total de questões respondidas
+      const totalRespondidas = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(respostasQuestoes)
+        .where(eq(respostasQuestoes.userId, ctx.user.id));
+      
+      const total = totalRespondidas[0]?.count || 0;
+      
+      // Conquistas por marcos
+      const marcos = [
+        { tipo: "10_questoes", minimo: 10 },
+        { tipo: "50_questoes", minimo: 50 },
+        { tipo: "100_questoes", minimo: 100 },
+        { tipo: "500_questoes", minimo: 500 },
+        { tipo: "1000_questoes", minimo: 1000 },
+      ];
+      
+      const novasConquistas: string[] = [];
+      
+      for (const marco of marcos) {
+        if (total >= marco.minimo) {
+          // Verificar se já tem a conquista
+          const jatem = await db
+            .select()
+            .from(conquistasQuestoes)
+            .where(
+              and(
+                eq(conquistasQuestoes.userId, ctx.user.id),
+                eq(conquistasQuestoes.tipo, marco.tipo)
+              )
+            )
+            .limit(1);
+          
+          if (jatem.length === 0) {
+            // Desbloquear conquista
+            await db.insert(conquistasQuestoes).values({
+              userId: ctx.user.id,
+              tipo: marco.tipo,
+            });
+            novasConquistas.push(marco.tipo);
+          }
+        }
+      }
+      
+      // Verificar streak de dias consecutivos
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      
+      const ultimosDias = await db
+        .select({
+          data: sql<Date>`DATE(${respostasQuestoes.createdAt})`,
+        })
+        .from(respostasQuestoes)
+        .where(eq(respostasQuestoes.userId, ctx.user.id))
+        .groupBy(sql`DATE(${respostasQuestoes.createdAt})`)
+        .orderBy(sql`DATE(${respostasQuestoes.createdAt}) DESC`)
+        .limit(30);
+      
+      let streak = 0;
+      let dataEsperada = new Date(hoje);
+      
+      for (const dia of ultimosDias) {
+        const dataDia = new Date(dia.data);
+        dataDia.setHours(0, 0, 0, 0);
+        
+        if (dataDia.getTime() === dataEsperada.getTime()) {
+          streak++;
+          dataEsperada.setDate(dataEsperada.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+      
+      // Conquistas de streak
+      const streakMarcos = [
+        { tipo: "streak_7_dias", minimo: 7 },
+        { tipo: "streak_30_dias", minimo: 30 },
+        { tipo: "streak_100_dias", minimo: 100 },
+      ];
+      
+      for (const marco of streakMarcos) {
+        if (streak >= marco.minimo) {
+          const jatem = await db
+            .select()
+            .from(conquistasQuestoes)
+            .where(
+              and(
+                eq(conquistasQuestoes.userId, ctx.user.id),
+                eq(conquistasQuestoes.tipo, marco.tipo)
+              )
+            )
+            .limit(1);
+          
+          if (jatem.length === 0) {
+            await db.insert(conquistasQuestoes).values({
+              userId: ctx.user.id,
+              tipo: marco.tipo,
+            });
+            novasConquistas.push(marco.tipo);
+          }
+        }
+      }
+      
+      return { novasConquistas, streak, totalQuestoes: total };
+    }),
+    
+    getConquistas: protectedProcedure.query(async ({ ctx }) => {
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) throw new Error("Database not available");
+      
+      const { conquistasQuestoes } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      const conquistas = await db
+        .select()
+        .from(conquistasQuestoes)
+        .where(eq(conquistasQuestoes.userId, ctx.user.id))
+        .orderBy(conquistasQuestoes.dataConquista);
+      
+      return conquistas;
+    }),
+    
+    reportarErro: protectedProcedure
+      .input(z.object({
+        questaoId: z.number(),
+        motivo: z.string().min(10),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { questoesReportadas } = await import("../drizzle/schema");
+        
+        await db.insert(questoesReportadas).values({
+          questaoId: input.questaoId,
+          userId: ctx.user.id,
+          motivo: input.motivo,
+          status: "pendente",
+        });
+        
+        return { success: true };
+      }),
   }),
 
   dashboard: router({
