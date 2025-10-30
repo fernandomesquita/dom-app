@@ -225,3 +225,5 @@
 **Bugs corrigidos nesta sessão**: 4/8 (50%)
 
 - [x] Reorganizar layout do modal de metas para formato horizontal (campos à esquerda, editor de orientação à direita)
+
+- [x] Corrigir funcionalidade de reordenação de metas (botões de setas ↑↓ não estão funcionando)

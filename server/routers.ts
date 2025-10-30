@@ -1048,7 +1048,7 @@ export const appRouter = router({
     moverMetaParaCima: protectedProcedure
       .input(z.object({ metaId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+        if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
           throw new Error("Unauthorized");
         }
         const { moverMetaParaCima } = await import("./db");
@@ -1058,7 +1058,7 @@ export const appRouter = router({
     moverMetaParaBaixo: protectedProcedure
       .input(z.object({ metaId: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        if (!ctx.user || !["master", "administrativo"].includes(ctx.user.role)) {
+        if (!ctx.user || !["master", "administrativo", "mentor"].includes(ctx.user.role)) {
           throw new Error("Unauthorized");
         }
         const { moverMetaParaBaixo } = await import("./db");
