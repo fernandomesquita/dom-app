@@ -1044,6 +1044,7 @@ export const appRouter = router({
     deletarTopico: protectedProcedure
       .input(z.object({
         id: z.number(),
+        motivo: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // Apenas master e administrativo podem deletar
@@ -1054,10 +1055,25 @@ export const appRouter = router({
         const db = await import("./db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
         
-        const { forumTopicos } = await import("../drizzle/schema");
+        const { forumTopicos, forumLixeira } = await import("../drizzle/schema");
         const { eq } = await import("drizzle-orm");
         
-        await db.delete(forumTopicos).where(eq(forumTopicos.id, input.id));
+        // Buscar tópico antes de deletar
+        const topico = await db.select().from(forumTopicos).where(eq(forumTopicos.id, input.id)).limit(1);
+        
+        if (topico.length > 0) {
+          // Mover para lixeira
+          await db.insert(forumLixeira).values({
+            tipo: "topico",
+            conteudoOriginal: JSON.stringify(topico[0]),
+            autorId: topico[0].userId,
+            deletadoPor: ctx.user.id,
+            motivoDelecao: input.motivo || null,
+          });
+          
+          // Deletar do fórum
+          await db.delete(forumTopicos).where(eq(forumTopicos.id, input.id));
+        }
         
         return { success: true };
       }),
@@ -1065,6 +1081,7 @@ export const appRouter = router({
     deletarResposta: protectedProcedure
       .input(z.object({
         id: z.number(),
+        motivo: z.string().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         // Apenas master e administrativo podem deletar
@@ -1075,10 +1092,25 @@ export const appRouter = router({
         const db = await import("./db").then(m => m.getDb());
         if (!db) throw new Error("Database not available");
         
-        const { forumRespostas } = await import("../drizzle/schema");
+        const { forumRespostas, forumLixeira } = await import("../drizzle/schema");
         const { eq } = await import("drizzle-orm");
         
-        await db.delete(forumRespostas).where(eq(forumRespostas.id, input.id));
+        // Buscar resposta antes de deletar
+        const resposta = await db.select().from(forumRespostas).where(eq(forumRespostas.id, input.id)).limit(1);
+        
+        if (resposta.length > 0) {
+          // Mover para lixeira
+          await db.insert(forumLixeira).values({
+            tipo: "resposta",
+            conteudoOriginal: JSON.stringify(resposta[0]),
+            autorId: resposta[0].userId,
+            deletadoPor: ctx.user.id,
+            motivoDelecao: input.motivo || null,
+          });
+          
+          // Deletar do fórum
+          await db.delete(forumRespostas).where(eq(forumRespostas.id, input.id));
+        }
         
         return { success: true };
       }),
@@ -1182,7 +1214,7 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    rejeitarMensagem: protectedProcedure
+     rejeitarMensagem: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
@@ -1197,6 +1229,84 @@ export const appRouter = router({
         
         // Deletar mensagem retida
         await db.delete(forumMensagensRetidas).where(eq(forumMensagensRetidas.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    // Lixeira (apenas Master)
+    listarLixeira: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "master") {
+          throw new Error("Apenas Master pode acessar a lixeira");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumLixeira, users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Buscar itens da lixeira com informações do autor e quem deletou
+        const itens = await db.select({
+          id: forumLixeira.id,
+          tipo: forumLixeira.tipo,
+          conteudoOriginal: forumLixeira.conteudoOriginal,
+          autorId: forumLixeira.autorId,
+          deletadoPor: forumLixeira.deletadoPor,
+          motivoDelecao: forumLixeira.motivoDelecao,
+          deletadoEm: forumLixeira.deletadoEm,
+        }).from(forumLixeira).orderBy(forumLixeira.deletadoEm);
+        
+        return itens;
+      }),
+    
+    recuperarDaLixeira: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master") {
+          throw new Error("Apenas Master pode recuperar da lixeira");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumLixeira, forumTopicos, forumRespostas } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Buscar item da lixeira
+        const item = await db.select().from(forumLixeira).where(eq(forumLixeira.id, input.id)).limit(1);
+        
+        if (item.length > 0) {
+          const conteudo = JSON.parse(item[0].conteudoOriginal);
+          
+          // Restaurar no fórum
+          if (item[0].tipo === "topico") {
+            await db.insert(forumTopicos).values(conteudo);
+          } else if (item[0].tipo === "resposta") {
+            await db.insert(forumRespostas).values(conteudo);
+          }
+          
+          // Remover da lixeira
+          await db.delete(forumLixeira).where(eq(forumLixeira.id, input.id));
+        }
+        
+        return { success: true };
+      }),
+    
+    deletarPermanentemente: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master") {
+          throw new Error("Apenas Master pode deletar permanentemente");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumLixeira } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        await db.delete(forumLixeira).where(eq(forumLixeira.id, input.id));
         
         return { success: true };
       }),

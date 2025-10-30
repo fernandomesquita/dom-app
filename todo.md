@@ -290,3 +290,9 @@
 - [x] Implementar detecção automática de links em mensagens do fórum
 - [x] Reter mensagens com links de alunos, professores e mentores para moderação
 - [x] Permitir links diretos de Master e Administrativo
+
+- [x] Criar tabela de lixeira para mensagens deletadas do fórum
+- [x] Modificar deletar tópico/resposta para mover para lixeira ao invés de deletar
+- [x] Criar painel de lixeira (apenas Master) - backend pronto
+- [x] Implementar função de recuperar mensagem da lixeira
+- [x] Implementar função de deletar permanentemente

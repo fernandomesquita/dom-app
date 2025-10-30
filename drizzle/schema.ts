@@ -405,6 +405,22 @@ export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
 export type ForumMensagemRetida = typeof forumMensagensRetidas.$inferSelect;
 export type InsertForumMensagemRetida = typeof forumMensagensRetidas.$inferInsert;
 
+/**
+ * Lixeira do fórum - mensagens deletadas (apenas Master pode ver/recuperar)
+ */
+export const forumLixeira = mysqlTable("forum_lixeira", {
+  id: int("id").autoincrement().primaryKey(),
+  tipo: mysqlEnum("tipo", ["topico", "resposta"]).notNull(),
+  conteudoOriginal: text("conteudo_original").notNull(), // JSON com todos os dados
+  autorId: int("autor_id").notNull(),
+  deletadoPor: int("deletado_por").notNull(),
+  motivoDelecao: text("motivo_delecao"),
+  deletadoEm: timestamp("deletado_em").defaultNow().notNull(),
+});
+
+export type ForumLixeira = typeof forumLixeira.$inferSelect;
+export type InsertForumLixeira = typeof forumLixeira.$inferInsert;
+
 // ========== AUTENTICAÇÃO E SEGURANÇA ==========
 
 /**
