@@ -909,6 +909,124 @@ export const appRouter = router({
         
         return { success: true };
       }),
+    
+    // Moderação
+    fixarTopico: protectedProcedure
+      .input(z.object({ id: z.number(), fixado: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumTopicos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        await db.update(forumTopicos)
+          .set({ fixado: input.fixado ? 1 : 0 })
+          .where(eq(forumTopicos.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    fecharTopico: protectedProcedure
+      .input(z.object({ id: z.number(), fechado: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumTopicos } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        await db.update(forumTopicos)
+          .set({ fechado: input.fechado ? 1 : 0 })
+          .where(eq(forumTopicos.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    getMensagensRetidas: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
+        throw new Error("Permissão negada");
+      }
+      
+      const db = await import("./db").then(m => m.getDb());
+      if (!db) return [];
+      
+      const { forumMensagensRetidas } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      
+      return await db.select().from(forumMensagensRetidas).where(eq(forumMensagensRetidas.aprovado, 0));
+    }),
+    
+    aprovarMensagem: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumMensagensRetidas, forumTopicos, forumRespostas } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Buscar mensagem retida
+        const mensagem = await db.select().from(forumMensagensRetidas).where(eq(forumMensagensRetidas.id, input.id)).limit(1);
+        if (!mensagem[0]) throw new Error("Mensagem não encontrada");
+        
+        // Publicar mensagem
+        if (mensagem[0].tipo === "topico") {
+          await db.insert(forumTopicos).values({
+            userId: mensagem[0].autorId,
+            titulo: mensagem[0].conteudo.split("\n")[0].substring(0, 500),
+            conteudo: mensagem[0].conteudo,
+            categoria: "duvidas",
+            curtidas: 0,
+            visualizacoes: 0,
+          });
+        } else {
+          await db.insert(forumRespostas).values({
+            topicoId: mensagem[0].topicoId!,
+            userId: mensagem[0].autorId,
+            conteudo: mensagem[0].conteudo,
+            curtidas: 0,
+          });
+        }
+        
+        // Marcar como aprovado
+        await db.update(forumMensagensRetidas)
+          .set({ aprovado: 1, moderadoPor: ctx.user.id })
+          .where(eq(forumMensagensRetidas.id, input.id));
+        
+        return { success: true };
+      }),
+    
+    rejeitarMensagem: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "master" && ctx.user.role !== "mentor" && ctx.user.role !== "administrativo") {
+          throw new Error("Permissão negada");
+        }
+        
+        const db = await import("./db").then(m => m.getDb());
+        if (!db) throw new Error("Database not available");
+        
+        const { forumMensagensRetidas } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        
+        // Deletar mensagem retida
+        await db.delete(forumMensagensRetidas).where(eq(forumMensagensRetidas.id, input.id));
+        
+        return { success: true };
+      }),
   }),
 
   matriculas: router({

@@ -113,6 +113,32 @@ export default function Forum() {
     },
   });
 
+  const fixarTopicoMutation = trpc.forum.fixarTopico.useMutation({
+    onSuccess: (_, variables) => {
+      toast.success(variables.fixado ? "Tópico fixado!" : "Tópico desfixado!");
+      refetchTopicos();
+      if (topicoSelecionado) {
+        setTopicoSelecionado({ ...topicoSelecionado, fixado: variables.fixado ? 1 : 0 });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao fixar tópico");
+    },
+  });
+
+  const fecharTopicoMutation = trpc.forum.fecharTopico.useMutation({
+    onSuccess: (_, variables) => {
+      toast.success(variables.fechado ? "Tópico fechado!" : "Tópico reaberto!");
+      refetchTopicos();
+      if (topicoSelecionado) {
+        setTopicoSelecionado({ ...topicoSelecionado, fechado: variables.fechado ? 1 : 0 });
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message || "Erro ao fechar tópico");
+    },
+  });
+
   const handleCriarTopico = () => {
     if (!novoTopico.titulo || !novoTopico.conteudo) {
       toast.error("Preencha todos os campos obrigatórios");
@@ -287,6 +313,32 @@ export default function Forum() {
                     </Button>
                   );
                 })()}
+                {isMentorOrMaster && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        const novoEstado = !topicoSelecionado.fixado;
+                        fixarTopicoMutation.mutate({ id: topicoSelecionado.id, fixado: novoEstado });
+                      }}
+                      title={topicoSelecionado.fixado ? "Desafixar tópico" : "Fixar tópico"}
+                    >
+                      📌 {topicoSelecionado.fixado ? "Desfixar" : "Fixar"}
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        const novoEstado = !topicoSelecionado.fechado;
+                        fecharTopicoMutation.mutate({ id: topicoSelecionado.id, fechado: novoEstado });
+                      }}
+                      title={topicoSelecionado.fechado ? "Reabrir tópico" : "Fechar tópico"}
+                    >
+                      🔒 {topicoSelecionado.fechado ? "Reabrir" : "Fechar"}
+                    </Button>
+                  </>
+                )}
                 {(user?.role === "master" || user?.role === "administrativo") && (
                   <Button 
                     variant="ghost" 

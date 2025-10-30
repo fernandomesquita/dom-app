@@ -235,3 +235,54 @@
 - [x] Implementar funcionalidade de vincular uma meta a múltiplos planos (seletor multi-select de planos)
 
 - [ ] Adicionar seção no Dashboard com histórico detalhado de questões respondidas (nota individual, data, disciplina)
+
+---
+
+## 🎯 PLANO DE TRABALHO ATUAL: AULAS, FÓRUM E NOTIFICAÇÕES
+
+### 🎥 Sistema de Aulas - Progresso e Funcionalidades
+- [ ] Salvar progresso de visualização (timestamp + % assistido)
+- [ ] Retomar aula do ponto onde parou
+- [ ] Marcar aula como concluída (90%+ assistido)
+- [ ] Barra de progresso visual no card da aula
+- [ ] Anotações durante aula com timestamp
+- [ ] Lista de anotações clicáveis (pula para timestamp)
+- [ ] Velocidade de reprodução (0.5x - 2x)
+- [ ] Atalhos de teclado no player
+- [ ] Playlists por disciplina/módulo
+- [ ] Próxima aula automática (sugestão)
+- [ ] Filtros: concluídas/pendentes, disciplina, duração
+
+### 💬 Fórum - Moderação e Engajamento
+- [x] Painel de moderação (Master/Mentor)
+- [x] Fixar tópicos importantes
+- [x] Fechar tópicos para novas respostas
+- [x] Marcar tópico como "resolvido" (via marcar melhor resposta)
+- [ ] Notificar autor quando alguém responde
+- [ ] Notificar quando mencionado (@usuario)
+- [ ] Seguir tópicos específicos
+- [ ] Sistema de reputação (pontos)
+- [ ] Marcar resposta como "solução"
+- [ ] Editor rich text para respostas
+- [ ] Upload de imagens nas respostas
+
+### 🔔 Sistema de Notificações - Infraestrutura Completa
+- [ ] Central de notificações (/notificacoes)
+- [ ] Badge com contador de não lidas
+- [ ] Marcar como lida (individual/todas)
+- [ ] Notificações in-app (sino + dropdown)
+- [ ] Notificações por email (templates HTML)
+- [ ] Push notifications (Web Push API)
+- [ ] Página de preferências (/configuracoes/notificacoes)
+- [ ] Ativar/desativar por tipo de evento
+- [ ] Escolher canal: in-app, email, push
+- [ ] Horário de silêncio (não enviar à noite)
+- [ ] Eventos: nova meta, prazo próximo, resposta fórum, nova aula
+- [ ] Templates de email responsivos
+- [ ] Fila de envio com retry automático
+
+### 🔗 Integrações Entre Módulos
+- [ ] Notificar quando nova aula vinculada à meta é publicada
+- [ ] Botão "Assistir Aula" direto da meta
+- [ ] Notificar respostas em tópicos do fórum
+- [ ] Lembrete de aulas não assistidas
