@@ -1,0 +1,1 @@
+ALTER TABLE `metas` MODIFY COLUMN `plano_id` varchar(500) NOT NULL;

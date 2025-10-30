@@ -229,3 +229,7 @@
 - [x] Corrigir funcionalidade de reordenação de metas (botões de setas ↑↓ não estão funcionando)
 
 - [x] Implementar menu dropdown/expansível responsivo para navegação do painel administrativo (evitar overflow em telas menores)
+
+- [x] Corrigir rota /admin retornando 404 (era problema transitório, rota está funcionando)
+
+- [x] Implementar funcionalidade de vincular uma meta a múltiplos planos (seletor multi-select de planos)

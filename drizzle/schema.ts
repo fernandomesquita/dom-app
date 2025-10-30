@@ -96,7 +96,7 @@ export type InsertMatricula = typeof matriculas.$inferInsert;
  */
 export const metas = mysqlTable("metas", {
   id: int("id").autoincrement().primaryKey(),
-  planoId: int("plano_id").notNull(),
+  planoId: varchar("plano_id", { length: 500 }).notNull(), // IDs separados por vírgula para múltiplos planos
   disciplina: varchar("disciplina", { length: 255 }).notNull(),
   assunto: text("assunto").notNull(),
   tipo: mysqlEnum("tipo", ["estudo", "revisao", "questoes"]).notNull(),

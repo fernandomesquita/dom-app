@@ -57,7 +57,11 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     dicaEstudo: "",
     orientacaoEstudos: "",
     aulaId: null as number | null,
+    planosIds: [planoId] as number[], // Plano atual selecionado por padrão
   });
+
+  // Buscar lista de todos os planos
+  const { data: todosPlanos } = trpc.admin.listarPlanos.useQuery();
 
   // Buscar metas do plano
   const { data: metasData, refetch } = trpc.metas.listByPlano.useQuery(
@@ -143,6 +147,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       dicaEstudo: "",
       orientacaoEstudos: "",
       aulaId: null,
+      planosIds: [planoId],
     });
     setMetaEditando(null);
   };
@@ -154,6 +159,11 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
 
   const handleEditarMeta = (meta: Meta) => {
     setMetaEditando(meta);
+    // Converter string de IDs separados por vírgula para array de números
+    const planosIds = (meta as any).planoId 
+      ? String((meta as any).planoId).split(',').map((id: string) => parseInt(id.trim()))
+      : [planoId];
+    
     setFormData({
       disciplina: meta.disciplina,
       assunto: meta.assunto,
@@ -163,6 +173,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       dicaEstudo: meta.dicaEstudo || "",
       orientacaoEstudos: meta.orientacaoEstudos || "",
       aulaId: (meta as any).aulaId || null,
+      planosIds,
     });
     setModalMeta(true);
   };
@@ -173,14 +184,23 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
       return;
     }
 
+    if (formData.planosIds.length === 0) {
+      toast.error("Selecione pelo menos um plano");
+      return;
+    }
+
+    // Converter array de IDs para string separada por vírgula
+    const planoIdString = formData.planosIds.join(',');
+
     if (metaEditando) {
       atualizarMetaMutation.mutate({
         id: metaEditando.id,
         ...formData,
+        planoId: planoIdString,
       });
     } else {
       criarMetaMutation.mutate({
-        planoId,
+        planoId: planoIdString,
         ...formData,
         ordem: metas.length + 1,
       });
@@ -443,6 +463,32 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
                 />
                 <p className="text-xs text-muted-foreground">
                   Vincule uma aula para acesso direto
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="planos">Planos Vinculados *</Label>
+                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1">
+                  {todosPlanos?.map((plano: any) => (
+                    <label key={plano.id} className="flex items-center gap-2 p-1 hover:bg-accent rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.planosIds.includes(plano.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ ...formData, planosIds: [...formData.planosIds, plano.id] });
+                          } else {
+                            setFormData({ ...formData, planosIds: formData.planosIds.filter(id => id !== plano.id) });
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-sm">{plano.nome}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecione os planos onde esta meta aparecerá
                 </p>
               </div>
             </div>
