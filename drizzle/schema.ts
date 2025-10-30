@@ -218,9 +218,10 @@ export type InsertAnotacaoAula = typeof anotacoesAulas.$inferInsert;
  */
 export const questoes = mysqlTable("questoes", {
   id: int("id").autoincrement().primaryKey(),
+  tipo: mysqlEnum("tipo", ["multipla_escolha", "certo_errado"]).default("multipla_escolha").notNull(),
   enunciado: text("enunciado").notNull(),
   alternativas: text("alternativas").notNull(), // JSON array
-  gabarito: varchar("gabarito", { length: 1 }).notNull(), // A, B, C, D, E
+  gabarito: varchar("gabarito", { length: 10 }).notNull(), // A, B, C, D, E para múltipla escolha | Certo/Errado
   banca: varchar("banca", { length: 255 }),
   concurso: varchar("concurso", { length: 255 }),
   ano: int("ano"),
@@ -675,3 +676,45 @@ export const bugsReportados = mysqlTable("bugs_reportados", {
 
 export type BugReportado = typeof bugsReportados.$inferSelect;
 export type InsertBugReportado = typeof bugsReportados.$inferInsert;
+
+
+/**
+ * Materiais - vídeos, PDFs, áudios e documentos para estudo
+ */
+export const materiais = mysqlTable("materiais", {
+  id: int("id").autoincrement().primaryKey(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  tipo: mysqlEnum("tipo", [
+    "video",    // vídeos (YouTube, Vimeo, MP4)
+    "pdf",      // documentos PDF
+    "audio",    // áudios (MP3, WAV, OGG, M4A)
+    "documento", // outros documentos (Word, Excel, etc)
+  ]).notNull(),
+  url: varchar("url", { length: 500 }).notNull(), // URL do arquivo no S3 ou link externo
+  duracao: int("duracao"), // Duração em segundos (para vídeos e áudios)
+  tamanho: int("tamanho"), // Tamanho em bytes
+  disciplina: varchar("disciplina", { length: 100 }),
+  assunto: varchar("assunto", { length: 255 }),
+  tags: text("tags"), // JSON array com tags para busca
+  createdBy: int("created_by").notNull(), // Quem criou
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Material = typeof materiais.$inferSelect;
+export type InsertMaterial = typeof materiais.$inferInsert;
+
+/**
+ * Materiais vinculados a metas - permite associar materiais de estudo às metas
+ */
+export const metasMateriais = mysqlTable("metas_materiais", {
+  id: int("id").autoincrement().primaryKey(),
+  metaId: int("meta_id").notNull(),
+  materialId: int("material_id").notNull(),
+  ordem: int("ordem").default(0), // Ordem de exibição
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type MetaMaterial = typeof metasMateriais.$inferSelect;
+export type InsertMetaMaterial = typeof metasMateriais.$inferInsert;

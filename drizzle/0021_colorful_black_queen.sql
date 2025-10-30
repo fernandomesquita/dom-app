@@ -1,0 +1,2 @@
+ALTER TABLE `questoes` MODIFY COLUMN `gabarito` varchar(10) NOT NULL;--> statement-breakpoint
+ALTER TABLE `questoes` ADD `tipo` enum('multipla_escolha','certo_errado') DEFAULT 'multipla_escolha' NOT NULL;

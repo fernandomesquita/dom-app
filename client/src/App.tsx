@@ -26,37 +26,45 @@ import RedefinirSenha from "./pages/RedefinirSenha";
 import Perfil from "./pages/Perfil";
 import Conquistas from "./pages/Conquistas";
 
+// Wrapper para rotas com layout
+function LayoutRoute({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <DOMLayout>
+      <Component />
+    </DOMLayout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       {/* Rotas públicas de autenticação (sem layout) */}
-      <Route path={"/cadastro"} component={Cadastro} />
-      <Route path={"/login"} component={Login} />
-      <Route path={"/verificar-email/:token"} component={VerificarEmail} />
-      <Route path={"/recuperar-senha"} component={RecuperarSenha} />
-      <Route path={"/redefinir-senha/:token"} component={RedefinirSenha} />
+      <Route path="/cadastro" component={Cadastro} />
+      <Route path="/login" component={Login} />
+      <Route path="/verificar-email/:token" component={VerificarEmail} />
+      <Route path="/recuperar-senha" component={RecuperarSenha} />
+      <Route path="/redefinir-senha/:token" component={RedefinirSenha} />
       
       {/* Rotas protegidas (com layout) */}
-      <DOMLayout>
-        <Route path={"/"} component={Dashboard} />
-        <Route path={"/plano"} component={Plano} />
-        <Route path={"/aulas"} component={Aulas} />
-      <Route path={"/aulas/:id"} component={AulaView} />
-        <Route path={"/materiais"} component={Materiais} />
-        <Route path={"/questoes"} component={Questoes} />
-        <Route path={"/questoes/resolver"} component={ResolverQuestoes} />
-        <Route path={"/questoes/estatisticas"} component={EstatisticasQuestoes} />
-        <Route path={"/forum"} component={Forum} />
-        <Route path={"/revisao"} component={Revisao} />
-        <Route path={"/anotacoes"} component={AnotacoesMeta} />
-        <Route path={"/perfil"} component={Perfil} />
-        <Route path={"/conquistas"} component={Conquistas} />
-        <Route path={"/admin"} component={Admin} />
-        <Route path={"/admin/planos/:id/metas"} component={GestaoMetas} />
-        <Route path={"/404"} component={NotFound} />
-        {/* Final fallback route */}
-        <Route component={NotFound} />
-      </DOMLayout>
+      <Route path="/" component={() => <LayoutRoute component={Dashboard} />} />
+      <Route path="/plano" component={() => <LayoutRoute component={Plano} />} />
+      <Route path="/aulas" component={() => <LayoutRoute component={Aulas} />} />
+      <Route path="/aulas/:id" component={() => <LayoutRoute component={AulaView} />} />
+      <Route path="/materiais" component={() => <LayoutRoute component={Materiais} />} />
+      <Route path="/questoes" component={() => <LayoutRoute component={Questoes} />} />
+      <Route path="/questoes/resolver" component={() => <LayoutRoute component={ResolverQuestoes} />} />
+      <Route path="/questoes/estatisticas" component={() => <LayoutRoute component={EstatisticasQuestoes} />} />
+      <Route path="/forum" component={() => <LayoutRoute component={Forum} />} />
+      <Route path="/revisao" component={() => <LayoutRoute component={Revisao} />} />
+      <Route path="/anotacoes" component={() => <LayoutRoute component={AnotacoesMeta} />} />
+      <Route path="/perfil" component={() => <LayoutRoute component={Perfil} />} />
+      <Route path="/conquistas" component={() => <LayoutRoute component={Conquistas} />} />
+      <Route path="/admin" component={() => <LayoutRoute component={Admin} />} />
+      <Route path="/admin/planos/:id/metas" component={() => <LayoutRoute component={GestaoMetas} />} />
+      <Route path="/404" component={() => <LayoutRoute component={NotFound} />} />
+      
+      {/* Final fallback route */}
+      <Route component={() => <LayoutRoute component={NotFound} />} />
     </Switch>
   );
 }

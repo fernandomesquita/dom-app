@@ -507,3 +507,50 @@
 - [x] Incluir título, categoria e prioridade na notificação
 - [x] Link direto para painel de bugs
 - [x] Endpoint /api/upload para screenshots
+
+
+## 🐛 BUG CRÍTICO - Erro 404 na Rota Principal ✅
+
+- [x] Investigar causa do erro 404 em /?from_webdev=1
+- [x] Verificar configuração de rotas no App.tsx
+- [x] Verificar se componente Dashboard está sendo importado corretamente
+- [x] Testar rota principal após correção
+- [x] Validar que todas as rotas estão funcionando
+
+**Solução:** Criado componente LayoutRoute para envolver cada página individualmente com DOMLayout, corrigindo conflito de renderização múltipla do Switch do wouter.
+
+
+## 🔴 PRIORIDADE URGENTE - Novas Demandas
+
+### Bug Crítico: Erro no Painel de Questões ✅
+- [x] Corrigir erro "Select.Item must have a value prop that is not an empty string"
+- [x] Localizar Select.Item com value vazio no componente GestaoQuestoes
+- [x] Adicionar valores válidos ou remover opções vazias
+- [x] Testar painel de questões após correção
+
+**Solução:** Substituído value="" por value="all" nos 3 SelectItem (Disciplina, Banca, Dificuldade) e ajustada lógica de filtragem para tratar "all" como "mostrar todas".
+
+### Nova Funcionalidade: Seletor de Tipo de Questão ✅
+- [x] Adicionar campo tipo na tabela questoes (certo_errado, multipla_escolha)
+- [x] Atualizar schema e executar migration
+- [x] Adicionar seletor de tipo no modal de criação de questões
+- [x] Ajustar formulário para mostrar 2 opções (Certo/Errado) ou 5 (A-E)
+- [x] Atualizar validações baseadas no tipo
+- [x] Seletor de gabarito dinâmico (Certo/Errado ou A-E)
+
+**Implementado:** Campo tipo no schema, seletor no modal com alternação dinâmica de alternativas e gabarito.
+
+### Nova Funcionalidade: Suporte a Áudios nos Materiais
+- [ ] Adicionar campo de tipo "audio" na tabela materiais
+- [ ] Criar upload de arquivos de áudio (MP3, WAV, OGG)
+- [ ] Implementar player de áudio no componente de materiais
+- [ ] Permitir vincular áudios às metas
+- [ ] Testar reprodução de áudios
+
+### Nova Funcionalidade: Estatísticas Comparativas Entre Alunos
+- [ ] Criar query para buscar alunos do mesmo plano
+- [ ] Implementar gráficos comparativos (Recharts)
+- [ ] Comparar: horas estudadas, metas concluídas, questões resolvidas
+- [ ] Adicionar filtros por período (semana, mês, trimestre)
+- [ ] Criar página ou seção dedicada para comparativos
+- [ ] Garantir privacidade (apenas dados agregados, sem identificação)

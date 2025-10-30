@@ -109,6 +109,7 @@ export default function GestaoQuestoes() {
   // Handlers
   const resetForm = () => {
     setNovaQuestao({
+      tipo: "multipla_escolha",
       enunciado: "",
       alternativas: ["", "", "", "", ""],
       gabarito: "A",
@@ -191,9 +192,9 @@ export default function GestaoQuestoes() {
       q.enunciado.toLowerCase().includes(searchTerm.toLowerCase()) ||
       q.disciplina.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchDisciplina = !filtroDisciplina || q.disciplina === filtroDisciplina;
-    const matchBanca = !filtroBanca || q.banca === filtroBanca;
-    const matchDificuldade = !filtroDificuldade || q.nivelDificuldade === filtroDificuldade;
+    const matchDisciplina = !filtroDisciplina || filtroDisciplina === "all" || q.disciplina === filtroDisciplina;
+    const matchBanca = !filtroBanca || filtroBanca === "all" || q.banca === filtroBanca;
+    const matchDificuldade = !filtroDificuldade || filtroDificuldade === "all" || q.nivelDificuldade === filtroDificuldade;
     
     return matchSearch && matchDisciplina && matchBanca && matchDificuldade;
   });
@@ -281,7 +282,7 @@ export default function GestaoQuestoes() {
                 <SelectValue placeholder="Disciplina" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 {disciplinas.map(d => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
                 ))}
@@ -293,7 +294,7 @@ export default function GestaoQuestoes() {
                 <SelectValue placeholder="Banca" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 {bancas.map(b => (
                   <SelectItem key={b} value={b!}>{b}</SelectItem>
                 ))}
@@ -305,7 +306,7 @@ export default function GestaoQuestoes() {
                 <SelectValue placeholder="Dificuldade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="facil">Fácil</SelectItem>
                 <SelectItem value="medio">Médio</SelectItem>
                 <SelectItem value="dificil">Difícil</SelectItem>
@@ -411,6 +412,31 @@ export default function GestaoQuestoes() {
           </DialogHeader>
           
           <div className="space-y-4">
+            {/* Seletor de Tipo de Questão */}
+            <div>
+              <Label>Tipo de Questão *</Label>
+              <Select
+                value={novaQuestao.tipo || "multipla_escolha"}
+                onValueChange={(value: any) => {
+                  const isCertoErrado = value === "certo_errado";
+                  setNovaQuestao({ 
+                    ...novaQuestao, 
+                    tipo: value,
+                    alternativas: isCertoErrado ? ["Certo", "Errado"] : ["", "", "", "", ""],
+                    gabarito: isCertoErrado ? "Certo" : "A"
+                  });
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="multipla_escolha">Múltipla Escolha (A, B, C, D, E)</SelectItem>
+                  <SelectItem value="certo_errado">Certo ou Errado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div>
               <Label>Enunciado *</Label>
               <Textarea
@@ -481,20 +507,49 @@ export default function GestaoQuestoes() {
             
             <div>
               <Label>Alternativas * (mínimo 2)</Label>
-              {novaQuestao.alternativas.map((alt, index) => (
-                <div key={index} className="flex items-center gap-2 mt-2">
-                  <span className="font-medium w-8">{String.fromCharCode(65 + index)})</span>
-                  <Input
-                    value={alt}
-                    onChange={(e) => {
-                      const newAlts = [...novaQuestao.alternativas];
-                      newAlts[index] = e.target.value;
-                      setNovaQuestao({ ...novaQuestao, alternativas: newAlts });
-                    }}
-                    placeholder={`Alternativa ${String.fromCharCode(65 + index)}`}
-                  />
+              {novaQuestao.tipo === "certo_errado" ? (
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium w-20">Certo:</span>
+                    <Input
+                      value={novaQuestao.alternativas[0] || "Certo"}
+                      onChange={(e) => {
+                        const newAlts = [...novaQuestao.alternativas];
+                        newAlts[0] = e.target.value;
+                        setNovaQuestao({ ...novaQuestao, alternativas: newAlts });
+                      }}
+                      placeholder="Certo"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium w-20">Errado:</span>
+                    <Input
+                      value={novaQuestao.alternativas[1] || "Errado"}
+                      onChange={(e) => {
+                        const newAlts = [...novaQuestao.alternativas];
+                        newAlts[1] = e.target.value;
+                        setNovaQuestao({ ...novaQuestao, alternativas: newAlts });
+                      }}
+                      placeholder="Errado"
+                    />
+                  </div>
                 </div>
-              ))}
+              ) : (
+                novaQuestao.alternativas.map((alt, index) => (
+                  <div key={index} className="flex items-center gap-2 mt-2">
+                    <span className="font-medium w-8">{String.fromCharCode(65 + index)})</span>
+                    <Input
+                      value={alt}
+                      onChange={(e) => {
+                        const newAlts = [...novaQuestao.alternativas];
+                        newAlts[index] = e.target.value;
+                        setNovaQuestao({ ...novaQuestao, alternativas: newAlts });
+                      }}
+                      placeholder={`Alternativa ${String.fromCharCode(65 + index)}`}
+                    />
+                  </div>
+                ))
+              )}
             </div>
             
             <div>
@@ -507,11 +562,20 @@ export default function GestaoQuestoes() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A">A</SelectItem>
-                  <SelectItem value="B">B</SelectItem>
-                  <SelectItem value="C">C</SelectItem>
-                  <SelectItem value="D">D</SelectItem>
-                  <SelectItem value="E">E</SelectItem>
+                  {novaQuestao.tipo === "certo_errado" ? (
+                    <>
+                      <SelectItem value="Certo">Certo</SelectItem>
+                      <SelectItem value="Errado">Errado</SelectItem>
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
