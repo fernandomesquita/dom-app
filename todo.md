@@ -371,3 +371,62 @@
 - [ ] Implementar rollback de estado em caso de falha
 - [ ] Melhorar mensagens de erro nos toasts
 - [ ] Adicionar logs de erro para debug
+
+
+---
+
+## 🐛 SISTEMA DE REPORTE DE BUGS (NOVA FUNCIONALIDADE) ✅
+
+### Schema e Banco de Dados
+- [x] Criar tabela bugs_reportados (id, userId, titulo, descricao, categoria, prioridade, status, screenshots, createdAt)
+- [x] Criar migration para nova tabela
+- [x] Executar db:push para aplicar migration
+
+### Backend (APIs tRPC)
+- [x] Criar função criarBugReportado no db.ts
+- [x] Criar função listarBugsReportados no db.ts
+- [x] Criar função atualizarStatusBug no db.ts
+- [x] Criar função deletarBugReportado no db.ts
+- [x] Criar router bugs no routers.ts
+- [x] Implementar mutation reportar (público)
+- [x] Implementar query listar (admin)
+- [x] Implementar mutation atualizarStatus (admin)
+- [x] Implementar mutation deletar (admin)
+
+### Upload de Screenshots
+- [x] Configurar upload de múltiplas imagens (até 3)
+- [x] Integrar com S3 storage
+- [x] Validar tamanho máximo (5MB por imagem)
+- [x] Validar formato (png, jpg, jpeg, webp)
+
+### Componente Modal de Reporte
+- [x] Criar componente ReportarBugModal.tsx
+- [x] Formulário com campos: título, descrição, categoria, prioridade
+- [x] Campo de upload de imagens com preview
+- [x] Validações de formulário
+- [x] Loading state durante envio
+- [x] Toast de sucesso/erro
+
+### Botão Flutuante Global
+- [x] Criar componente BotaoReportarBug.tsx (botão flutuante fixo)
+- [x] Posicionar no canto inferior direito
+- [x] Ícone de bug com animação
+- [x] Integrar em DOMLayout para aparecer em todas as páginas
+- [x] Abrir modal ao clicar
+
+### Painel Administrativo
+- [x] Criar componente GestaoBugs.tsx
+- [x] Listagem em tabela com todos os bugs
+- [x] Filtros: status (pendente/em análise/resolvido/fechado), prioridade, categoria
+- [x] Busca por título/descrição
+- [x] Modal de detalhes do bug com screenshots
+- [x] Botões de ação: alterar status, deletar
+- [x] Badges coloridos por status e prioridade
+- [x] Integrar na tab "Bugs Reportados" do painel Admin
+
+### Notificações Automáticas
+- [x] Criar notificação automática ao reportar bug
+- [x] Enviar notificação para owner (OWNER_OPEN_ID)
+- [x] Incluir título, categoria e prioridade na notificação
+- [x] Link direto para painel de bugs
+- [x] Endpoint /api/upload para screenshots

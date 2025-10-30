@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import CentralNotificacoes from "./CentralNotificacoes";
+import BotaoReportarBug from "./BotaoReportarBug";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
@@ -206,6 +207,9 @@ export default function DOMLayout({ children }: { children: React.ReactNode }) {
         <div className="flex-1">{children}</div>
         <Footer />
       </main>
+
+      {/* Botão Flutuante de Reportar Bug */}
+      {isAuthenticated && <BotaoReportarBug />}
     </div>
   );
 }

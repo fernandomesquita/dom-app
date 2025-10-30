@@ -18,7 +18,11 @@ import {
   conquistas,
   userConquistas,
   configFuncionalidades,
-  forumMensagensRetidas
+  forumMensagensRetidas,
+  bugsReportados,
+  InsertBugReportado,
+  notificacoes,
+  InsertNotificacao
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -3716,4 +3720,286 @@ export async function redistribuirMetasAluno(
   }
   
   console.log(`[Redistribuição] ${metasOrdenadas.length} metas redistribuídas para o usuário ${userId}`);
+}
+
+/**
+ * ========================================
+ * BUGS REPORTADOS
+ * ========================================
+ */
+
+/**
+ * Criar um novo bug reportado
+ */
+export async function criarBugReportado(dados: {
+  userId: number;
+  titulo: string;
+  descricao: string;
+  categoria: "interface" | "funcionalidade" | "performance" | "dados" | "mobile" | "outro";
+  prioridade: "baixa" | "media" | "alta" | "critica";
+  screenshots?: string[]; // URLs das imagens no S3
+  paginaUrl?: string;
+  navegador?: string;
+  resolucao?: string;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const screenshotsJson = dados.screenshots ? JSON.stringify(dados.screenshots) : null;
+
+  const result = await db.insert(bugsReportados).values({
+    userId: dados.userId,
+    titulo: dados.titulo,
+    descricao: dados.descricao,
+    categoria: dados.categoria,
+    prioridade: dados.prioridade,
+    screenshots: screenshotsJson,
+    paginaUrl: dados.paginaUrl || null,
+    navegador: dados.navegador || null,
+    resolucao: dados.resolucao || null,
+    status: "pendente",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+
+  return Number(result.insertId);
+}
+
+/**
+ * Listar todos os bugs reportados (para admin)
+ */
+export async function listarBugsReportados(filtros?: {
+  status?: string;
+  prioridade?: string;
+  categoria?: string;
+}): Promise<any[]> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  let query = db
+    .select({
+      id: bugsReportados.id,
+      userId: bugsReportados.userId,
+      userName: users.name,
+      userEmail: users.email,
+      titulo: bugsReportados.titulo,
+      descricao: bugsReportados.descricao,
+      categoria: bugsReportados.categoria,
+      prioridade: bugsReportados.prioridade,
+      status: bugsReportados.status,
+      screenshots: bugsReportados.screenshots,
+      paginaUrl: bugsReportados.paginaUrl,
+      navegador: bugsReportados.navegador,
+      resolucao: bugsReportados.resolucao,
+      observacoesAdmin: bugsReportados.observacoesAdmin,
+      createdAt: bugsReportados.createdAt,
+      updatedAt: bugsReportados.updatedAt,
+      resolvidoEm: bugsReportados.resolvidoEm,
+      resolvidoPor: bugsReportados.resolvidoPor,
+    })
+    .from(bugsReportados)
+    .leftJoin(users, eq(bugsReportados.userId, users.id));
+
+  // Aplicar filtros
+  const conditions = [];
+  if (filtros?.status) {
+    conditions.push(eq(bugsReportados.status, filtros.status as any));
+  }
+  if (filtros?.prioridade) {
+    conditions.push(eq(bugsReportados.prioridade, filtros.prioridade as any));
+  }
+  if (filtros?.categoria) {
+    conditions.push(eq(bugsReportados.categoria, filtros.categoria as any));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const bugs = await query.orderBy(desc(bugsReportados.createdAt));
+
+  // Parse screenshots JSON
+  return bugs.map(bug => ({
+    ...bug,
+    screenshots: bug.screenshots ? JSON.parse(bug.screenshots) : [],
+  }));
+}
+
+/**
+ * Buscar bug por ID
+ */
+export async function getBugReportadoById(bugId: number): Promise<any | null> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select({
+      id: bugsReportados.id,
+      userId: bugsReportados.userId,
+      userName: users.name,
+      userEmail: users.email,
+      titulo: bugsReportados.titulo,
+      descricao: bugsReportados.descricao,
+      categoria: bugsReportados.categoria,
+      prioridade: bugsReportados.prioridade,
+      status: bugsReportados.status,
+      screenshots: bugsReportados.screenshots,
+      paginaUrl: bugsReportados.paginaUrl,
+      navegador: bugsReportados.navegador,
+      resolucao: bugsReportados.resolucao,
+      observacoesAdmin: bugsReportados.observacoesAdmin,
+      createdAt: bugsReportados.createdAt,
+      updatedAt: bugsReportados.updatedAt,
+      resolvidoEm: bugsReportados.resolvidoEm,
+      resolvidoPor: bugsReportados.resolvidoPor,
+    })
+    .from(bugsReportados)
+    .leftJoin(users, eq(bugsReportados.userId, users.id))
+    .where(eq(bugsReportados.id, bugId))
+    .limit(1);
+
+  if (result.length === 0) return null;
+
+  const bug = result[0];
+  return {
+    ...bug,
+    screenshots: bug.screenshots ? JSON.parse(bug.screenshots) : [],
+  };
+}
+
+/**
+ * Atualizar status do bug
+ */
+export async function atualizarStatusBug(
+  bugId: number,
+  status: "pendente" | "em_analise" | "resolvido" | "fechado",
+  adminId: number,
+  observacoes?: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updateData: any = {
+    status,
+    updatedAt: new Date(),
+  };
+
+  if (observacoes) {
+    updateData.observacoesAdmin = observacoes;
+  }
+
+  if (status === "resolvido") {
+    updateData.resolvidoEm = new Date();
+    updateData.resolvidoPor = adminId;
+  }
+
+  await db
+    .update(bugsReportados)
+    .set(updateData)
+    .where(eq(bugsReportados.id, bugId));
+}
+
+/**
+ * Deletar bug reportado
+ */
+export async function deletarBugReportado(bugId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(bugsReportados).where(eq(bugsReportados.id, bugId));
+}
+
+/**
+ * Contar bugs por status
+ */
+export async function contarBugsPorStatus(): Promise<{
+  pendente: number;
+  em_analise: number;
+  resolvido: number;
+  fechado: number;
+  total: number;
+}> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const bugs = await db.select().from(bugsReportados);
+
+  const contadores = {
+    pendente: 0,
+    em_analise: 0,
+    resolvido: 0,
+    fechado: 0,
+    total: bugs.length,
+  };
+
+  bugs.forEach(bug => {
+    if (bug.status === "pendente") contadores.pendente++;
+    else if (bug.status === "em_analise") contadores.em_analise++;
+    else if (bug.status === "resolvido") contadores.resolvido++;
+    else if (bug.status === "fechado") contadores.fechado++;
+  });
+
+  return contadores;
+}
+
+/**
+ * Notificar owner sobre novo bug reportado
+ */
+export async function notificarOwnerNovoBug(bugId: number, bug: {
+  titulo: string;
+  categoria: string;
+  prioridade: string;
+  userName?: string;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Buscar owner pelo OWNER_OPEN_ID
+  const owner = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, ENV.ownerOpenId))
+    .limit(1);
+
+  if (owner.length === 0) {
+    console.warn("[notificarOwnerNovoBug] Owner não encontrado");
+    return;
+  }
+
+  const ownerId = owner[0].id;
+
+  // Emojis por prioridade
+  const prioridadeEmoji: Record<string, string> = {
+    baixa: "🟢",
+    media: "🟡",
+    alta: "🟠",
+    critica: "🔴",
+  };
+
+  // Emojis por categoria
+  const categoriaEmoji: Record<string, string> = {
+    interface: "🎨",
+    funcionalidade: "⚙️",
+    performance: "⚡",
+    dados: "📊",
+    mobile: "📱",
+    outro: "❓",
+  };
+
+  const emoji = prioridadeEmoji[bug.prioridade] || "🐛";
+  const catEmoji = categoriaEmoji[bug.categoria] || "🐛";
+
+  // Criar notificação
+  await db.insert(notificacoes).values({
+    userId: ownerId,
+    tipo: "sistema",
+    titulo: `${emoji} Novo Bug Reportado`,
+    mensagem: `${catEmoji} **${bug.titulo}**\n\nCategoria: ${bug.categoria}\nPrioridade: ${bug.prioridade}\nReportado por: ${bug.userName || "Usuário desconhecido"}`,
+    link: `/admin?tab=bugs`, // Link direto para o painel de bugs
+    lida: 0,
+    metadata: JSON.stringify({ bugId, tipo: "bug_reportado" }),
+    createdAt: new Date(),
+  });
+
+  console.log(`[notificarOwnerNovoBug] Notificação criada para owner sobre bug #${bugId}`);
 }

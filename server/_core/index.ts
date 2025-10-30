@@ -35,6 +35,38 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+  
+  // Upload de arquivos para S3
+  app.post("/api/upload", express.json(), async (req, res) => {
+    try {
+      const { storagePut } = await import("../storage");
+      
+      // Espera receber { file: base64String, filename: string, mimeType: string }
+      const { file, filename, mimeType } = req.body;
+      
+      if (!file || !filename) {
+        return res.status(400).json({ error: "Missing file or filename" });
+      }
+      
+      // Converter base64 para Buffer
+      const base64Data = file.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+      
+      // Gerar nome único
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(7);
+      const fileKey = `bugs/${timestamp}-${randomSuffix}-${filename}`;
+      
+      // Upload para S3
+      const { url } = await storagePut(fileKey, buffer, mimeType || "image/png");
+      
+      res.json({ url, key: fileKey });
+    } catch (error) {
+      console.error("[/api/upload] Erro:", error);
+      res.status(500).json({ error: "Failed to upload file" });
+    }
+  });
+  
   // tRPC API
   app.use(
     "/api/trpc",

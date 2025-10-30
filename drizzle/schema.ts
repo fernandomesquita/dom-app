@@ -632,3 +632,46 @@ export const preferenciasNotificacoes = mysqlTable("preferencias_notificacoes", 
 
 export type PreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferSelect;
 export type InsertPreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferInsert;
+
+
+/**
+ * Bugs Reportados - sistema de feedback e reporte de problemas
+ */
+export const bugsReportados = mysqlTable("bugs_reportados", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull(), // Quem reportou
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao").notNull(),
+  categoria: mysqlEnum("categoria", [
+    "interface", // problemas visuais/UI
+    "funcionalidade", // recurso não funciona
+    "performance", // lentidão
+    "dados", // dados incorretos
+    "mobile", // problemas no mobile
+    "outro", // outros problemas
+  ]).notNull(),
+  prioridade: mysqlEnum("prioridade", [
+    "baixa",
+    "media",
+    "alta",
+    "critica",
+  ]).default("media").notNull(),
+  status: mysqlEnum("status", [
+    "pendente", // aguardando análise
+    "em_analise", // sendo analisado
+    "resolvido", // corrigido
+    "fechado", // não será corrigido ou duplicado
+  ]).default("pendente").notNull(),
+  screenshots: text("screenshots"), // JSON array com URLs das imagens no S3
+  paginaUrl: varchar("pagina_url", { length: 500 }), // URL da página onde ocorreu
+  navegador: varchar("navegador", { length: 100 }), // Info do navegador
+  resolucao: varchar("resolucao", { length: 50 }), // Resolução da tela
+  observacoesAdmin: text("observacoes_admin"), // Notas internas do admin
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  resolvidoEm: timestamp("resolvido_em"), // Data de resolução
+  resolvidoPor: int("resolvido_por"), // ID do admin que resolveu
+});
+
+export type BugReportado = typeof bugsReportados.$inferSelect;
+export type InsertBugReportado = typeof bugsReportados.$inferInsert;

@@ -18,7 +18,8 @@ import {
   Palette,
   Menu,
   GraduationCap,
-  FileText
+  FileText,
+  Bug
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ import DashboardAlunoAdmin from "@/components/admin/DashboardAlunoAdmin";
 import RelatorioComparativo from "@/components/admin/RelatorioComparativo";
 import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
+import GestaoBugs from "@/components/GestaoBugs";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
@@ -86,6 +88,7 @@ export default function Admin() {
     personalizacao: isMaster,
     configuracoes: isMaster,
     tokens: isMaster || isAdministrativo,
+    bugs: isMaster || isAdministrativo,
   };
 
   const tabs = [
@@ -98,6 +101,7 @@ export default function Admin() {
     { value: "materiais", label: "Materiais", show: availableTabs.materiais },
     { value: "avisos", label: "Avisos", show: availableTabs.avisos },
     { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
+    { value: "bugs", label: "Bugs Reportados", show: availableTabs.bugs },
     { value: "personalizacao", label: "Personalização", show: availableTabs.personalizacao },
     { value: "configuracoes", label: "Configurações", show: availableTabs.configuracoes },
     { value: "tokens", label: "Tokens", show: availableTabs.tokens },
@@ -413,6 +417,13 @@ export default function Admin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Tab: Bugs Reportados (Master, Administrativo) */}
+        {availableTabs.bugs && (
+          <TabsContent value="bugs" className="space-y-4">
+            <GestaoBugs />
           </TabsContent>
         )}
 

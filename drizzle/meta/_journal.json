@@ -134,6 +134,13 @@
       "when": 1761849356056,
       "tag": "0018_freezing_metal_master",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1761852115589,
+      "tag": "0019_lucky_green_goblin",
+      "breakpoints": true
     }
   ]
 }

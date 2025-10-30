@@ -2407,4 +2407,131 @@ export const appRouter = router({
         return await getEvolucaoTemporalProgresso(userId, input.periodo || "30dias");
       }),
   }),
+
+  bugs: router({
+    // Reportar bug (público - qualquer usuário autenticado)
+    reportar: protectedProcedure
+      .input(z.object({
+        titulo: z.string().min(5, "Título deve ter no mínimo 5 caracteres").max(255),
+        descricao: z.string().min(10, "Descrição deve ter no mínimo 10 caracteres"),
+        categoria: z.enum(["interface", "funcionalidade", "performance", "dados", "mobile", "outro"]),
+        prioridade: z.enum(["baixa", "media", "alta", "critica"]).default("media"),
+        screenshots: z.array(z.string()).optional(),
+        paginaUrl: z.string().optional(),
+        navegador: z.string().optional(),
+        resolucao: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { criarBugReportado, notificarOwnerNovoBug } = await import("./db");
+        const bugId = await criarBugReportado({
+          userId: ctx.user.id,
+          titulo: input.titulo,
+          descricao: input.descricao,
+          categoria: input.categoria,
+          prioridade: input.prioridade,
+          screenshots: input.screenshots,
+          paginaUrl: input.paginaUrl,
+          navegador: input.navegador,
+          resolucao: input.resolucao,
+        });
+        
+        // Notificar owner sobre novo bug
+        try {
+          await notificarOwnerNovoBug(bugId, {
+            titulo: input.titulo,
+            categoria: input.categoria,
+            prioridade: input.prioridade,
+            userName: ctx.user.name || undefined,
+          });
+        } catch (error) {
+          console.error("[reportar] Erro ao notificar owner:", error);
+          // Não falhar a requisição se notificação falhar
+        }
+        
+        return { bugId };
+      }),
+    
+    // Listar bugs (admin)
+    listar: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+        prioridade: z.string().optional(),
+        categoria: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { listarBugsReportados } = await import("./db");
+        return await listarBugsReportados(input);
+      }),
+    
+    // Buscar bug por ID (admin)
+    buscarPorId: protectedProcedure
+      .input(z.object({
+        bugId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { getBugReportadoById } = await import("./db");
+        return await getBugReportadoById(input.bugId);
+      }),
+    
+    // Atualizar status (admin)
+    atualizarStatus: protectedProcedure
+      .input(z.object({
+        bugId: z.number(),
+        status: z.enum(["pendente", "em_analise", "resolvido", "fechado"]),
+        observacoes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { atualizarStatusBug } = await import("./db");
+        await atualizarStatusBug(
+          input.bugId,
+          input.status,
+          ctx.user.id,
+          input.observacoes
+        );
+        return { success: true };
+      }),
+    
+    // Deletar bug (admin)
+    deletar: protectedProcedure
+      .input(z.object({
+        bugId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { deletarBugReportado } = await import("./db");
+        await deletarBugReportado(input.bugId);
+        return { success: true };
+      }),
+    
+    // Contar bugs por status (admin)
+    contadores: protectedProcedure
+      .query(async ({ ctx }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { contarBugsPorStatus } = await import("./db");
+        return await contarBugsPorStatus();
+      }),
+  }),
 });
