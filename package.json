@@ -10,7 +10,10 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate"
+    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "git:commit": "git add . && git commit -m",
+    "git:push": "git push origin main",
+    "git:sync": "git add . && git commit --allow-empty -m 'chore: sync checkpoint' && git push origin main"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
