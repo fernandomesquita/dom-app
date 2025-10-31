@@ -13,6 +13,7 @@ import { UserPlus, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 export default function Cadastro() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
+    token: "",
     nome: "",
     email: "",
     cpf: "",
@@ -61,6 +62,10 @@ export default function Cadastro() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.token || formData.token.length < 5) {
+      newErrors.token = "Token de cadastro é obrigatório";
+    }
+
     if (!formData.nome || formData.nome.length < 3) {
       newErrors.nome = "Nome deve ter no mínimo 3 caracteres";
     }
@@ -105,6 +110,7 @@ export default function Cadastro() {
 
     try {
       await registerMutation.mutateAsync({
+        token: formData.token,
         nome: formData.nome,
         email: formData.email,
         cpf: formData.cpf,
@@ -180,6 +186,24 @@ export default function Cadastro() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Token de Cadastro */}
+            <div className="space-y-2">
+              <Label htmlFor="token">Token de Cadastro *</Label>
+              <Input
+                id="token"
+                value={formData.token}
+                onChange={(e) => handleChange("token", e.target.value.toUpperCase())}
+                placeholder="DOM-XXXXXXXXXX-XXXX"
+                className={errors.token ? "border-red-500" : ""}
+              />
+              {errors.token && (
+                <p className="text-sm text-red-500">{errors.token}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Insira o token fornecido pelo administrador da plataforma
+              </p>
+            </div>
+
             {/* Nome */}
             <div className="space-y-2">
               <Label htmlFor="nome">Nome Completo *</Label>

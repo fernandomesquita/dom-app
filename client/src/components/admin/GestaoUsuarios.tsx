@@ -10,6 +10,7 @@ import MensagensForumModal from "./MensagensForumModal";
 import FormularioUsuario from "./FormularioUsuario";
 import PerfilAlunoModal from "./PerfilAlunoModal";
 import ImportarAlunos from "./ImportarAlunos";
+import AtribuirPlanoModal from "./AtribuirPlanoModal";
 import { trpc } from "@/lib/trpc";
 
 export default function GestaoUsuarios() {
@@ -27,6 +28,8 @@ export default function GestaoUsuarios() {
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<any | null>(null);
   const [usuarioEditando, setUsuarioEditando] = useState<any | null>(null);
   const [usuarioPerfil, setUsuarioPerfil] = useState<number | null>(null);
+  const [atribuirPlanoAberto, setAtribuirPlanoAberto] = useState(false);
+  const [usuarioParaAtribuir, setUsuarioParaAtribuir] = useState<number | null>(null);
 
   const getPerfilColor = (perfil: string) => {
     switch (perfil) {
@@ -58,6 +61,12 @@ export default function GestaoUsuarios() {
   const handleVerPerfil = (usuarioId: number) => {
     setUsuarioPerfil(usuarioId);
     setPerfilAberto(true);
+  };
+
+  const handleAtribuirPlano = (usuarioId: number) => {
+    setUsuarioParaAtribuir(usuarioId);
+    setPerfilAberto(false);
+    setAtribuirPlanoAberto(true);
   };
 
   const handleExcluir = async (id: number) => {
@@ -224,6 +233,7 @@ export default function GestaoUsuarios() {
               handleEditarUsuario(usuario);
             }
           }}
+          onAtribuirPlano={() => handleAtribuirPlano(usuarioPerfil)}
         />
       )}
       
@@ -234,6 +244,20 @@ export default function GestaoUsuarios() {
           onOpenChange={setMensagensDialogAberto}
           userId={usuarioSelecionado.id}
           userName={usuarioSelecionado.name}
+        />
+      )}
+      
+      {/* Modal de Atribuir Plano */}
+      {usuarioParaAtribuir !== null && (
+        <AtribuirPlanoModal
+          open={atribuirPlanoAberto}
+          onOpenChange={(open) => {
+            setAtribuirPlanoAberto(open);
+            if (!open) setUsuarioParaAtribuir(null);
+          }}
+          usuarioId={usuarioParaAtribuir}
+          usuarioNome={usuarios.find((u: any) => u.id === usuarioParaAtribuir)?.name}
+          onSuccess={refetch}
         />
       )}
     </div>

@@ -42,6 +42,7 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   // Mutations tRPC
   const marcarConcluida = trpc.metas.marcarConcluida.useMutation();
   const adicionarAnotacao = trpc.metas.adicionarAnotacao.useMutation();
+  const salvarQuestoesExternas = trpc.metas.salvarQuestoesExternas.useMutation();
   
   const [tempoRestante, setTempoRestante] = useState(0);
   const [tempoDecorrido, setTempoDecorrido] = useState(0);
@@ -59,6 +60,10 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
   const [editDicaEstudo, setEditDicaEstudo] = useState("");
   const [editOrientacaoEstudos, setEditOrientacaoEstudos] = useState("");
   const [editAnotacoes, setEditAnotacoes] = useState("");
+  
+  // Estados para questões externas
+  const [questoesExternas, setQuestoesExternas] = useState(0);
+  const [taxaAcertosExternas, setTaxaAcertosExternas] = useState<number | "">("");
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -249,6 +254,34 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
     if (onSaveAnotacao && meta) {
       onSaveAnotacao(meta.id, editAnotacoes);
       toast.success("Anotação salva com sucesso!");
+    }
+  };
+
+  const handleSalvarQuestoesExternas = async () => {
+    if (!meta || !user) return;
+    
+    if (questoesExternas < 0) {
+      toast.error("❌ Número de questões deve ser positivo");
+      return;
+    }
+    
+    if (taxaAcertosExternas !== "" && (taxaAcertosExternas < 0 || taxaAcertosExternas > 100)) {
+      toast.error("❌ Taxa de acertos deve estar entre 0 e 100%");
+      return;
+    }
+    
+    try {
+      await salvarQuestoesExternas.mutateAsync({
+        metaId: meta.id,
+        questoesExternas,
+        taxaAcertosExternas: taxaAcertosExternas === "" ? null : taxaAcertosExternas,
+      });
+      
+      toast.success("✅ Questões externas registradas com sucesso!");
+      setQuestoesExternas(0);
+      setTaxaAcertosExternas("");
+    } catch (error) {
+      toast.error("❌ Erro ao salvar questões externas");
     }
   };
 
@@ -559,6 +592,61 @@ export default function MetaModal({ meta, open, onClose, onConcluir, onNeedMoreT
               Suas anotações aparecerão no menu "Anotações de Meta" no dashboard
             </p>
           </div>
+
+          {/* Questões Fora da Plataforma */}
+          {meta.tipo === "questoes" && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <HelpCircle className="h-5 w-5 text-blue-600" />
+                  Questões Fora da Plataforma
+                </h4>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Registre questões que você resolveu fora da plataforma (livros, PDFs, outros sites)
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="questoesExternas" className="text-sm font-medium">
+                    Número de Questões
+                  </Label>
+                  <Input
+                    id="questoesExternas"
+                    type="number"
+                    min="0"
+                    value={questoesExternas}
+                    onChange={(e) => setQuestoesExternas(Number(e.target.value))}
+                    placeholder="Ex: 50"
+                    className="mt-1 bg-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="taxaAcertos" className="text-sm font-medium">
+                    Taxa de Acertos (%) - Opcional
+                  </Label>
+                  <Input
+                    id="taxaAcertos"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={taxaAcertosExternas}
+                    onChange={(e) => setTaxaAcertosExternas(e.target.value === "" ? "" : Number(e.target.value))}
+                    placeholder="Ex: 75"
+                    className="mt-1 bg-white"
+                  />
+                </div>
+              </div>
+              <Button
+                className="w-full mt-4"
+                variant="outline"
+                size="sm"
+                onClick={handleSalvarQuestoesExternas}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Salvar Questões Externas
+              </Button>
+            </div>
+          )}
 
           {/* Ações */}
           {!editMode && (

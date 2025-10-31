@@ -11,9 +11,10 @@ interface PerfilAlunoModalProps {
   onOpenChange: (open: boolean) => void;
   usuarioId: number;
   onEditar?: () => void;
+  onAtribuirPlano?: () => void;
 }
 
-export default function PerfilAlunoModal({ open, onOpenChange, usuarioId, onEditar }: PerfilAlunoModalProps) {
+export default function PerfilAlunoModal({ open, onOpenChange, usuarioId, onEditar, onAtribuirPlano }: PerfilAlunoModalProps) {
   const { data: usuario, isLoading } = trpc.admin.usuarios.getById.useQuery(
     { id: usuarioId },
     { enabled: open && !!usuarioId }
@@ -96,14 +97,14 @@ export default function PerfilAlunoModal({ open, onOpenChange, usuarioId, onEdit
                 <p className="text-muted-foreground">{usuario.bio}</p>
               )}
 
-              <div className="flex gap-2">
-                <Button size="sm" onClick={onEditar}>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={onEditar} className="whitespace-nowrap">
                   Editar Perfil
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="whitespace-nowrap">
                   Enviar Mensagem
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" onClick={onAtribuirPlano} className="whitespace-nowrap">
                   Atribuir Plano
                 </Button>
               </div>

@@ -1,735 +1,554 @@
-import { int, json, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { mysqlTable, mysqlSchema, AnyMySqlColumn, int, text, timestamp, varchar, index, mysqlEnum, json } from "drizzle-orm/mysql-core"
+import { sql } from "drizzle-orm"
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["aluno", "professor", "administrativo", "mentor", "master"]).default("aluno").notNull(),
-  pontos: int("pontos").default(0).notNull(),
-  
-  // Autenticação
-  emailVerified: int("email_verified").default(0).notNull(), // 0 = não verificado, 1 = verificado
-  passwordHash: varchar("password_hash", { length: 255 }), // Hash bcrypt (opcional, para login com senha)
-  
-  // Dados pessoais completos
-  cpf: varchar("cpf", { length: 14 }).unique(), // Formato: 000.000.000-00
-  telefone: varchar("telefone", { length: 20 }),
-  dataNascimento: varchar("data_nascimento", { length: 10 }), // Formato: DD/MM/YYYY
-  endereco: text("endereco"), // JSON: {rua, numero, complemento, bairro, cidade, estado, cep}
-  foto: varchar("foto", { length: 500 }), // URL S3
-  bio: text("bio"),
-  status: mysqlEnum("status", ["ativo", "inativo", "suspenso"]).default("ativo").notNull(),
-  observacoes: text("observacoes"), // Notas internas do admin
-  
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-});
-
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-
-/**
- * Planos de estudo - estrutura completa de estudos vinculada a um concurso/edital
- */
-export const planos = mysqlTable("planos", {
-  id: int("id").autoincrement().primaryKey(),
-  nome: varchar("nome", { length: 255 }).notNull(),
-  descricao: text("descricao"),
-  tipo: mysqlEnum("tipo", ["pago", "gratuito"]).default("pago").notNull(),
-  duracaoTotal: int("duracao_total").notNull(), // em dias
-  orgao: varchar("orgao", { length: 255 }),
-  cargo: varchar("cargo", { length: 255 }),
-  concursoArea: varchar("concurso_area", { length: 255 }), // Mantido para compatibilidade
-  ativo: int("ativo").default(1).notNull(), // 1 = ativo, 0 = inativo
-  horasDiariasPadrao: int("horas_diarias_padrao").default(4).notNull(),
-  diasEstudoPadrao: varchar("dias_estudo_padrao", { length: 50 }).default("1,2,3,4,5").notNull(), // dias da semana (0=dom, 6=sab)
-  createdBy: int("created_by"), // userId do criador
-  mensagemPosPlano: text("mensagem_pos_plano"), // Mensagem HTML rich text após última meta
-  linkPosPlano: varchar("link_pos_plano", { length: 500 }), // Link opcional após última meta
-  exibirMensagemPosPlano: int("exibir_mensagem_pos_plano").default(0).notNull(), // 1 = exibir, 0 = não exibir
-  
-  // Ciclo EARA®
-  algoritmoEARA: int("algoritmo_eara").default(1).notNull(), // 1 = habilitado, 0 = desabilitado
-  configuracaoEARA: json("configuracao_eara"), // Configurações JSON do algoritmo
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Plano = typeof planos.$inferSelect;
-export type InsertPlano = typeof planos.$inferInsert;
-
-/**
- * Matrículas - relacionamento entre alunos e planos
- */
-export const matriculas = mysqlTable("matriculas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  planoId: int("plano_id").notNull(),
-  dataInicio: timestamp("data_inicio").defaultNow().notNull(),
-  dataTermino: timestamp("data_termino").notNull(),
-  horasDiarias: int("horas_diarias").default(4).notNull(),
-  diasEstudo: varchar("dias_estudo", { length: 50 }).default("1,2,3,4,5").notNull(),
-  ativo: int("ativo").default(1).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Matricula = typeof matriculas.$inferSelect;
-export type InsertMatricula = typeof matriculas.$inferInsert;
-
-/**
- * Metas - unidade básica de atividade no cronograma
- */
-export const metas = mysqlTable("metas", {
-  id: int("id").autoincrement().primaryKey(),
-  planoId: varchar("plano_id", { length: 500 }).notNull(), // IDs separados por vírgula para múltiplos planos
-  disciplina: varchar("disciplina", { length: 255 }).notNull(),
-  assunto: text("assunto").notNull(),
-  tipo: mysqlEnum("tipo", ["estudo", "revisao", "questoes"]).notNull(),
-  duracao: int("duracao").notNull(), // em minutos
-  incidencia: mysqlEnum("incidencia", ["baixa", "media", "alta"]),
-  prioridade: int("prioridade").default(3).notNull(), // 1-5
-  ordem: int("ordem").notNull(),
-  dicaEstudo: text("dica_estudo"),
-  orientacaoEstudos: text("orientacao_estudos"),
-  aulaId: int("aula_id"),
-  
-  // Ciclo EARA®
-  assuntoAgrupador: varchar("assunto_agrupador", { length: 255 }), // Para agrupar E-A-R-R-R do mesmo assunto
-  sequenciaEARA: int("sequencia_eara").default(1).notNull(), // 1=Estudo, 2=Aplicação, 3=Revisão1, etc
-  metaOrigemId: int("meta_origem_id"), // ID da meta de Estudo original (para revisões)
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Meta = typeof metas.$inferSelect;
-export type InsertMeta = typeof metas.$inferInsert;
-
-/**
- * Progresso das metas - acompanhamento individual por aluno
- */
-export const progressoMetas = mysqlTable("progresso_metas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  metaId: int("meta_id").notNull(),
-  dataAgendada: timestamp("data_agendada").notNull(),
-  concluida: int("concluida").default(0).notNull(), // 0 = não, 1 = sim
-  dataConclusao: timestamp("data_conclusao"),
-  tempoGasto: int("tempo_gasto").default(0).notNull(), // em minutos
-  pulada: int("pulada").default(0).notNull(), // 0 = não, 1 = sim
-  dataPulada: timestamp("data_pulada"),
-  adiada: int("adiada").default(0).notNull(), // 0 = não, 1 = sim
-  dataAdiamento: timestamp("data_adiamento"),
-  
-  // Ciclo EARA®
-  cicloEARA: varchar("ciclo_eara", { length: 50 }), // 'estudo', 'aplicacao', 'revisao1', 'revisao2', 'revisao3'
-  desempenhoQuestoes: int("desempenho_questoes"), // % de acerto (0-100) para adaptação
-  proximoCiclo: varchar("proximo_ciclo", { length: 50 }), // próximo ciclo agendado
-  dataProximoCiclo: timestamp("data_proximo_ciclo"), // data do próximo ciclo
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ProgressoMeta = typeof progressoMetas.$inferSelect;
-export type InsertProgressoMeta = typeof progressoMetas.$inferInsert;
-
-/**
- * Aulas - repositório de conteúdos educacionais
- */
-export const aulas = mysqlTable("aulas", {
-  id: int("id").autoincrement().primaryKey(),
-  titulo: varchar("titulo", { length: 500 }).notNull(),
-  descricao: text("descricao"),
-  professorId: int("professor_id"),
-  disciplina: varchar("disciplina", { length: 255 }).notNull(),
-  assuntoNivel1: varchar("assunto_nivel1", { length: 255 }),
-  assuntoNivel2: varchar("assunto_nivel2", { length: 255 }),
-  assuntoNivel3: varchar("assunto_nivel3", { length: 255 }),
-  concursoArea: varchar("concurso_area", { length: 255 }),
-  duracao: int("duracao").default(0).notNull(), // em minutos
-  tipoConteudo: mysqlEnum("tipo_conteudo", ["videoaula", "pdf", "audio", "slides", "questoes", "mapa_mental", "legislacao"]).default("videoaula").notNull(),
-  urlVideo: text("url_video"),
-  urlMaterial: text("url_material"),
-  conteudoHtml: text("conteudo_html"),
-  tags: text("tags"), // JSON array
-  nivelDificuldade: mysqlEnum("nivel_dificuldade", ["basico", "intermediario", "avancado"]).default("basico").notNull(),
-  visualizacoes: int("visualizacoes").default(0).notNull(),
-  ativo: int("ativo").default(1).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Aula = typeof aulas.$inferSelect;
-export type InsertAula = typeof aulas.$inferInsert;
-
-/**
- * Progresso das aulas - acompanhamento individual por aluno
- */
-export const progressoAulas = mysqlTable("progresso_aulas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  aulaId: int("aula_id").notNull(),
-  percentualAssistido: int("percentual_assistido").default(0).notNull(),
-  concluida: int("concluida").default(0).notNull(),
-  favoritada: int("favoritada").default(0).notNull(),
-  tempoAssistido: int("tempo_assistido").default(0).notNull(), // em segundos
-  ultimaPosicao: int("ultima_posicao").default(0).notNull(), // em segundos
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ProgressoAula = typeof progressoAulas.$inferSelect;
-export type InsertProgressoAula = typeof progressoAulas.$inferInsert;
-
-/**
- * Anotações de aulas - notas dos alunos com timestamps
- */
 export const anotacoesAulas = mysqlTable("anotacoes_aulas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  aulaId: int("aula_id").notNull(),
-  timestamp: int("timestamp").notNull(), // posição do vídeo em segundos
-  conteudo: text("conteudo").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	aulaId: int("aula_id").notNull(),
+	timestamp: int().notNull(),
+	conteudo: text().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
-export type AnotacaoAula = typeof anotacoesAulas.$inferSelect;
-export type InsertAnotacaoAula = typeof anotacoesAulas.$inferInsert;
-
-/**
- * Questões - banco de questões para prática
- */
-export const questoes = mysqlTable("questoes", {
-  id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["multipla_escolha", "certo_errado"]).default("multipla_escolha").notNull(),
-  enunciado: text("enunciado").notNull(),
-  alternativas: text("alternativas").notNull(), // JSON array
-  gabarito: varchar("gabarito", { length: 10 }).notNull(), // A, B, C, D, E para múltipla escolha | Certo/Errado
-  banca: varchar("banca", { length: 255 }),
-  entidade: varchar("entidade", { length: 255 }),
-  cargo: varchar("cargo", { length: 255 }),
-  ano: int("ano"),
-  disciplina: varchar("disciplina", { length: 255 }).notNull(),
-  assuntos: text("assuntos"), // JSON array
-  nivelDificuldade: mysqlEnum("nivel_dificuldade", ["facil", "medio", "dificil"]).default("medio").notNull(),
-  comentario: text("comentario"),
-  urlVideoResolucao: text("url_video_resolucao"),
-  taxaAcerto: int("taxa_acerto").default(0).notNull(), // percentual 0-100
-  totalResolucoes: int("total_resolucoes").default(0).notNull(),
-  ativo: int("ativo").default(1).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+export const auditLogs = mysqlTable("audit_logs", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id"),
+	action: varchar({ length: 100 }).notNull(),
+	entity: varchar({ length: 100 }).notNull(),
+	entityId: int("entity_id"),
+	oldData: text("old_data"),
+	newData: text("new_data"),
+	ip: varchar({ length: 45 }),
+	userAgent: text("user_agent"),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
 
-export type Questao = typeof questoes.$inferSelect;
-export type InsertQuestao = typeof questoes.$inferInsert;
+export const aulas = mysqlTable("aulas", {
+	id: int().autoincrement().notNull(),
+	titulo: varchar({ length: 500 }).notNull(),
+	descricao: text(),
+	professorId: int("professor_id"),
+	disciplina: varchar({ length: 255 }).notNull(),
+	assuntoNivel1: varchar("assunto_nivel1", { length: 255 }),
+	assuntoNivel2: varchar("assunto_nivel2", { length: 255 }),
+	assuntoNivel3: varchar("assunto_nivel3", { length: 255 }),
+	concursoArea: varchar("concurso_area", { length: 255 }),
+	duracao: int().default(0).notNull(),
+	tipoConteudo: mysqlEnum("tipo_conteudo", ['videoaula','pdf','audio','slides','questoes','mapa_mental','legislacao']).default('videoaula').notNull(),
+	urlVideo: text("url_video"),
+	urlMaterial: text("url_material"),
+	conteudoHtml: text("conteudo_html"),
+	tags: text(),
+	nivelDificuldade: mysqlEnum("nivel_dificuldade", ['basico','intermediario','avancado']).default('basico').notNull(),
+	visualizacoes: int().default(0).notNull(),
+	ativo: int().default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("idx_aulas_disciplina").on(table.disciplina),
+	index("").on(table.disciplina),
+	index("idx_aulas_tipo_conteudo").on(table.tipoConteudo),
+	index("idx_aulas_ativo").on(table.ativo),
+]);
 
-/**
- * Respostas de questões - histórico de respostas dos alunos
- */
-export const respostasQuestoes = mysqlTable("respostas_questoes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  questaoId: int("questao_id").notNull(),
-  respostaAluno: varchar("resposta_aluno", { length: 1 }).notNull(),
-  acertou: int("acertou").notNull(), // 0 = errou, 1 = acertou
-  tempoResposta: int("tempo_resposta").default(0).notNull(), // em segundos
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type RespostaQuestao = typeof respostasQuestoes.$inferSelect;
-export type InsertRespostaQuestao = typeof respostasQuestoes.$inferInsert;
-
-/**
- * Lixeira de questões - auditoria de exclusões (apenas Master)
- */
-export const questoesLixeira = mysqlTable("questoes_lixeira", {
-  id: int("id").autoincrement().primaryKey(),
-  conteudoOriginal: text("conteudo_original").notNull(), // JSON da questão completa
-  deletadoPor: int("deletado_por").notNull(),
-  motivoDelecao: text("motivo_delecao"),
-  deletadoEm: timestamp("deletado_em").defaultNow().notNull(),
-});
-
-export type QuestaoLixeira = typeof questoesLixeira.$inferSelect;
-export type InsertQuestaoLixeira = typeof questoesLixeira.$inferInsert;
-
-/**
- * Conquistas de questões - gamificação
- */
-export const conquistasQuestoes = mysqlTable("conquistas_questoes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  tipo: varchar("tipo", { length: 50 }).notNull(), // '10_questoes', '50_questoes', 'streak_7_dias', etc
-  dataConquista: timestamp("data_conquista").defaultNow().notNull(),
-});
-
-export type ConquistaQuestao = typeof conquistasQuestoes.$inferSelect;
-export type InsertConquistaQuestao = typeof conquistasQuestoes.$inferInsert;
-
-/**
- * Questões marcadas para revisar - sistema de revisão inteligente
- */
-export const questoesRevisar = mysqlTable("questoes_revisar", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  questaoId: int("questao_id").notNull(),
-  proximaRevisao: timestamp("proxima_revisao").notNull(),
-  nivelDificuldadePercebida: int("nivel_dificuldade_percebida").default(3).notNull(), // 1-5
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type QuestaoRevisar = typeof questoesRevisar.$inferSelect;
-export type InsertQuestaoRevisar = typeof questoesRevisar.$inferInsert;
-
-/**
- * Questões reportadas - feedback dos alunos sobre erros
- */
-export const questoesReportadas = mysqlTable("questoes_reportadas", {
-  id: int("id").autoincrement().primaryKey(),
-  questaoId: int("questao_id").notNull(),
-  userId: int("user_id").notNull(),
-  motivo: text("motivo").notNull(),
-  status: mysqlEnum("status", ["pendente", "resolvido", "invalido"]).default("pendente").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type QuestaoReportada = typeof questoesReportadas.$inferSelect;
-export type InsertQuestaoReportada = typeof questoesReportadas.$inferInsert;
-
-/**
- * Fórum - tópicos de discussão
- */
-export const forumTopicos = mysqlTable("forum_topicos", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  titulo: varchar("titulo", { length: 500 }).notNull(),
-  conteudo: text("conteudo").notNull(),
-  categoria: varchar("categoria", { length: 255 }),
-  tags: text("tags"), // JSON array
-  aulaId: int("aula_id"),
-  metaId: int("meta_id"),
-  resolvido: int("resolvido").default(0).notNull(),
-  fixado: int("fixado").default(0).notNull(),
-  fechado: int("fechado").default(0).notNull(),
-  visualizacoes: int("visualizacoes").default(0).notNull(),
-  curtidas: int("curtidas").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ForumTopico = typeof forumTopicos.$inferSelect;
-export type InsertForumTopico = typeof forumTopicos.$inferInsert;
-
-/**
- * Fórum - respostas aos tópicos
- */
-export const forumRespostas = mysqlTable("forum_respostas", {
-  id: int("id").autoincrement().primaryKey(),
-  topicoId: int("topico_id").notNull(),
-  userId: int("user_id").notNull(),
-  conteudo: text("conteudo").notNull(),
-  respostaPaiId: int("resposta_pai_id"), // para sub-respostas (threading)
-  solucao: int("solucao").default(0).notNull(), // 0 = não, 1 = sim
-  votos: int("votos").default(0).notNull(),
-  curtidas: int("curtidas").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ForumResposta = typeof forumRespostas.$inferSelect;
-export type InsertForumResposta = typeof forumRespostas.$inferInsert;
-
-/**
- * Avisos - sistema de notificações e comunicados
- */
 export const avisos = mysqlTable("avisos", {
-  id: int("id").autoincrement().primaryKey(),
-  titulo: varchar("titulo", { length: 500 }).notNull(),
-  conteudo: text("conteudo").notNull(),
-  tipo: mysqlEnum("tipo", ["normal", "urgente", "individual"]).default("normal").notNull(),
-  planoId: int("plano_id"), // null = todos os planos
-  userId: int("user_id"), // para avisos individuais
-  criadoPor: int("criado_por").notNull(),
-  ativo: int("ativo").default(1).notNull(),
-  dataAgendamento: timestamp("data_agendamento"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+	id: int().autoincrement().notNull(),
+	titulo: varchar({ length: 500 }).notNull(),
+	conteudo: text().notNull(),
+	tipo: mysqlEnum(['normal','urgente','individual']).default('normal').notNull(),
+	planoId: int("plano_id"),
+	userId: int("user_id"),
+	criadoPor: int("criado_por").notNull(),
+	ativo: int().default(1).notNull(),
+	dataAgendamento: timestamp("data_agendamento", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
-export type Aviso = typeof avisos.$inferSelect;
-export type InsertAviso = typeof avisos.$inferInsert;
-
-/**
- * Avisos dispensados - controle de avisos que o usuário já dispensou
- */
 export const avisosDispensados = mysqlTable("avisos_dispensados", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  avisoId: int("aviso_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	avisoId: int("aviso_id").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
 
-export type AvisoDispensado = typeof avisosDispensados.$inferSelect;
-export type InsertAvisoDispensado = typeof avisosDispensados.$inferInsert;
-
-/**
- * Notificações lidas do fórum - controle de respostas visualizadas
- */
-export const forumNotificacoesLidas = mysqlTable("forum_notificacoes_lidas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  respostaId: int("resposta_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+export const bugsReportados = mysqlTable("bugs_reportados", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	titulo: varchar({ length: 255 }).notNull(),
+	descricao: text().notNull(),
+	categoria: mysqlEnum(['interface','funcionalidade','performance','dados','mobile','outro']).notNull(),
+	prioridade: mysqlEnum(['baixa','media','alta','critica']).default('media').notNull(),
+	status: mysqlEnum(['pendente','em_analise','resolvido','fechado']).default('pendente').notNull(),
+	screenshots: text(),
+	paginaUrl: varchar("pagina_url", { length: 500 }),
+	navegador: varchar({ length: 100 }),
+	resolucao: varchar({ length: 50 }),
+	observacoesAdmin: text("observacoes_admin"),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	resolvidoEm: timestamp("resolvido_em", { mode: 'string' }),
+	resolvidoPor: int("resolvido_por"),
 });
 
-export type ForumNotificacaoLida = typeof forumNotificacoesLidas.$inferSelect;
-export type InsertForumNotificacaoLida = typeof forumNotificacoesLidas.$inferInsert;
-
-// ========== GAMIFICAÇÃO ==========
+export const configFuncionalidades = mysqlTable("config_funcionalidades", {
+	id: int().autoincrement().notNull(),
+	questoesHabilitado: int("questoes_habilitado").default(1).notNull(),
+	forumHabilitado: int("forum_habilitado").default(1).notNull(),
+	materiaisHabilitado: int("materiais_habilitado").default(1).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
 
 export const conquistas = mysqlTable("conquistas", {
-  id: int("id").autoincrement().primaryKey(),
-  nome: varchar("nome", { length: 100 }).notNull(),
-  descricao: text("descricao"),
-  icone: varchar("icone", { length: 50 }), // nome do ícone lucide-react
-  pontosRequeridos: int("pontosRequeridos"),
-  tipo: mysqlEnum("tipo", ["meta", "aula", "questao", "sequencia", "especial"]).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+	id: int().autoincrement().notNull(),
+	nome: varchar({ length: 100 }).notNull(),
+	descricao: text(),
+	icone: varchar({ length: 50 }),
+	pontosRequeridos: int(),
+	tipo: mysqlEnum(['meta','aula','questao','sequencia','especial']).notNull(),
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
+
+export const conquistasQuestoes = mysqlTable("conquistas_questoes", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	tipo: varchar({ length: 50 }).notNull(),
+	dataConquista: timestamp("data_conquista", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	token: varchar({ length: 64 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("email_verification_tokens_token_unique").on(table.token),
+]);
+
+export const forumLixeira = mysqlTable("forum_lixeira", {
+	id: int().autoincrement().notNull(),
+	tipo: mysqlEnum(['topico','resposta']).notNull(),
+	conteudoOriginal: text("conteudo_original").notNull(),
+	autorId: int("autor_id").notNull(),
+	deletadoPor: int("deletado_por").notNull(),
+	motivoDelecao: text("motivo_delecao"),
+	deletadoEm: timestamp("deletado_em", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
+	id: int().autoincrement().notNull(),
+	tipo: mysqlEnum(['topico','resposta']).notNull(),
+	topicoId: int("topico_id"),
+	respostaId: int("resposta_id"),
+	autorId: int("autor_id").notNull(),
+	conteudo: text().notNull(),
+	linksDetectados: text("links_detectados").notNull(),
+	status: mysqlEnum(['pendente','aprovado','rejeitado']).default('pendente').notNull(),
+	revisadoPor: int("revisado_por"),
+	revisadoEm: timestamp("revisado_em", { mode: 'string' }),
+	motivoRejeicao: text("motivo_rejeicao"),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const forumNotificacoesLidas = mysqlTable("forum_notificacoes_lidas", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	respostaId: int("resposta_id").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const forumRespostas = mysqlTable("forum_respostas", {
+	id: int().autoincrement().notNull(),
+	topicoId: int("topico_id").notNull(),
+	userId: int("user_id").notNull(),
+	conteudo: text().notNull(),
+	respostaPaiId: int("resposta_pai_id"),
+	solucao: int().default(0).notNull(),
+	votos: int().default(0).notNull(),
+	curtidas: int().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const forumTopicos = mysqlTable("forum_topicos", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	titulo: varchar({ length: 500 }).notNull(),
+	conteudo: text().notNull(),
+	categoria: varchar({ length: 255 }),
+	tags: text(),
+	aulaId: int("aula_id"),
+	metaId: int("meta_id"),
+	resolvido: int().default(0).notNull(),
+	fixado: int().default(0).notNull(),
+	fechado: int().default(0).notNull(),
+	visualizacoes: int().default(0).notNull(),
+	curtidas: int().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const materiais = mysqlTable("materiais", {
+	id: int().autoincrement().notNull(),
+	titulo: varchar({ length: 255 }).notNull(),
+	descricao: text(),
+	urlArquivo: text("url_arquivo").notNull(),
+	tipoArquivo: varchar("tipo_arquivo", { length: 50 }).default('application/pdf').notNull(),
+	tamanhoBytes: int("tamanho_bytes"),
+	metaId: int("meta_id"),
+	disciplina: varchar({ length: 255 }),
+	uploadedBy: int("uploaded_by").notNull(),
+	ativo: int().default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const matriculas = mysqlTable("matriculas", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	planoId: int("plano_id").notNull(),
+	dataInicio: timestamp("data_inicio", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	dataTermino: timestamp("data_termino", { mode: 'string' }).notNull(),
+	horasDiarias: int("horas_diarias").default(4).notNull(),
+	diasEstudo: varchar("dias_estudo", { length: 50 }).default('1,2,3,4,5').notNull(),
+	ativo: int().default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("idx_matriculas_user_id").on(table.userId),
+	index("idx_matriculas_plano_id").on(table.planoId),
+	index("idx_matriculas_ativo").on(table.ativo),
+	index("idx_matriculas_user_plano").on(table.userId, table.planoId),
+	index("").on(table.userId),
+]);
+
+export const metas = mysqlTable("metas", {
+	id: int().autoincrement().notNull(),
+	planoId: varchar("plano_id", { length: 500 }).notNull(),
+	disciplina: varchar({ length: 255 }).notNull(),
+	assunto: text().notNull(),
+	tipo: mysqlEnum(['estudo','revisao','questoes']).notNull(),
+	duracao: int().notNull(),
+	incidencia: mysqlEnum(['baixa','media','alta']),
+	prioridade: int().default(3).notNull(),
+	ordem: int().notNull(),
+	dicaEstudo: text("dica_estudo"),
+	aulaId: int("aula_id"),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	orientacaoEstudos: text("orientacao_estudos"),
+	assuntoAgrupador: varchar("assunto_agrupador", { length: 255 }),
+	sequenciaEara: int("sequencia_eara").default(1).notNull(),
+	metaOrigemId: int("meta_origem_id"),
+},
+(table) => [
+	index("idx_metas_plano_id").on(table.planoId),
+	index("idx_metas_disciplina").on(table.disciplina),
+	index("idx_metas_tipo").on(table.tipo),
+	index("idx_metas_aula_id").on(table.aulaId),
+	index("idx_metas_ordem").on(table.ordem),
+	index("").on(table.planoId),
+]);
+
+export const metasQuestoes = mysqlTable("metas_questoes", {
+	id: int().autoincrement().notNull(),
+	metaId: int("meta_id").notNull(),
+	questaoId: int("questao_id").notNull(),
+	ordem: int().default(0),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP'),
+},
+(table) => [
+	index("unique_meta_questao").on(table.metaId, table.questaoId),
+]);
+
+export const notificacoes = mysqlTable("notificacoes", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	tipo: mysqlEnum(['forum_resposta','forum_mencao','meta_vencendo','meta_atrasada','aula_nova','material_novo','aviso_geral','conquista','sistema']).notNull(),
+	titulo: varchar({ length: 255 }).notNull(),
+	mensagem: text().notNull(),
+	link: varchar({ length: 500 }),
+	lida: int().default(0).notNull(),
+	metadata: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	token: varchar({ length: 64 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("password_reset_tokens_token_unique").on(table.token),
+]);
+
+export const permissions = mysqlTable("permissions", {
+	id: int().autoincrement().notNull(),
+	name: varchar({ length: 100 }).notNull(),
+	description: text(),
+	module: varchar({ length: 50 }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("permissions_name_unique").on(table.name),
+]);
+
+export const planos = mysqlTable("planos", {
+	id: int().autoincrement().notNull(),
+	nome: varchar({ length: 255 }).notNull(),
+	descricao: text(),
+	tipo: mysqlEnum(['pago','gratuito']).default('pago').notNull(),
+	duracaoTotal: int("duracao_total").notNull(),
+	concursoArea: varchar("concurso_area", { length: 255 }),
+	ativo: int().default(1).notNull(),
+	horasDiariasPadrao: int("horas_diarias_padrao").default(4).notNull(),
+	diasEstudoPadrao: varchar("dias_estudo_padrao", { length: 50 }).default('1,2,3,4,5').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	orgao: varchar({ length: 255 }),
+	cargo: varchar({ length: 255 }),
+	createdBy: int("created_by"),
+	mensagemPosPlano: text("mensagem_pos_plano"),
+	linkPosPlano: varchar("link_pos_plano", { length: 500 }),
+	exibirMensagemPosPlano: int("exibir_mensagem_pos_plano").default(0).notNull(),
+	algoritmoEara: int("algoritmo_eara").default(1).notNull(),
+	configuracaoEara: json("configuracao_eara"),
+},
+(table) => [
+	index("idx_planos_ativo").on(table.ativo),
+	index("idx_planos_tipo").on(table.tipo),
+	index("idx_planos_orgao").on(table.orgao),
+	index("idx_planos_cargo").on(table.cargo),
+	index("").on(table.ativo),
+]);
+
+export const preferenciasNotificacoes = mysqlTable("preferencias_notificacoes", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	inappForumResposta: int("inapp_forum_resposta").default(1).notNull(),
+	inappForumMencao: int("inapp_forum_mencao").default(1).notNull(),
+	inappMetaVencendo: int("inapp_meta_vencendo").default(1).notNull(),
+	inappMetaAtrasada: int("inapp_meta_atrasada").default(1).notNull(),
+	inappAulaNova: int("inapp_aula_nova").default(1).notNull(),
+	inappMaterialNovo: int("inapp_material_novo").default(1).notNull(),
+	inappAvisoGeral: int("inapp_aviso_geral").default(1).notNull(),
+	inappConquista: int("inapp_conquista").default(1).notNull(),
+	emailForumResposta: int("email_forum_resposta").default(0).notNull(),
+	emailForumMencao: int("email_forum_mencao").default(1).notNull(),
+	emailMetaVencendo: int("email_meta_vencendo").default(1).notNull(),
+	emailMetaAtrasada: int("email_meta_atrasada").default(1).notNull(),
+	emailAulaNova: int("email_aula_nova").default(0).notNull(),
+	emailMaterialNovo: int("email_material_novo").default(0).notNull(),
+	emailAvisoGeral: int("email_aviso_geral").default(1).notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("preferencias_notificacoes_user_id_unique").on(table.userId),
+]);
+
+export const progressoAulas = mysqlTable("progresso_aulas", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	aulaId: int("aula_id").notNull(),
+	percentualAssistido: int("percentual_assistido").default(0).notNull(),
+	concluida: int().default(0).notNull(),
+	favoritada: int().default(0).notNull(),
+	tempoAssistido: int("tempo_assistido").default(0).notNull(),
+	ultimaPosicao: int("ultima_posicao").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("idx_progresso_aulas_user_id").on(table.userId),
+	index("idx_progresso_aulas_aula_id").on(table.aulaId),
+	index("idx_progresso_aulas_user_aula").on(table.userId, table.aulaId),
+	index("").on(table.userId),
+]);
+
+export const progressoMetas = mysqlTable("progresso_metas", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	metaId: int("meta_id").notNull(),
+	dataAgendada: timestamp("data_agendada", { mode: 'string' }).notNull(),
+	concluida: int().default(0).notNull(),
+	dataConclusao: timestamp("data_conclusao", { mode: 'string' }),
+	tempoGasto: int("tempo_gasto").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	anotacao: text(),
+	pulada: int().default(0).notNull(),
+	dataPulada: timestamp("data_pulada", { mode: 'string' }),
+	adiada: int().default(0).notNull(),
+	dataAdiamento: timestamp("data_adiamento", { mode: 'string' }),
+	cicloEara: varchar("ciclo_eara", { length: 50 }),
+	desempenhoQuestoes: int("desempenho_questoes"),
+	proximoCiclo: varchar("proximo_ciclo", { length: 50 }),
+	dataProximoCiclo: timestamp("data_proximo_ciclo", { mode: 'string' }),
+	questoesExternas: int("questoes_externas").default(0).notNull(),
+	taxaAcertosExternas: int("taxa_acertos_externas"),
+},
+(table) => [
+	index("idx_progresso_metas_user_id").on(table.userId),
+	index("idx_progresso_metas_meta_id").on(table.metaId),
+	index("idx_progresso_metas_concluida").on(table.concluida),
+	index("idx_progresso_metas_user_meta").on(table.userId, table.metaId),
+	index("idx_progresso_metas_data_agendada").on(table.dataAgendada),
+	index("").on(table.userId),
+]);
+
+export const questoes = mysqlTable("questoes", {
+	id: int().autoincrement().notNull(),
+	tipo: mysqlEnum(['multipla_escolha','certo_errado']).default('multipla_escolha').notNull(),
+	enunciado: text().notNull(),
+	alternativas: text().notNull(),
+	gabarito: varchar({ length: 10 }).notNull(),
+	banca: varchar({ length: 255 }),
+	entidade: varchar({ length: 255 }),
+	cargo: varchar({ length: 255 }),
+	ano: int(),
+	disciplina: varchar({ length: 255 }).notNull(),
+	assuntos: text(),
+	nivelDificuldade: mysqlEnum("nivel_dificuldade", ['facil','medio','dificil']).default('medio').notNull(),
+	comentario: text(),
+	urlVideoResolucao: text("url_video_resolucao"),
+	taxaAcerto: int("taxa_acerto").default(0).notNull(),
+	totalResolucoes: int("total_resolucoes").default(0).notNull(),
+	ativo: int().default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	textoMotivador: text("texto_motivador"),
+},
+(table) => [
+	index("idx_questoes_disciplina").on(table.disciplina),
+	index("").on(table.disciplina),
+	index("idx_questoes_nivel_dificuldade").on(table.nivelDificuldade),
+	index("idx_questoes_banca").on(table.banca),
+	index("idx_questoes_ativo").on(table.ativo),
+]);
+
+export const questoesLixeira = mysqlTable("questoes_lixeira", {
+	id: int().autoincrement().notNull(),
+	conteudoOriginal: text("conteudo_original").notNull(),
+	deletadoPor: int("deletado_por").notNull(),
+	motivoDelecao: text("motivo_delecao"),
+	deletadoEm: timestamp("deletado_em", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const questoesReportadas = mysqlTable("questoes_reportadas", {
+	id: int().autoincrement().notNull(),
+	questaoId: int("questao_id").notNull(),
+	userId: int("user_id").notNull(),
+	motivo: text().notNull(),
+	status: mysqlEnum(['pendente','resolvido','invalido']).default('pendente').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const questoesRevisar = mysqlTable("questoes_revisar", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	questaoId: int("questao_id").notNull(),
+	proximaRevisao: timestamp("proxima_revisao", { mode: 'string' }).notNull(),
+	nivelDificuldadePercebida: int("nivel_dificuldade_percebida").default(3).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const respostasQuestoes = mysqlTable("respostas_questoes", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	questaoId: int("questao_id").notNull(),
+	respostaAluno: varchar("resposta_aluno", { length: 1 }).notNull(),
+	acertou: int().notNull(),
+	tempoResposta: int("tempo_resposta").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("idx_respostas_questoes_user_id").on(table.userId),
+	index("idx_respostas_questoes_questao_id").on(table.questaoId),
+	index("").on(table.userId),
+	index("idx_respostas_questoes_acertou").on(table.acertou),
+	index("idx_respostas_questoes_user_questao").on(table.userId, table.questaoId),
+	index("idx_respostas_questoes_created_at").on(table.createdAt),
+]);
+
+export const rolePermissions = mysqlTable("role_permissions", {
+	id: int().autoincrement().notNull(),
+	role: mysqlEnum(['aluno','professor','administrativo','mentor','master']).notNull(),
+	permissionId: int("permission_id").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+});
+
+export const sessions = mysqlTable("sessions", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull(),
+	token: varchar({ length: 255 }).notNull(),
+	ip: varchar({ length: 45 }),
+	userAgent: text("user_agent"),
+	lastActivity: timestamp("last_activity", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+},
+(table) => [
+	index("sessions_token_unique").on(table.token),
+]);
+
+export const tokensCadastro = mysqlTable("tokens_cadastro", {
+	id: int().autoincrement().notNull(),
+	token: varchar({ length: 64 }).notNull(),
+	status: mysqlEnum(['ativo','usado','expirado']).default('ativo').notNull(),
+	criadoPor: int("criado_por").notNull(),
+	usadoPor: int("usado_por"),
+	dataGeracao: timestamp("data_geracao", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	dataUso: timestamp("data_uso", { mode: 'string' }),
+	dataExpiracao: timestamp("data_expiracao", { mode: 'string' }),
+	observacoes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("token").on(table.token),
+]);
 
 export const userConquistas = mysqlTable("userConquistas", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  conquistaId: int("conquistaId").notNull(),
-  desbloqueadaEm: timestamp("desbloqueadaEm").defaultNow().notNull(),
+	id: int().autoincrement().notNull(),
+	userId: int().notNull(),
+	conquistaId: int().notNull(),
+	desbloqueadaEm: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
 });
 
-export type Conquista = typeof conquistas.$inferSelect;
-export type InsertConquista = typeof conquistas.$inferInsert;
-export type UserConquista = typeof userConquistas.$inferSelect;
-export type InsertUserConquista = typeof userConquistas.$inferInsert;
-
-// ========== CONFIGURAÇÕES DO SISTEMA ==========
-
-/**
- * Configurações de funcionalidades - controle de módulos habilitados/desabilitados
- */
-export const configFuncionalidades = mysqlTable("config_funcionalidades", {
-  id: int("id").autoincrement().primaryKey(),
-  questoesHabilitado: int("questoes_habilitado").default(1).notNull(),
-  forumHabilitado: int("forum_habilitado").default(1).notNull(),
-  materiaisHabilitado: int("materiais_habilitado").default(1).notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type ConfigFuncionalidades = typeof configFuncionalidades.$inferSelect;
-export type InsertConfigFuncionalidades = typeof configFuncionalidades.$inferInsert;
-
-/**
- * Mensagens retidas do fórum - moderação de conteúdo com links
- */
-export const forumMensagensRetidas = mysqlTable("forum_mensagens_retidas", {
-  id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["topico", "resposta"]).notNull(),
-  topicoId: int("topico_id"),
-  respostaId: int("resposta_id"),
-  autorId: int("autor_id").notNull(),
-  conteudo: text("conteudo").notNull(),
-  linksDetectados: text("links_detectados").notNull(), // JSON array de links
-  status: mysqlEnum("status", ["pendente", "aprovado", "rejeitado"]).default("pendente").notNull(),
-  revisadoPor: int("revisado_por"),
-  revisadoEm: timestamp("revisado_em"),
-  motivoRejeicao: text("motivo_rejeicao"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type ForumMensagemRetida = typeof forumMensagensRetidas.$inferSelect;
-export type InsertForumMensagemRetida = typeof forumMensagensRetidas.$inferInsert;
-
-/**
- * Lixeira do fórum - mensagens deletadas (apenas Master pode ver/recuperar)
- */
-export const forumLixeira = mysqlTable("forum_lixeira", {
-  id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["topico", "resposta"]).notNull(),
-  conteudoOriginal: text("conteudo_original").notNull(), // JSON com todos os dados
-  autorId: int("autor_id").notNull(),
-  deletadoPor: int("deletado_por").notNull(),
-  motivoDelecao: text("motivo_delecao"),
-  deletadoEm: timestamp("deletado_em").defaultNow().notNull(),
-});
-
-export type ForumLixeira = typeof forumLixeira.$inferSelect;
-export type InsertForumLixeira = typeof forumLixeira.$inferInsert;
-
-// ========== AUTENTICAÇÃO E SEGURANÇA ==========
-
-/**
- * Tokens de verificação de email
- */
-export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  token: varchar("token", { length: 64 }).notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
-export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;
-
-/**
- * Tokens de reset de senha
- */
-export const passwordResetTokens = mysqlTable("password_reset_tokens", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  token: varchar("token", { length: 64 }).notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
-export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
-
-/**
- * Sessões ativas dos usuários
- */
-export const sessions = mysqlTable("sessions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(),
-  token: varchar("token", { length: 255 }).notNull().unique(),
-  ip: varchar("ip", { length: 45 }),
-  userAgent: text("user_agent"),
-  lastActivity: timestamp("last_activity").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type Session = typeof sessions.$inferSelect;
-export type InsertSession = typeof sessions.$inferInsert;
-
-/**
- * Logs de auditoria - rastreamento de ações críticas
- */
-export const auditLogs = mysqlTable("audit_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id"), // null se ação do sistema
-  action: varchar("action", { length: 100 }).notNull(), // create, update, delete, login, etc
-  entity: varchar("entity", { length: 100 }).notNull(), // users, planos, metas, etc
-  entityId: int("entity_id"),
-  oldData: text("old_data"), // JSON do estado anterior
-  newData: text("new_data"), // JSON do estado novo
-  ip: varchar("ip", { length: 45 }),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type AuditLog = typeof auditLogs.$inferSelect;
-export type InsertAuditLog = typeof auditLogs.$inferInsert;
-
-/**
- * Permissões do sistema - controle granular de acesso
- */
-export const permissions = mysqlTable("permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 100 }).notNull().unique(), // Ex: usuarios.criar, planos.editar
-  description: text("description"),
-  module: varchar("module", { length: 50 }).notNull(), // Ex: usuarios, planos, forum
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type Permission = typeof permissions.$inferSelect;
-export type InsertPermission = typeof permissions.$inferInsert;
-
-/**
- * Relação entre roles e permissões
- */
-export const rolePermissions = mysqlTable("role_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  role: mysqlEnum("role", ["aluno", "professor", "administrativo", "mentor", "master"]).notNull(),
-  permissionId: int("permission_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type RolePermission = typeof rolePermissions.$inferSelect;
-export type InsertRolePermission = typeof rolePermissions.$inferInsert;
-
-// ========== NOTIFICAÇÕES ==========
-
-/**
- * Notificações - sistema unificado de notificações da plataforma
- */
-export const notificacoes = mysqlTable("notificacoes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(), // destinatário
-  tipo: mysqlEnum("tipo", [
-    "forum_resposta", // alguém respondeu seu tópico
-    "forum_mencao", // você foi mencionado
-    "meta_vencendo", // meta próxima do prazo
-    "meta_atrasada", // meta atrasada
-    "aula_nova", // nova aula disponível
-    "material_novo", // novo material disponível
-    "aviso_geral", // aviso da administração
-    "conquista", // nova conquista/badge
-    "sistema", // notificação do sistema
-  ]).notNull(),
-  titulo: varchar("titulo", { length: 255 }).notNull(),
-  mensagem: text("mensagem").notNull(),
-  link: varchar("link", { length: 500 }), // URL para ação relacionada
-  lida: int("lida").default(0).notNull(), // 0 = não lida, 1 = lida
-  metadata: text("metadata"), // JSON com dados extras (id do tópico, meta, etc)
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type Notificacao = typeof notificacoes.$inferSelect;
-export type InsertNotificacao = typeof notificacoes.$inferInsert;
-
-/**
- * Preferências de notificações - controle de quais notificações o usuário quer receber
- */
-export const preferenciasNotificacoes = mysqlTable("preferencias_notificacoes", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull().unique(),
-  
-  // In-app (central de notificações)
-  inappForumResposta: int("inapp_forum_resposta").default(1).notNull(),
-  inappForumMencao: int("inapp_forum_mencao").default(1).notNull(),
-  inappMetaVencendo: int("inapp_meta_vencendo").default(1).notNull(),
-  inappMetaAtrasada: int("inapp_meta_atrasada").default(1).notNull(),
-  inappAulaNova: int("inapp_aula_nova").default(1).notNull(),
-  inappMaterialNovo: int("inapp_material_novo").default(1).notNull(),
-  inappAvisoGeral: int("inapp_aviso_geral").default(1).notNull(),
-  inappConquista: int("inapp_conquista").default(1).notNull(),
-  
-  // Email
-  emailForumResposta: int("email_forum_resposta").default(0).notNull(),
-  emailForumMencao: int("email_forum_mencao").default(1).notNull(),
-  emailMetaVencendo: int("email_meta_vencendo").default(1).notNull(),
-  emailMetaAtrasada: int("email_meta_atrasada").default(1).notNull(),
-  emailAulaNova: int("email_aula_nova").default(0).notNull(),
-  emailMaterialNovo: int("email_material_novo").default(0).notNull(),
-  emailAvisoGeral: int("email_aviso_geral").default(1).notNull(),
-  
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type PreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferSelect;
-export type InsertPreferenciasNotificacoes = typeof preferenciasNotificacoes.$inferInsert;
-
-
-/**
- * Bugs Reportados - sistema de feedback e reporte de problemas
- */
-export const bugsReportados = mysqlTable("bugs_reportados", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull(), // Quem reportou
-  titulo: varchar("titulo", { length: 255 }).notNull(),
-  descricao: text("descricao").notNull(),
-  categoria: mysqlEnum("categoria", [
-    "interface", // problemas visuais/UI
-    "funcionalidade", // recurso não funciona
-    "performance", // lentidão
-    "dados", // dados incorretos
-    "mobile", // problemas no mobile
-    "outro", // outros problemas
-  ]).notNull(),
-  prioridade: mysqlEnum("prioridade", [
-    "baixa",
-    "media",
-    "alta",
-    "critica",
-  ]).default("media").notNull(),
-  status: mysqlEnum("status", [
-    "pendente", // aguardando análise
-    "em_analise", // sendo analisado
-    "resolvido", // corrigido
-    "fechado", // não será corrigido ou duplicado
-  ]).default("pendente").notNull(),
-  screenshots: text("screenshots"), // JSON array com URLs das imagens no S3
-  paginaUrl: varchar("pagina_url", { length: 500 }), // URL da página onde ocorreu
-  navegador: varchar("navegador", { length: 100 }), // Info do navegador
-  resolucao: varchar("resolucao", { length: 50 }), // Resolução da tela
-  observacoesAdmin: text("observacoes_admin"), // Notas internas do admin
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-  resolvidoEm: timestamp("resolvido_em"), // Data de resolução
-  resolvidoPor: int("resolvido_por"), // ID do admin que resolveu
-});
-
-export type BugReportado = typeof bugsReportados.$inferSelect;
-export type InsertBugReportado = typeof bugsReportados.$inferInsert;
-
-
-/**
- * Materiais - vídeos, PDFs, áudios e documentos para estudo
- */
-export const materiais = mysqlTable("materiais", {
-  id: int("id").autoincrement().primaryKey(),
-  titulo: varchar("titulo", { length: 255 }).notNull(),
-  descricao: text("descricao"),
-  tipo: mysqlEnum("tipo", [
-    "video",    // vídeos (YouTube, Vimeo, MP4)
-    "pdf",      // documentos PDF
-    "audio",    // áudios (MP3, WAV, OGG, M4A)
-    "documento", // outros documentos (Word, Excel, etc)
-  ]).notNull(),
-  url: varchar("url", { length: 500 }).notNull(), // URL do arquivo no S3 ou link externo
-  duracao: int("duracao"), // Duração em segundos (para vídeos e áudios)
-  tamanho: int("tamanho"), // Tamanho em bytes
-  disciplina: varchar("disciplina", { length: 100 }),
-  assunto: varchar("assunto", { length: 255 }),
-  tags: text("tags"), // JSON array com tags para busca
-  createdBy: int("created_by").notNull(), // Quem criou
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
-});
-
-export type Material = typeof materiais.$inferSelect;
-export type InsertMaterial = typeof materiais.$inferInsert;
-
-/**
- * Materiais vinculados a metas - permite associar materiais de estudo às metas
- */
-export const metasMateriais = mysqlTable("metas_materiais", {
-  id: int("id").autoincrement().primaryKey(),
-  metaId: int("meta_id").notNull(),
-  materialId: int("material_id").notNull(),
-  ordem: int("ordem").default(0), // Ordem de exibição
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type MetaMaterial = typeof metasMateriais.$inferSelect;
-export type InsertMetaMaterial = typeof metasMateriais.$inferInsert;
-
-/**
- * Metas Questões - relacionamento entre metas e questões
- */
-export const metasQuestoes = mysqlTable("metas_questoes", {
-  id: int("id").autoincrement().primaryKey(),
-  metaId: int("meta_id").notNull(),
-  questaoId: int("questao_id").notNull(),
-  ordem: int("ordem").default(0).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export type MetaQuestao = typeof metasQuestoes.$inferSelect;
-export type InsertMetaQuestao = typeof metasQuestoes.$inferInsert;
+export const users = mysqlTable("users", {
+	id: int().autoincrement().notNull(),
+	openId: varchar({ length: 64 }).notNull(),
+	name: text(),
+	email: varchar({ length: 320 }),
+	loginMethod: varchar({ length: 64 }),
+	role: mysqlEnum(['aluno','professor','administrativo','mentor','master']).default('aluno').notNull(),
+	createdAt: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	lastSignedIn: timestamp({ mode: 'string' }).default('CURRENT_TIMESTAMP').notNull(),
+	pontos: int().default(0).notNull(),
+	cpf: varchar({ length: 14 }),
+	telefone: varchar({ length: 20 }),
+	dataNascimento: varchar("data_nascimento", { length: 10 }),
+	endereco: text(),
+	foto: varchar({ length: 500 }),
+	bio: text(),
+	status: mysqlEnum(['ativo','inativo','suspenso']).default('ativo').notNull(),
+	observacoes: text(),
+	emailVerified: int("email_verified").default(0).notNull(),
+	passwordHash: varchar("password_hash", { length: 255 }),
+},
+(table) => [
+	index("users_openId_unique").on(table.openId),
+	index("users_cpf_unique").on(table.cpf),
+	index("idx_users_role").on(table.role),
+	index("idx_users_status").on(table.status),
+	index("idx_users_email").on(table.email),
+	index("").on(table.role),
+]);

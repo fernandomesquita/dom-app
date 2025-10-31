@@ -588,3 +588,243 @@
 - [ ] Contabilizar questões resolvidas nas metas para estatísticas gerais
 - [ ] Atualizar dashboard com questões resolvidas nas metas
 - [ ] Sincronizar progresso de metas com resolução de questões
+
+
+### Exibir Questões nas Metas ✅
+- [x] Criar componente QuestaoCard (visualização completa)
+- [x] Criar componente MetaQuestoesModal
+- [x] Permitir responder questões diretamente na meta
+- [x] Mostrar gabarito após responder (com destaque verde/vermelho)
+- [x] Exibir comentário da questão
+- [x] Suporte a questões de múltipla escolha e certo/errado
+- [x] Feedback visual (CheckCircle/XCircle)
+
+### Contabilizar Resoluções nas Estatísticas ✅
+- [x] Atualizar mutation responder para aceitar metaId
+- [x] Calcular acerto automaticamente comparando com gabarito
+- [x] Salvar respostas na tabela respostas_questoes
+- [x] Atualizar estatísticas gerais ao responder questão
+- [x] Invalidar queries para atualizar dashboard
+- [x] Sistema já contabiliza questões de metas nas estatísticas gerais
+
+
+## 🔴 CORREÇÕES URGENTES
+
+### Botão Atribuir Plano Não Funciona
+- [ ] Investigar componente de gestão de usuários
+- [ ] Verificar onClick do botão Atribuir Plano
+- [ ] Corrigir lógica de atribuição
+- [ ] Testar atribuição de plano
+
+### Textos Cortados nos Cards
+- [ ] Ajustar "Metas Concluídas" → "Metas Concluí..."
+- [ ] Ajustar "Aulas Assistidas" → "Aulas Assistid..."
+- [ ] Usar text-xs ou reduzir padding
+- [ ] Testar em diferentes resoluções
+
+
+---
+
+## 🆕 NOVAS MELHORIAS - 30/10/2025 18:32
+
+### Menu Administrativo - Reorganização
+- [x] Reorganizar tabs do painel admin em ordem alfabética
+- [x] Mover menu de tabs para o topo da tela (horizontal)
+- [x] Ajustar layout para menu superior fixo
+- [x] Garantir responsividade do menu horizontal
+
+### Questões Externas - Registro Manual
+- [x] Adicionar box "Questões Fora da Plataforma" no MetaModal
+- [x] Campo numérico para quantidade de questões externas
+- [x] Campo opcional para taxa de acertos (%)
+- [x] Salvar dados na tabela progressoMetas (novos campos)
+- [x] Criar migration para campos questoesExternas e taxaAcertosExternas
+- [ ] Exibir estatística "Questões Fora da Plataforma" no dashboard
+- [ ] Somar questões externas nas estatísticas gerais de questões
+- [x] Adicionar validação: taxa de acertos entre 0-100%
+
+
+---
+
+## 🆕 NOVAS CORREÇÕES - 30/10/2025 18:42
+
+### Menu Administrativo - Setas de Navegação
+- [x] Adicionar setas de navegação (← →) no menu de tabs
+- [x] Implementar scroll horizontal suave ao clicar nas setas
+- [x] Mostrar/ocultar setas baseado na posição do scroll
+- [x] Garantir que todas as tabs sejam acessíveis
+
+### Questões - Campo Texto Motivador
+- [x] Adicionar campo "Texto Motivador" no formulário de criação de questões
+- [x] Campo opcional (textarea)
+- [x] Adicionar coluna textoMotivador na tabela questoes
+- [x] Criar migration para novo campo
+- [x] Exibir texto motivador ao resolver questões
+- [x] Salvar e carregar texto motivador no CRUD
+
+
+---
+
+## 🔥 CORREÇÕES URGENTES - 30/10/2025 18:45
+
+### Bug Crítico - ReferenceError no Admin.tsx
+- [x] Corrigir erro "Cannot access 'tabs' before initialization"
+- [x] Mover useEffect que usa 'tabs' para depois da definição de 'tabs'
+- [x] Testar carregamento do painel administrativo
+
+### Texto Motivador - Exibição nas Questões
+- [x] Buscar componente de resolução de questões
+- [x] Adicionar exibição do texto motivador na interface
+- [x] Estilizar box do texto motivador (destaque visual)
+- [x] Garantir que texto só aparece se existir
+- [x] Testar exibição durante resolução de questões
+
+
+---
+
+## 🔧 CORREÇÃO - Texto Motivador = Texto-Base - 30/10/2025 18:48
+
+### Corrigir Conceito de Texto Motivador
+- [x] Remover estilo "motivacional" do QuestaoCard (sem emoji, sem gradiente colorido)
+- [x] Exibir como texto-base neutro em box simples
+- [x] Manter visível SEMPRE (antes e depois de responder)
+- [x] Posicionar ANTES do enunciado (é contexto necessário)
+- [x] Renomear label no formulário: "Texto-Base da Questão" ou "Texto de Apoio"
+- [x] Atualizar placeholder para refletir uso correto
+- [x] Estilo: fundo cinza claro, borda sutil, sem cores chamativas
+
+
+---
+
+## 🐛 BUGS - Atribuição de Planos - 30/10/2025 18:54
+
+### Erro userId Undefined
+- [x] Corrigir erro "Invalid input: expected number, received undefined" no userId
+- [x] Verificar AtribuirPlanoModal: garantir que userId é passado corretamente
+- [x] Verificar chamada do modal no PerfilAlunoModal
+- [x] Testar atribuição de plano pelo perfil do usuário
+
+### Textos Longos Cortados
+- [x] Nome do plano muito longo cortado no select (adicionar tooltip ou ellipsis)
+- [x] Botão "Atribuir Plano" cortado no perfil (ajustar largura/responsividade)
+- [x] Testar com nomes de planos muito longos
+
+
+---
+
+## 🎫 NOVA FUNCIONALIDADE - Gestão de Tokens - 30/10/2025 18:59
+
+### Schema e Banco de Dados
+- [x] Criar tabela tokens_cadastro no schema
+- [x] Campos: id, token (único), status (ativo/usado/expirado), criadoPor, usadoPor, dataGeracao, dataUso, dataExpiracao
+- [x] Aplicar migration no banco
+
+### Backend - Routers e DB Functions
+- [x] Criar router tokens com endpoints: gerar, listar, invalidar, validar
+- [x] Função gerarToken: criar token único (UUID ou código curto)
+- [x] Função listarTokens: buscar todos com filtros
+- [x] Função invalidarToken: marcar como expirado
+- [x] Função validarToken: verificar se token é válido para uso
+- [x] Função usarToken: marcar como usado ao cadastrar aluno
+
+### Frontend - Interface de Gestão
+- [x] Criar componente GestaoTokens.tsx
+- [x] Botão "Gerar Token" no topo direito
+- [x] Modal de geração com opções (validade, quantidade)
+- [x] Tabela listando tokens (token, status, datas, ações)
+- [x] Badge colorido para status (verde=ativo, cinza=usado, vermelho=expirado)
+- [x] Botão copiar token (clipboard)
+- [x] Botão invalidar token
+- [x] Filtros por status
+
+### Integração com Cadastro
+- [x] Adicionar campo token na tela de cadastro
+- [x] Validar token antes de permitir cadastro
+- [x] Marcar token como usado após cadastro bem-sucedido
+- [x] Exibir mensagens de erro apropriadas (token inválido/usado/expirado)
+- [x] Testar fluxo completo: gerar token → cadastrar aluno → verificar status
+
+---
+
+## 🐛 BUG - Erro ao Gerar Token - 30/10/2025 19:15
+
+### Problema
+- [x] Interface de Gestão de Tokens não está carregando
+- [x] Mostra mensagem "Sistema de gestão de tokens em desenvolvimento"
+- [x] Componente GestaoTokens não está sendo renderizado
+- [x] Verificar se componente foi substituído corretamente no Admin.tsx
+- [x] Testar geração de token após correção
+
+**Causa:** Faltava import do `useState` no componente GestaoTokens.tsx
+**Solução:** Adicionado `import { useState } from "react";` na linha 1
+**Status:** Cache persistente - forçar rebuild completo
+
+---
+
+## 🐛 BUG - Erro ao Enviar Bug - 30/10/2025 19:20
+
+### Problema
+- [x] Erro ao inserir bug no banco: "Failed query: insert into `bugs_reportados`..."
+- [x] Campos com valores default incorretos (?, ?, ?, ?)
+- [x] Verificar schema da tabela bugs_reportados
+- [x] Corrigir inserção no backend
+- [x] Testar envio de bug após correção
+
+**Causa:** Função `criarBugReportado` tentava inserir `createdAt` e `updatedAt` manualmente, mas schema define `.defaultNow()` (auto-gerado)
+**Solução:** Removidos campos `createdAt` e `updatedAt` da inserção. Banco gera automaticamente.
+**Status:** ERRO PERSISTE - investigar schema completo
+
+---
+
+## 🐛 ERROS PERSISTENTES - 30/10/2025 22:47
+
+### Erro 1: tokensCadastro is not defined
+- [x] Import faltando no db.ts
+- [x] Adicionar `import { tokensCadastro } from "../drizzle/schema";`
+**Solução:** Adicionado `tokensCadastro` na linha 27 do import do schema
+
+### Erro 2: Bug insert ainda falha
+- [x] Verificar TODOS os campos do schema bugs_reportados
+- [x] Comparar com valores enviados na inserção
+- [x] Corrigir campos obrigatórios vs opcionais
+**Causa:** Campo `status` tem `.default("pendente")` no schema, mas estava sendo passado manualmente na inserção
+**Solução:** Removido campo `status` da inserção (linha 3885-3895). Banco usa default automaticamente.
+
+
+---
+
+## 🔄 RESTART NECESSÁRIO - 30/10/2025 22:52
+
+### Problema
+- [ ] Mudanças no db.ts não foram aplicadas (hot reload falhou)
+- [ ] Erro "tokensCadastro is not defined" persiste
+- [ ] Erro de inserção de bugs persiste
+- [ ] Tab Tokens ainda mostra "Funcionalidade em desenvolvimento"
+
+### Ações
+- [ ] Limpar cache completo (node_modules/.vite, client/dist)
+- [ ] Restart completo do servidor
+- [ ] Verificar logs de erro após restart
+- [ ] Testar geração de token
+- [ ] Testar envio de bug
+
+
+## 🔴 BUGS CRÍTICOS IDENTIFICADOS (31/out - 23:45)
+- [ ] Sidebar aparece na tela inicial para usuários não autenticados (cache agressivo)
+- [ ] Erro ao reportar bug: campos default (status, created_at, etc) sendo enviados manualmente
+- [ ] Avisos não salvam no banco e não exibem no dashboard
+- [ ] Crash ao clicar "Estatísticas Avançadas" na página de Questões
+- [ ] Personalização de cores da sidebar não salva (falta botão "Salvar")
+- [ ] Adicionar botão "Incluir Questão" no topo do Banco de Questões (apenas admin/master)
+
+
+---
+
+## 🔴 BUGS CRÍTICOS IDENTIFICADOS E RESOLVIDOS (31/out - 23:45)
+
+- [x] Sidebar persiste na tela inicial (corrigido com DashboardRoute condicional)
+- [x] Erro ao reportar bugs - campos default (removidos do db.ts + cache limpo)
+- [x] Avisos não salvam no banco (integrado GestaoAvisos com tRPC)
+- [x] Crash em Estatísticas Avançadas (tratamento de erros e loading states)
+- [x] Personalização não salva cores (botão Salvar já existia, documentado)
+- [x] Botão Incluir Questão para admins/master (adicionado no topo do Banco de Questões)

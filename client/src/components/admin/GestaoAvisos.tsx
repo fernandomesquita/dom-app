@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bell, Plus, Trash2, Eye, EyeOff, Calendar } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface Aviso {
   id: number;
@@ -23,39 +24,24 @@ interface Aviso {
 }
 
 export default function GestaoAvisos() {
-  const [avisos, setAvisos] = useState<Aviso[]>([
-    {
-      id: 1,
-      titulo: "Atualização do Cronograma",
-      conteudo: "O cronograma da próxima semana foi atualizado. Verifique suas metas.",
-      tipo: "info",
-      destinatarios: "todos",
-      dataEnvio: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      ativo: true,
-      visualizacoes: 145,
+  const { data: avisos = [], refetch } = trpc.avisos.list.useQuery();
+  const criarMutation = trpc.avisos.criar.useMutation({
+    onSuccess: () => {
+      toast.success("Aviso criado com sucesso!");
+      refetch();
+      setDialogOpen(false);
+      setNovoAviso({
+        titulo: "",
+        conteudo: "",
+        tipo: "info",
+        destinatarios: "todos",
+        planoId: undefined,
+      });
     },
-    {
-      id: 2,
-      titulo: "Manutenção Programada",
-      conteudo: "Sistema ficará indisponível dia 15/01 das 2h às 4h para manutenção.",
-      tipo: "alerta",
-      destinatarios: "todos",
-      dataEnvio: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      ativo: true,
-      visualizacoes: 203,
+    onError: (error) => {
+      toast.error(`Erro ao criar aviso: ${error.message}`);
     },
-    {
-      id: 3,
-      titulo: "Prazo de Inscrição TJ-SP",
-      conteudo: "Atenção! Prazo de inscrição termina em 3 dias. Não perca!",
-      tipo: "urgente",
-      destinatarios: "plano_especifico",
-      planoId: 1,
-      dataEnvio: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      ativo: true,
-      visualizacoes: 78,
-    },
-  ]);
+  });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [novoAviso, setNovoAviso] = useState({
@@ -98,36 +84,21 @@ export default function GestaoAvisos() {
       return;
     }
 
-    const aviso: Aviso = {
-      id: avisos.length + 1,
-      ...novoAviso,
-      dataEnvio: new Date(),
-      ativo: true,
-      visualizacoes: 0,
-    };
-
-    setAvisos([aviso, ...avisos]);
-    setDialogOpen(false);
-    setNovoAviso({
-      titulo: "",
-      conteudo: "",
-      tipo: "info",
-      destinatarios: "todos",
-      planoId: undefined,
+    criarMutation.mutate({
+      titulo: novoAviso.titulo,
+      mensagem: novoAviso.conteudo,
+      tipo: novoAviso.tipo,
     });
-    toast.success("Aviso criado e enviado com sucesso!");
   };
 
   const handleToggleAtivo = (id: number) => {
-    setAvisos(avisos.map(aviso => 
-      aviso.id === id ? { ...aviso, ativo: !aviso.ativo } : aviso
-    ));
-    toast.success("Status do aviso atualizado");
+    // TODO: Implementar mutation para ativar/desativar aviso
+    toast.info("Funcionalidade em desenvolvimento");
   };
 
   const handleExcluirAviso = (id: number) => {
-    setAvisos(avisos.filter(aviso => aviso.id !== id));
-    toast.success("Aviso excluído com sucesso");
+    // TODO: Implementar mutation para excluir aviso
+    toast.info("Funcionalidade em desenvolvimento");
   };
 
   return (

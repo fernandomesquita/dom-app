@@ -32,6 +32,7 @@ export const appRouter = router({
     // Registro de novo usuário
     register: publicProcedure
       .input(z.object({
+        token: z.string().min(1, "Token de cadastro é obrigatório"),
         nome: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
         email: z.string().email("Email inválido"),
         cpf: z.string().min(11, "CPF inválido"),
@@ -41,9 +42,15 @@ export const appRouter = router({
         aceitouTermos: z.boolean().refine(val => val === true, "Você deve aceitar os termos de uso"),
       }))
       .mutation(async ({ input }) => {
-        const { registerUser, createEmailVerificationToken, logAudit } = await import("./db");
+        const { registerUser, createEmailVerificationToken, logAudit, validarToken, usarToken } = await import("./db");
         
         try {
+          // Validar token de cadastro
+          const tokenValido = await validarToken(input.token);
+          if (!tokenValido.valido) {
+            throw new Error(tokenValido.mensagem || "Token inválido");
+          }
+          
           const novoUsuario = await registerUser({
             nome: input.nome,
             email: input.email,
@@ -56,12 +63,15 @@ export const appRouter = router({
           // Criar token de verificação de email
           const verificationToken = await createEmailVerificationToken(novoUsuario.insertId);
           
+          // Marcar token como usado
+          await usarToken(input.token, novoUsuario.insertId);
+          
           // Log de auditoria
           await logAudit({
             action: "register",
             entity: "users",
             entityId: novoUsuario.insertId,
-            newData: { email: input.email, nome: input.nome },
+            newData: { email: input.email, nome: input.nome, token: input.token },
           });
           
           return {
@@ -501,6 +511,17 @@ export const appRouter = router({
       if (!ctx.user) throw new Error("Not authenticated");
       const { adicionarAnotacaoMeta } = await import("./db");
       return await adicionarAnotacaoMeta(ctx.user.id, input.metaId, input.anotacao);
+    }),
+
+    salvarQuestoesExternas: publicProcedure.input((val: unknown) => {
+      if (typeof val === "object" && val !== null && "metaId" in val && "questoesExternas" in val) {
+        return val as { metaId: number; questoesExternas: number; taxaAcertosExternas: number | null };
+      }
+      throw new Error("Invalid input");
+    }).mutation(async ({ input, ctx }) => {
+      if (!ctx.user) throw new Error("Not authenticated");
+      const { salvarQuestoesExternasMeta } = await import("./db");
+      return await salvarQuestoesExternasMeta(ctx.user.id, input.metaId, input.questoesExternas, input.taxaAcertosExternas);
     }),
 
     vincularAula: publicProcedure.input((val: unknown) => {
@@ -1592,16 +1613,37 @@ export const appRouter = router({
       const { getQuestaoById } = await import("./db");
       return await getQuestaoById(input.id);
     }),
-    responder: publicProcedure.input((val: unknown) => {
-      if (typeof val === "object" && val !== null && "questaoId" in val && "alternativaSelecionada" in val) {
-        return val as { questaoId: number; alternativaSelecionada: string; correta: boolean };
-      }
-      throw new Error("Invalid input");
-    }).mutation(async ({ input, ctx }) => {
-      if (!ctx.user) throw new Error("Not authenticated");
-      const { salvarRespostaQuestao } = await import("./db");
-      return await salvarRespostaQuestao(ctx.user.id, input.questaoId, input.alternativaSelecionada, input.correta);
-    }),
+    responder: publicProcedure
+      .input(z.object({
+        questaoId: z.number(),
+        respostaAluno: z.string(),
+        metaId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Not authenticated");
+        const { getQuestaoById, salvarRespostaQuestao } = await import("./db");
+        
+        // Buscar questão para verificar gabarito
+        const questao = await getQuestaoById(input.questaoId);
+        if (!questao) throw new Error("Questão não encontrada");
+        
+        // Verificar se a resposta está correta
+        const acertou = input.respostaAluno === questao.gabarito;
+        
+        // Salvar resposta
+        const resultado = await salvarRespostaQuestao(
+          ctx.user.id,
+          input.questaoId,
+          input.respostaAluno,
+          acertou
+        );
+        
+        return {
+          ...resultado,
+          acertou,
+          gabarito: questao.gabarito,
+        };
+      }),
     minhasRespostas: publicProcedure.query(async ({ ctx }) => {
       if (!ctx.user) throw new Error("Not authenticated");
       const { getRespostasQuestoesByUserId } = await import("./db");
@@ -2575,6 +2617,114 @@ export const appRouter = router({
         
         const { contarBugsPorStatus } = await import("./db");
         return await contarBugsPorStatus();
+      }),
+  }),
+  
+  // ========== TOKENS DE CADASTRO ==========
+  tokens: router({
+    // Gerar novo token
+    gerar: protectedProcedure
+      .input(z.object({
+        dataExpiracao: z.string().optional(),
+        observacoes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { gerarTokenCadastro } = await import("./db");
+        return await gerarTokenCadastro({
+          criadoPor: ctx.user.id,
+          dataExpiracao: input.dataExpiracao ? new Date(input.dataExpiracao) : undefined,
+          observacoes: input.observacoes,
+        });
+      }),
+    
+    // Listar tokens
+    listar: protectedProcedure
+      .input(z.object({
+        status: z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { listarTokens } = await import("./db");
+        return await listarTokens(input);
+      }),
+    
+    // Invalidar token
+    invalidar: protectedProcedure
+      .input(z.object({
+        tokenId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar se é admin
+        if (!['master', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Acesso negado");
+        }
+        
+        const { invalidarToken } = await import("./db");
+        return await invalidarToken(input.tokenId);
+      }),
+    
+    // Validar token (público para cadastro)
+    validar: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { validarToken } = await import("./db");
+        return await validarToken(input.token);
+      }),
+  }),
+
+  // ========== AVISOS ==========
+  avisos: router({
+    // Listar avisos ativos para o usuário
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const { getAvisosAtivos } = await import("./db");
+      return await getAvisosAtivos(ctx.user.id);
+    }),
+
+    // Criar aviso (admin)
+    criar: protectedProcedure
+      .input(z.object({
+        tipo: z.enum(["info", "aviso", "urgente"]),
+        titulo: z.string().min(3),
+        mensagem: z.string().min(10),
+        destinatarios: z.enum(["todos", "plano_especifico"]),
+        planoId: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Verificar permissões
+        if (!['master', 'mentor', 'administrativo'].includes(ctx.user.role || '')) {
+          throw new Error("Permissão negada");
+        }
+        const { createAviso } = await import("./db");
+        return await createAviso({
+          tipo: input.tipo,
+          titulo: input.titulo,
+          mensagem: input.mensagem,
+          destinatarios: input.destinatarios,
+          planoId: input.planoId,
+          criadoPor: ctx.user.id,
+          ativo: 1,
+        });
+      }),
+
+    // Dispensar aviso
+    dispensar: protectedProcedure
+      .input(z.object({
+        avisoId: z.number(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { dispensarAviso } = await import("./db");
+        return await dispensarAviso(ctx.user.id, input.avisoId);
       }),
   }),
 });

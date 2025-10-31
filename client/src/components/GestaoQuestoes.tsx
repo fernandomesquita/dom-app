@@ -47,6 +47,7 @@ interface NovaQuestao {
   nivelDificuldade: "facil" | "medio" | "dificil";
   comentario?: string;
   urlVideoResolucao?: string;
+  textoMotivador?: string;
 }
 
 export default function GestaoQuestoes() {
@@ -599,6 +600,19 @@ export default function GestaoQuestoes() {
                 rows={3}
                 placeholder="Explicação da resposta correta..."
               />
+            </div>
+            
+            <div>
+              <Label>Texto-Base da Questão (Opcional)</Label>
+              <Textarea
+                value={novaQuestao.textoMotivador || ""}
+                onChange={(e) => setNovaQuestao({ ...novaQuestao, textoMotivador: e.target.value })}
+                rows={4}
+                placeholder="Texto de apoio, artigo, gráfico ou contexto necessário para responder a questão..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Texto que o aluno precisa ler para responder (ex: artigo de lei, notícia, gráfico)
+              </p>
             </div>
           </div>
           

@@ -1,0 +1,33 @@
+{
+  "query": "SHOW CREATE TABLE bugs_reportados;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3FZ1nxfVKsSpRCQ.6ae6aa367fa6 --database 7jqNEfGzSXdcaVce6jQFxA --execute SHOW CREATE TABLE bugs_reportados;",
+  "rows": [
+    {
+      "Table": "bugs_reportados",
+      "Create Table": "CREATE TABLE `bugs_reportados` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `user_id` int(11) NOT NULL,",
+    "  `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `descricao` text COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `categoria` enum('interface','funcionalidade','performance','dados','mobile','outro') COLLATE utf8mb4_unicode_ci NOT NULL,",
+    "  `prioridade` enum('baixa','media','alta','critica') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'media',",
+    "  `status` enum('pendente','em_analise','resolvido','fechado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pendente',",
+    "  `screenshots` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `pagina_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `navegador` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `resolucao` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `observacoes_admin` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,",
+    "  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+    "  `resolvido_em` timestamp NULL DEFAULT NULL,",
+    "  `resolvido_por` int(11) DEFAULT NULL,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+  ],
+  "stdout": "Table\tCreate Table\nbugs_reportados\tCREATE TABLE `bugs_reportados` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `user_id` int(11) NOT NULL,\n  `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,\n  `descricao` text COLLATE utf8mb4_unicode_ci NOT NULL,\n  `categoria` enum('interface','funcionalidade','performance','dados','mobile','outro') COLLATE utf8mb4_unicode_ci NOT NULL,\n  `prioridade` enum('baixa','media','alta','critica') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'media',\n  `status` enum('pendente','em_analise','resolvido','fechado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pendente',\n  `screenshots` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `pagina_url` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `navegador` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `resolucao` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `observacoes_admin` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  `resolvido_em` timestamp NULL DEFAULT NULL,\n  `resolvido_por` int(11) DEFAULT NULL,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci\n",
+  "stderr": "",
+  "execution_time_ms": 55
+}

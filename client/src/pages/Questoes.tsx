@@ -13,8 +13,12 @@ import { useLocation } from "wouter";
 import { mockQuestoes, type Questao } from "@/lib/mockQuestoes";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Plus } from "lucide-react";
 
 export default function Questoes() {
+  const { user } = useAuth();
+  const isAdmin = user && ["master", "administrativo"].includes(user.role || "");
   const [, setLocation] = useLocation();
   const [questaoAtual, setQuestaoAtual] = useState<Questao | null>(null);
   const [respostaSelecionada, setRespostaSelecionada] = useState<string>("");
@@ -289,10 +293,18 @@ export default function Questoes() {
             Pratique com questões de concursos anteriores
           </p>
         </div>
-        <Button onClick={() => setLocation("/questoes/estatisticas")} variant="outline">
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Estatísticas Avançadas
-        </Button>
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button onClick={() => setLocation("/admin")} variant="default">
+              <Plus className="h-4 w-4 mr-2" />
+              Incluir Questão
+            </Button>
+          )}
+          <Button onClick={() => setLocation("/questoes/estatisticas")} variant="outline">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Estatísticas Avançadas
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

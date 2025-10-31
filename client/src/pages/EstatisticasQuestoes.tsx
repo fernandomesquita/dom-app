@@ -29,10 +29,45 @@ const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899'
 export default function EstatisticasQuestoes() {
   const [, setLocation] = useLocation();
   
-  const { data: estatisticasGerais, isLoading: loadingGerais } = trpc.questoes.estatisticas.useQuery();
-  const { data: estatisticasPorDisciplina, isLoading: loadingDisciplina } = trpc.questoes.estatisticasPorDisciplina.useQuery();
-  const { data: evolucaoTemporal, isLoading: loadingEvolucao } = trpc.questoes.evolucaoTemporal.useQuery({ dias: 30 });
-  const { data: questoesMaisErradas, isLoading: loadingErradas } = trpc.questoes.questoesMaisErradas.useQuery({ limit: 10 });
+  const { data: estatisticasGerais, isLoading: loadingGerais, error: errorGerais } = trpc.questoes.estatisticas.useQuery();
+  const { data: estatisticasPorDisciplina, isLoading: loadingDisciplina, error: errorDisciplina } = trpc.questoes.estatisticasPorDisciplina.useQuery();
+  const { data: evolucaoTemporal, isLoading: loadingEvolucao, error: errorEvolucao } = trpc.questoes.evolucaoTemporal.useQuery({ dias: 30 });
+  const { data: questoesMaisErradas, isLoading: loadingErradas, error: errorErradas } = trpc.questoes.questoesMaisErradas.useQuery({ limit: 10 });
+
+  const isLoading = loadingGerais || loadingDisciplina || loadingEvolucao || loadingErradas;
+  const hasError = errorGerais || errorDisciplina || errorEvolucao || errorErradas;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Carregando estatísticas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="container py-8">
+        <Breadcrumb items={[
+          { label: "Questões", href: "/questoes" },
+          { label: "Estatísticas Avançadas" },
+        ]} />
+        <Card className="mt-6">
+          <CardContent className="p-8 text-center">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar estatísticas</h3>
+            <p className="text-muted-foreground mb-4">
+              {(errorGerais || errorDisciplina || errorEvolucao || errorErradas)?.message || "Erro desconhecido"}
+            </p>
+            <Button onClick={() => window.location.reload()}>Tentar Novamente</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   // Preparar dados para gráficos
   const dadosDisciplina = estatisticasPorDisciplina?.map(d => ({
@@ -52,8 +87,6 @@ export default function EstatisticasQuestoes() {
     { name: 'Acertos', value: estatisticasGerais?.corretas || 0 },
     { name: 'Erros', value: (estatisticasGerais?.total || 0) - (estatisticasGerais?.corretas || 0) },
   ];
-
-  const isLoading = loadingGerais || loadingDisciplina || loadingEvolucao || loadingErradas;
 
   if (isLoading) {
     return (

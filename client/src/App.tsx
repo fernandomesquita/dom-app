@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -35,6 +36,29 @@ function LayoutRoute({ component: Component }: { component: React.ComponentType 
   );
 }
 
+// Wrapper especial para Dashboard que gerencia seu próprio layout
+function DashboardRoute() {
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+  
+  if (!isAuthenticated) {
+    return <Dashboard />; // Sem layout
+  }
+  
+  return (
+    <DOMLayout>
+      <Dashboard />
+    </DOMLayout>
+  );
+}
+
 function Router() {
   return (
     <Switch>
@@ -46,7 +70,7 @@ function Router() {
       <Route path="/redefinir-senha/:token" component={RedefinirSenha} />
       
       {/* Rotas protegidas (com layout) */}
-      <Route path="/" component={() => <LayoutRoute component={Dashboard} />} />
+      <Route path="/" component={DashboardRoute} />
       <Route path="/plano" component={() => <LayoutRoute component={Plano} />} />
       <Route path="/aulas" component={() => <LayoutRoute component={Aulas} />} />
       <Route path="/aulas/:id" component={() => <LayoutRoute component={AulaView} />} />

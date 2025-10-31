@@ -10,6 +10,7 @@ import { Link } from "wouter";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import GraficoProgressoSemanal from "@/components/GraficoProgressoSemanal";
+import AvisosSection from "@/components/AvisosSection";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -69,6 +70,14 @@ export default function Dashboard() {
             >
               Fazer Login
             </Button>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Não tem uma conta?{" "}
+                <Link href="/cadastro" className="text-primary hover:underline font-medium">
+                  Cadastre-se
+                </Link>
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -138,6 +147,9 @@ export default function Dashboard() {
         )}
       </div>
 
+      {/* Avisos Importantes */}
+      <AvisosSection />
+
       {/* Estatísticas Rápidas */}
       {!stats ? (
         <div className="col-span-full text-center py-8">
@@ -165,8 +177,8 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Metas Concluídas</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium whitespace-nowrap">Metas Concluídas</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.metasConcluidas || 0} / {stats?.totalMetas || 0}</div>
@@ -184,8 +196,8 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Aulas Assistidas</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium whitespace-nowrap">Aulas Assistidas</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.aulasAssistidas || 0}</div>

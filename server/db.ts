@@ -23,7 +23,8 @@ import {
   bugsReportados,
   InsertBugReportado,
   notificacoes,
-  InsertNotificacao
+  InsertNotificacao,
+  tokensCadastro
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -539,6 +540,57 @@ export async function adicionarAnotacaoMeta(
     .where(eq(metas.id, metaId));
   
   return { success: true, metaId, anotacao };
+}
+
+export async function salvarQuestoesExternasMeta(
+  userId: number,
+  metaId: number,
+  questoesExternas: number,
+  taxaAcertosExternas: number | null
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const { and, sql } = await import("drizzle-orm");
+  
+  try {
+    // Buscar ou criar registro de progresso para esta meta
+    const progresso = await db.select()
+      .from(progressoMetas)
+      .where(and(
+        eq(progressoMetas.userId, userId),
+        eq(progressoMetas.metaId, metaId)
+      ))
+      .limit(1);
+    
+    if (progresso.length > 0) {
+      // Atualizar registro existente (incrementar questões)
+      await db.update(progressoMetas)
+        .set({
+          questoesExternas: sql`${progressoMetas.questoesExternas} + ${questoesExternas}`,
+          taxaAcertosExternas: taxaAcertosExternas,
+          updatedAt: new Date(),
+        })
+        .where(eq(progressoMetas.id, progresso[0].id));
+    } else {
+      // Criar novo registro de progresso
+      await db.insert(progressoMetas).values({
+        userId,
+        metaId,
+        dataAgendada: new Date(),
+        questoesExternas,
+        taxaAcertosExternas,
+        concluida: 0,
+        pulada: 0,
+        adiada: 0,
+        tempoGasto: 0,
+      });
+    }
+    
+    return { success: true, metaId, questoesExternas, taxaAcertosExternas };
+  } catch (error) {
+    console.error("[salvarQuestoesExternasMeta] Erro:", error);
+    throw error;
+  }
 }
 
 export async function vincularAulaAMeta(metaId: number, aulaId: number) {
@@ -3837,12 +3889,10 @@ export async function criarBugReportado(dados: {
     categoria: dados.categoria,
     prioridade: dados.prioridade,
     screenshots: screenshotsJson,
-    paginaUrl: dados.paginaUrl || null,
-    navegador: dados.navegador || null,
-    resolucao: dados.resolucao || null,
-    status: "pendente",
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    paginaUrl: dados.paginaUrl,
+    navegador: dados.navegador,
+    resolucao: dados.resolucao,
+    // Campos com default não devem ser enviados: status, createdAt, updatedAt, resolvidoEm, resolvidoPor
   });
 
   return Number(result.insertId);
@@ -4376,5 +4426,149 @@ export async function buscarQuestoesPorFiltro(filtro: {
   } catch (error) {
     console.error("[buscarQuestoesPorFiltro] Erro:", error);
     return [];
+  }
+}
+
+
+// ========== TOKENS DE CADASTRO ==========
+
+export async function gerarTokenCadastro(params: {
+  criadoPor: number;
+  dataExpiracao?: Date;
+  observacoes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    // Gerar token único (UUID simplificado)
+    const token = `DOM-${Date.now()}-${Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+    
+    await db.insert(tokensCadastro).values({
+      token,
+      criadoPor: params.criadoPor,
+      dataExpiracao: params.dataExpiracao,
+      observacoes: params.observacoes,
+    } as InsertTokenCadastro);
+    
+    return { success: true, token };
+  } catch (error) {
+    console.error("[gerarTokenCadastro] Erro:", error);
+    throw error;
+  }
+}
+
+export async function listarTokens(filtro?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    let query = db
+      .select({
+        id: tokensCadastro.id,
+        token: tokensCadastro.token,
+        status: tokensCadastro.status,
+        criadoPor: tokensCadastro.criadoPor,
+        usadoPor: tokensCadastro.usadoPor,
+        dataGeracao: tokensCadastro.dataGeracao,
+        dataUso: tokensCadastro.dataUso,
+        dataExpiracao: tokensCadastro.dataExpiracao,
+        observacoes: tokensCadastro.observacoes,
+        criadorNome: users.name,
+        usuarioNome: sql<string>`u2.name`,
+      })
+      .from(tokensCadastro)
+      .leftJoin(users, eq(tokensCadastro.criadoPor, users.id))
+      .leftJoin(sql`users u2`, sql`tokens_cadastro.usado_por = u2.id`);
+    
+    if (filtro?.status) {
+      query = query.where(eq(tokensCadastro.status, filtro.status as any)) as any;
+    }
+    
+    const result = await query.orderBy(desc(tokensCadastro.dataGeracao));
+    return result;
+  } catch (error) {
+    console.error("[listarTokens] Erro:", error);
+    return [];
+  }
+}
+
+export async function invalidarToken(tokenId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    await db
+      .update(tokensCadastro)
+      .set({ status: "expirado" })
+      .where(eq(tokensCadastro.id, tokenId));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("[invalidarToken] Erro:", error);
+    throw error;
+  }
+}
+
+export async function validarToken(token: string) {
+  const db = await getDb();
+  if (!db) return { valido: false, mensagem: "Database not available" };
+  
+  try {
+    const result = await db
+      .select()
+      .from(tokensCadastro)
+      .where(eq(tokensCadastro.token, token))
+      .limit(1);
+    
+    if (result.length === 0) {
+      return { valido: false, mensagem: "Token não encontrado" };
+    }
+    
+    const tokenData = result[0];
+    
+    if (tokenData.status === "usado") {
+      return { valido: false, mensagem: "Token já foi utilizado" };
+    }
+    
+    if (tokenData.status === "expirado") {
+      return { valido: false, mensagem: "Token expirado" };
+    }
+    
+    if (tokenData.dataExpiracao && new Date(tokenData.dataExpiracao) < new Date()) {
+      // Marcar como expirado
+      await db
+        .update(tokensCadastro)
+        .set({ status: "expirado" })
+        .where(eq(tokensCadastro.id, tokenData.id));
+      
+      return { valido: false, mensagem: "Token expirado" };
+    }
+    
+    return { valido: true, mensagem: "Token válido", tokenId: tokenData.id };
+  } catch (error) {
+    console.error("[validarToken] Erro:", error);
+    return { valido: false, mensagem: "Erro ao validar token" };
+  }
+}
+
+export async function usarToken(token: string, usuarioId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    await db
+      .update(tokensCadastro)
+      .set({ 
+        status: "usado",
+        usadoPor: usuarioId,
+        dataUso: new Date(),
+      })
+      .where(eq(tokensCadastro.token, token));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("[usarToken] Erro:", error);
+    throw error;
   }
 }

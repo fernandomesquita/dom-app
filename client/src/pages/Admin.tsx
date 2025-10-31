@@ -28,7 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import GestaoAvisos from "@/components/admin/GestaoAvisos";
@@ -43,11 +43,15 @@ import CentroComando from "@/components/admin/CentroComando";
 import ControleFuncionalidades from "@/components/admin/ControleFuncionalidades";
 import GestaoBugs from "@/components/GestaoBugs";
 import GestaoQuestoes from "@/components/GestaoQuestoes";
+import GestaoTokens from "@/components/admin/GestaoTokens";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("");
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
 
   // Verificar permissões por perfil
   const isMaster = user?.role === "master";
@@ -56,6 +60,61 @@ export default function Admin() {
   const isProfessor = user?.role === "professor";
   
   const hasAccess = isMaster || isMentor || isAdministrativo || isProfessor;
+
+  // Definir tabs disponíveis por perfil (ANTES do return condicional)
+  const availableTabs = {
+    usuarios: isMaster || isAdministrativo,
+    planos: isMaster || isMentor || isAdministrativo,
+    atribuirPlanos: isMaster || isMentor || isAdministrativo,
+    matriculas: isMaster || isMentor || isAdministrativo,
+    metas: isMaster || isMentor,
+    aulas: isMaster || isAdministrativo || isProfessor,
+    materiais: isMaster || isMentor || isProfessor,
+    questoes: isMaster || isAdministrativo || isProfessor,
+    avisos: isMaster || isMentor || isAdministrativo,
+    relatorios: isMaster || isMentor,
+    personalizacao: isMaster,
+    configuracoes: isMaster,
+    tokens: isMaster || isAdministrativo,
+    bugs: isMaster || isAdministrativo,
+  };
+
+  const tabs = [
+    { value: "atribuirPlanos", label: "Atribuir Planos", show: availableTabs.atribuirPlanos },
+    { value: "aulas", label: "Aulas", show: availableTabs.aulas },
+    { value: "avisos", label: "Avisos", show: availableTabs.avisos },
+    { value: "bugs", label: "Bugs Reportados", show: availableTabs.bugs },
+    { value: "configuracoes", label: "Configurações", show: availableTabs.configuracoes },
+    { value: "materiais", label: "Materiais", show: availableTabs.materiais },
+    { value: "matriculas", label: "Matrículas", show: availableTabs.matriculas },
+    { value: "metas", label: "Metas", show: availableTabs.metas },
+    { value: "personalizacao", label: "Personalização", show: availableTabs.personalizacao },
+    { value: "planos", label: "Planos", show: availableTabs.planos },
+    { value: "questoes", label: "Questões", show: availableTabs.questoes },
+    { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
+    { value: "tokens", label: "Tokens", show: availableTabs.tokens },
+    { value: "usuarios", label: "Usuários", show: availableTabs.usuarios },
+  ].filter(tab => tab.show);
+
+  // Verificar se precisa mostrar setas ao carregar (ANTES do return condicional)
+  useEffect(() => {
+    if (!hasAccess) return; // Não executar se não tem acesso
+    
+    const checkScroll = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        setShowLeftArrow(scrollLeft > 10);
+        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+      }
+    };
+    
+    // Verificar após renderização
+    setTimeout(checkScroll, 100);
+    
+    // Verificar ao redimensionar
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [tabs, hasAccess]);
 
   if (!hasAccess) {
     return (
@@ -75,41 +134,6 @@ export default function Admin() {
       </div>
     );
   }
-
-  // Definir tabs disponíveis por perfil
-  const availableTabs = {
-    usuarios: isMaster || isAdministrativo,
-    planos: isMaster || isMentor || isAdministrativo,
-    atribuirPlanos: isMaster || isMentor || isAdministrativo,
-    matriculas: isMaster || isMentor || isAdministrativo,
-    metas: isMaster || isMentor,
-    aulas: isMaster || isAdministrativo || isProfessor,
-    materiais: isMaster || isMentor || isProfessor,
-    questoes: isMaster || isAdministrativo || isProfessor,
-    avisos: isMaster || isMentor || isAdministrativo,
-    relatorios: isMaster || isMentor,
-    personalizacao: isMaster,
-    configuracoes: isMaster,
-    tokens: isMaster || isAdministrativo,
-    bugs: isMaster || isAdministrativo,
-  };
-
-  const tabs = [
-    { value: "usuarios", label: "Usuários", show: availableTabs.usuarios },
-    { value: "planos", label: "Planos", show: availableTabs.planos },
-    { value: "atribuirPlanos", label: "Atribuir Planos", show: availableTabs.atribuirPlanos },
-    { value: "matriculas", label: "Matrículas", show: availableTabs.matriculas },
-    { value: "metas", label: "Metas", show: availableTabs.metas },
-    { value: "aulas", label: "Aulas", show: availableTabs.aulas },
-    { value: "materiais", label: "Materiais", show: availableTabs.materiais },
-    { value: "questoes", label: "Questões", show: availableTabs.questoes },
-    { value: "avisos", label: "Avisos", show: availableTabs.avisos },
-    { value: "relatorios", label: "Relatórios", show: availableTabs.relatorios },
-    { value: "bugs", label: "Bugs Reportados", show: availableTabs.bugs },
-    { value: "personalizacao", label: "Personalização", show: availableTabs.personalizacao },
-    { value: "configuracoes", label: "Configurações", show: availableTabs.configuracoes },
-    { value: "tokens", label: "Tokens", show: availableTabs.tokens },
-  ].filter(tab => tab.show);
 
   const getPerfilDescricao = () => {
     if (isMaster) return "Controle total da plataforma - Master";
@@ -217,15 +241,61 @@ export default function Admin() {
 
       {/* Tabs de Gestão */}
       <Tabs defaultValue={tabs[0]?.value} value={activeTab || tabs[0]?.value} onValueChange={setActiveTab} className="space-y-6">
-        {/* Desktop: TabsList horizontal */}
-        <div className="hidden lg:block">
-          <TabsList className="flex w-full overflow-x-auto">
-            {tabs.map(tab => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        {/* Desktop: TabsList horizontal com setas */}
+        <div className="hidden lg:block relative">
+          {/* Seta Esquerda */}
+          {showLeftArrow && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md"
+              onClick={() => {
+                if (scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+                }
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {/* Container com scroll */}
+          <div 
+            ref={scrollContainerRef}
+            className="overflow-x-auto scrollbar-hide px-10"
+            onScroll={(e) => {
+              const target = e.currentTarget;
+              setShowLeftArrow(target.scrollLeft > 10);
+              setShowRightArrow(
+                target.scrollLeft < target.scrollWidth - target.clientWidth - 10
+              );
+            }}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            <TabsList className="flex w-max">
+              {tabs.map(tab => (
+                <TabsTrigger key={tab.value} value={tab.value} className="whitespace-nowrap">
+                  {tab.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          
+          {/* Seta Direita */}
+          {showRightArrow && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background/80 backdrop-blur-sm shadow-md"
+              onClick={() => {
+                if (scrollContainerRef.current) {
+                  scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+                }
+              }}
+            >
+              <ArrowLeft className="h-4 w-4 rotate-180" />
+            </Button>
+          )}
         </div>
 
         {/* Mobile/Tablet: Dropdown Menu */}
@@ -441,30 +511,7 @@ export default function Admin() {
         {/* Tab: Tokens (Master, Administrativo) */}
         {availableTabs.tokens && (
           <TabsContent value="tokens" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Key className="h-5 w-5" />
-                      Gestão de Tokens
-                    </CardTitle>
-                    <CardDescription>
-                      Gerar e invalidar tokens de cadastro e acesso
-                    </CardDescription>
-                  </div>
-                  <Button onClick={() => toast.info("Funcionalidade em desenvolvimento")}>
-                    <Key className="h-4 w-4 mr-2" />
-                    Gerar Token
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  Sistema de gestão de tokens em desenvolvimento
-                </p>
-              </CardContent>
-            </Card>
+            <GestaoTokens />
           </TabsContent>
         )}
       </Tabs>
