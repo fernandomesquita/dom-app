@@ -17,7 +17,7 @@ export default function Conquistas() {
   
   // Mutation para verificar conquistas
   const verificarConquistas = trpc.gamificacao.verificarConquistas.useMutation({
-    onSuccess: (novasConquistas) => {
+    onSuccess: (novasConquistas: unknown) => {
       if (novasConquistas && novasConquistas.length > 0) {
         toast.success(`🎉 Você desbloqueou ${novasConquistas.length} nova(s) conquista(s)!`);
         refetch();
@@ -34,7 +34,7 @@ export default function Conquistas() {
   const conquistasDesbloqueadas = conquistasUsuario || [];
   const conquistasIds = new Set(conquistasDesbloqueadas.map(c => c.id));
   
-  const todasComStatus = todasConquistas?.map(conquista => ({
+  const todasComStatus = todasConquistas?.map((conquista: any) => ({
     ...conquista,
     desbloqueada: conquistasIds.has(conquista.id),
     desbloqueadaEm: conquistasDesbloqueadas.find(c => c.id === conquista.id)?.desbloqueadaEm,
@@ -48,7 +48,7 @@ export default function Conquistas() {
     : 0;
   
   // Agrupar por tipo
-  const conquistasPorTipo = todasComStatus.reduce((acc, conquista) => {
+  const conquistasPorTipo = todasComStatus.reduce((acc: any, conquista: any) => {
     const tipo = conquista.tipo || 'especial';
     if (!acc[tipo]) acc[tipo] = [];
     acc[tipo].push(conquista);
@@ -186,12 +186,12 @@ export default function Conquistas() {
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold">{tipoLabels[tipo] || tipo}</h2>
               <Badge variant="outline">
-                {conquistas.filter(c => c.desbloqueada).length} / {conquistas.length}
+                {conquistas.filter((c: any) => c.desbloqueada).length} / {conquistas.length}
               </Badge>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {conquistas.map((conquista) => (
+              {conquistas.map((conquista: any) => (
                 <ConquistaBadge
                   key={conquista.id}
                   nome={conquista.nome}
