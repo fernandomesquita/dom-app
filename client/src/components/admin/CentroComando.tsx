@@ -29,6 +29,7 @@ const defaultColors: ColorConfig = {
 
 export default function CentroComando() {
   const [colors, setColors] = useState<ColorConfig>(defaultColors);
+  const [savedColors, setSavedColors] = useState<ColorConfig>(defaultColors);
   const [previewMode, setPreviewMode] = useState(false);
 
   // Carregar cores salvas do localStorage
@@ -38,12 +39,16 @@ export default function CentroComando() {
       try {
         const parsed = JSON.parse(saved);
         setColors(parsed);
+        setSavedColors(parsed);
         applyColors(parsed);
       } catch (e) {
         console.error("Erro ao carregar cores:", e);
       }
     }
   }, []);
+
+  // Verificar se há mudanças não salvas
+  const hasChanges = JSON.stringify(colors) !== JSON.stringify(savedColors);
 
   const applyColors = (colorConfig: ColorConfig) => {
     const root = document.documentElement;
@@ -101,6 +106,7 @@ export default function CentroComando() {
 
   const handleSave = () => {
     localStorage.setItem("customColors", JSON.stringify(colors));
+    setSavedColors(colors);
     applyColors(colors);
     toast.success("Cores personalizadas salvas com sucesso!");
   };
@@ -150,9 +156,13 @@ export default function CentroComando() {
             <RotateCcw className="h-4 w-4 mr-2" />
             Resetar
           </Button>
-          <Button onClick={handleSave}>
+          <Button 
+            onClick={handleSave}
+            className={hasChanges ? "bg-green-600 hover:bg-green-700 animate-pulse" : ""}
+            disabled={!hasChanges}
+          >
             <Save className="h-4 w-4 mr-2" />
-            Salvar
+            {hasChanges ? "Salvar Alterações" : "Salvo"}
           </Button>
         </div>
       </div>
