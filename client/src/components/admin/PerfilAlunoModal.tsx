@@ -14,7 +14,7 @@ interface PerfilAlunoModalProps {
 }
 
 export default function PerfilAlunoModal({ open, onOpenChange, usuarioId, onEditar }: PerfilAlunoModalProps) {
-  const { data: usuario, isLoading } = trpc.admin.usuarios.getById.useQuery(
+  const { data: usuario, isLoading } = trpc.adminPanel.usuarios.getById.useQuery(
     { id: usuarioId },
     { enabled: open && !!usuarioId }
   );

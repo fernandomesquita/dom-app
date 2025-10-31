@@ -24,7 +24,7 @@ export default function ImportarAlunos({ open, onOpenChange, onSuccess }: Import
   const [resultado, setResultado] = useState<any>(null);
   const [etapa, setEtapa] = useState<"upload" | "preview" | "resultado">("upload");
 
-  const importarMutation = trpc.admin.usuarios.importarCSV.useMutation();
+  const importarMutation = trpc.adminPanel.usuarios.importarCSV.useMutation();
 
   const handleDownloadTemplate = () => {
     try {

@@ -20,12 +20,12 @@ export default function AtribuirPlano() {
   const [mostrarApenasSemPlano, setMostrarApenasSemPlano] = useState(false);
 
   // Queries
-  const { data: usuarios } = trpc.admin.usuarios.list.useQuery();
+  const { data: usuarios } = trpc.adminPanel.usuarios.list.useQuery();
   const { data: planos } = trpc.planos.list.useQuery();
-  const { data: matriculas, refetch } = trpc.admin.getMatriculas.useQuery();
+  const { data: matriculas, refetch } = trpc.adminPanel.getMatriculas.useQuery();
 
   // Mutation
-  const atribuirMutation = trpc.admin.atribuirPlano.useMutation({
+  const atribuirMutation = trpc.adminPanel.atribuirPlano.useMutation({
     onSuccess: () => {
       toast.success("Plano(s) atribuído(s) com sucesso!");
       setUsuariosSelecionados([]);

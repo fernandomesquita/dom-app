@@ -7,9 +7,9 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function ControleFuncionalidades() {
-  const { data: config, refetch } = trpc.admin.getConfigFuncionalidades.useQuery();
+  const { data: config, refetch } = trpc.adminPanel.getConfigFuncionalidades.useQuery();
   
-  const atualizarMutation = trpc.admin.atualizarConfigFuncionalidades.useMutation({
+  const atualizarMutation = trpc.adminPanel.atualizarConfigFuncionalidades.useMutation({
     onSuccess: () => {
       refetch();
       toast.success("Configuração atualizada com sucesso!");

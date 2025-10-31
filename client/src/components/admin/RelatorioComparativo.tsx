@@ -13,8 +13,8 @@ export default function RelatorioComparativo() {
   const [alunosSelecionados, setAlunosSelecionados] = useState<number[]>([]);
   const [busca, setBusca] = useState("");
 
-  const { data: usuarios } = trpc.admin.usuarios.list.useQuery();
-  const { data: progresso } = trpc.admin.usuarios.getAlunosComProgresso.useQuery();
+  const { data: usuarios } = trpc.adminPanel.usuarios.list.useQuery();
+  const { data: progresso } = trpc.adminPanel.usuarios.getAlunosComProgresso.useQuery();
 
   const alunos = usuarios?.filter((u: any) => u.role === "aluno") || [];
 
