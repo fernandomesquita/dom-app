@@ -11,6 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Video, Plus, Search, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return String(error);
+};
+
 export default function GestaoAulas() {
   const [busca, setBusca] = useState("");
   const [filtroAtivo, setFiltroAtivo] = useState<string>("todos");
@@ -32,8 +37,8 @@ export default function GestaoAulas() {
       utils.aulas.list.invalidate();
       fecharModal();
     },
-    onError: (error) => {
-      toast.error(`Erro ao criar aula: ${error.message}`);
+    onError: (error: unknown) => {
+      toast.error(`Erro ao criar aula: ${getErrorMessage(error)}`);
     },
   });
 
@@ -43,8 +48,8 @@ export default function GestaoAulas() {
       utils.aulas.list.invalidate();
       fecharModal();
     },
-    onError: (error) => {
-      toast.error(`Erro ao atualizar aula: ${error.message}`);
+    onError: (error: unknown) => {
+      toast.error(`Erro ao atualizar aula: ${getErrorMessage(error)}`);
     },
   });
 
@@ -53,8 +58,8 @@ export default function GestaoAulas() {
       toast.success("Status da aula atualizado!");
       utils.aulas.list.invalidate();
     },
-    onError: (error) => {
-      toast.error(`Erro: ${error.message}`);
+    onError: (error: unknown) => {
+      toast.error(`Erro: ${getErrorMessage(error)}`);
     },
   });
 
@@ -63,8 +68,8 @@ export default function GestaoAulas() {
       toast.success("Aula deletada com sucesso!");
       utils.aulas.list.invalidate();
     },
-    onError: (error) => {
-      toast.error(`Erro ao deletar aula: ${error.message}`);
+    onError: (error: unknown) => {
+      toast.error(`Erro ao deletar aula: ${getErrorMessage(error)}`);
     },
   });
 
