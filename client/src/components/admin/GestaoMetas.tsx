@@ -61,7 +61,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
   });
 
   // Buscar lista de todos os planos
-  const { data: todosPlanos } = trpc.admin.listarPlanos.useQuery();
+  const { data: todosPlanos } = trpc.adminPanel.listarPlanos.useQuery();
 
   // Buscar metas do plano
   const { data: metasData, refetch } = trpc.metas.listByPlano.useQuery(
@@ -109,7 +109,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     },
   });
 
-  const moverParaCimaMutation = trpc.admin.moverMetaParaCima.useMutation({
+  const moverParaCimaMutation = trpc.adminPanel.moverMetaParaCima.useMutation({
     onSuccess: (result) => {
       if (result.success) {
         toast.success(result.message);
@@ -123,7 +123,7 @@ export default function GestaoMetas({ planoId, planoNome, aberto, onFechar }: Ge
     },
   });
 
-  const moverParaBaixoMutation = trpc.admin.moverMetaParaBaixo.useMutation({
+  const moverParaBaixoMutation = trpc.adminPanel.moverMetaParaBaixo.useMutation({
     onSuccess: (result) => {
       if (result.success) {
         toast.success(result.message);

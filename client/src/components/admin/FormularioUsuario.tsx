@@ -38,8 +38,8 @@ export default function FormularioUsuario({ open, onOpenChange, usuario, onSucce
 
   const [uploadingFoto, setUploadingFoto] = useState(false);
 
-  const criarMutation = trpc.admin.usuarios.create.useMutation();
-  const atualizarMutation = trpc.admin.usuarios.update.useMutation();
+  const criarMutation = trpc.adminPanel.usuarios.create.useMutation();
+  const atualizarMutation = trpc.adminPanel.usuarios.update.useMutation();
 
   // Preencher formulário ao editar
   useEffect(() => {

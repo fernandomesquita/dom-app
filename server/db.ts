@@ -11,6 +11,7 @@ import {
   questoes,
   respostasQuestoes,
   metasQuestoes, InsertMetaQuestao,
+  questoesLixeira,
   forumTopicos, InsertForumTopico,
   forumRespostas, InsertForumResposta,
   forumNotificacoesLidas,
@@ -3489,6 +3490,7 @@ export async function getAlunosDoPlano(planoId: number) {
 // ============================================
 
 export async function getEstatisticasProgresso(userId: number, periodo: string = "tudo") {
+  const { eq, gte } = await import("drizzle-orm");
   const db = await getDb();
   if (!db) return null;
   
@@ -3598,6 +3600,7 @@ export async function getEstatisticasPorDisciplinaProgresso(userId: number) {
 }
 
 export async function getEvolucaoTemporalProgresso(userId: number, periodo: string = "30dias") {
+  const { eq, and, gte } = await import("drizzle-orm");
   const db = await getDb();
   if (!db) return [];
   
@@ -3717,6 +3720,7 @@ export async function redistribuirMetasAluno(
   horasDiarias?: number,
   diasSemana?: string
 ): Promise<void> {
+  const { eq, and, or, isNull } = await import("drizzle-orm");
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 

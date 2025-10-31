@@ -411,7 +411,7 @@ export function inserirDisciplinasPinadas(
       if (!disciplinaPinada.pinada) continue;
       
       // Verificar se já existe meta desta disciplina neste dia
-      const jaExiste = itens.some(i => i.meta.disciplina === disciplinaPinada.disciplina);
+      const jaExiste = itens.some((i: any) => i.meta.disciplina === disciplinaPinada.disciplina);
       if (jaExiste) continue;
       
       // Criar meta pinada (simplificado - em produção, buscar do banco)

@@ -153,9 +153,10 @@ export default function Forum() {
   };
 
   const handleCurtirTopico = (id: number) => {
-    setTopicos(topicos.map(t => 
-      t.id === id ? { ...t, curtidas: t.curtidas + 1 } : t
-    ));
+    // TODO: Implementar mutation tRPC para curtir tópico
+    // setTopicos(topicos.map(t => 
+    //   t.id === id ? { ...t, curtidas: t.curtidas + 1 } : t
+    // ));
     toast.success("Curtida adicionada!");
   };
 
@@ -189,9 +190,10 @@ export default function Forum() {
     };
 
     setRespostas([...respostas, resposta]);
-    setTopicos(topicos.map(t => 
-      t.id === topicoSelecionado.id ? { ...t, respostas: t.respostas + 1 } : t
-    ));
+    // TODO: Implementar mutation tRPC para adicionar resposta
+    // setTopicos(topicos.map(t => 
+    //   t.id === topicoSelecionado.id ? { ...t, respostas: t.respostas + 1 } : t
+    // ));
     setNovaResposta("");
     toast.success("Resposta enviada!");
   };

@@ -2198,7 +2198,7 @@ export const appRouter = router({
     }),
   }),
 
-  admin: router({
+  adminPanel: router({
     getConfigFuncionalidades: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.user || ctx.user.role !== "master") {
         throw new Error("Unauthorized");
@@ -2728,3 +2728,5 @@ export const appRouter = router({
       }),
   }),
 });
+
+export type AppRouter = typeof appRouter;

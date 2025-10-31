@@ -25,10 +25,10 @@ export default function GestaoMatriculas() {
   });
 
   // Queries
-  const { data: matriculas, refetch, isLoading } = trpc.admin.getMatriculas.useQuery();
+  const { data: matriculas, refetch, isLoading } = trpc.adminPanel.getMatriculas.useQuery();
 
   // Mutations (placeholder - precisam ser criadas no backend)
-  const atualizarMatriculaMutation = trpc.admin.usuarios.update.useMutation();
+  const atualizarMatriculaMutation = trpc.adminPanel.usuarios.update.useMutation();
 
   const handleEditar = (matricula: any) => {
     setMatriculaEditando(matricula);

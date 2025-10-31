@@ -23,8 +23,8 @@ export default function DashboardAlunoAdmin() {
   const [periodo, setPeriodo] = useState<string>("30"); // dias
 
   // Queries
-  const { data: usuarios } = trpc.admin.usuarios.list.useQuery();
-  const { data: progresso, isLoading } = trpc.admin.usuarios.getAlunosComProgresso.useQuery(
+  const { data: usuarios } = trpc.adminPanel.usuarios.list.useQuery();
+  const { data: progresso, isLoading } = trpc.adminPanel.usuarios.getAlunosComProgresso.useQuery(
     undefined,
     { enabled: !!alunoSelecionado }
   );

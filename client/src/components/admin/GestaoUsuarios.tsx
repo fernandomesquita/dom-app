@@ -15,8 +15,8 @@ import { trpc } from "@/lib/trpc";
 
 export default function GestaoUsuarios() {
   // Buscar usuários do backend
-  const { data: usuariosData, isLoading, refetch } = trpc.admin.usuarios.list.useQuery();
-  const deletarUsuarioMutation = trpc.admin.usuarios.delete.useMutation();
+  const { data: usuariosData, isLoading, refetch } = trpc.adminPanel.usuarios.list.useQuery();
+  const deletarUsuarioMutation = trpc.adminPanel.usuarios.delete.useMutation();
   
   const usuarios = usuariosData || [];
 
